@@ -1329,7 +1329,7 @@ def_scale_prior.brmsterms <- function(x, center = TRUE, df = 3,
 #' @export
 validate_prior <- function(prior, formula, data, family = gaussian(),
                            sample_prior = "no", data2 = NULL, knots = NULL,
-                           drop_unused_levels = TRUE, ...) {
+                           drop_unused_levels = TRUE, ..., stanvars = NULL) {
   formula <- validate_formula(formula, data = data, family = family)
   bterms <- brmsterms(formula)
   data2 <- validate_data2(data2, bterms = bterms)
@@ -1339,9 +1339,10 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
+  stanvars <- validate_stanvars(stanvars)
   .validate_prior(
     prior, bframe = bframe,
-    sample_prior = sample_prior, ...
+    sample_prior = sample_prior, stanvars = stanvars, ...
   )
 }
 
@@ -1497,7 +1498,8 @@ validate_sd_level_prior <- function(prior, all_priors, bframe,
 }
 
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bframe, sample_prior, ...) {
+.validate_prior <- function(prior, bframe, sample_prior, ...,
+                            stanvars = NULL) {
   stopifnot(is.anybrmsframe(bframe))
   sample_prior <- validate_sample_prior(sample_prior)
   all_priors <- normalize_brmsprior(.default_prior(bframe, internal = TRUE))
@@ -1628,7 +1630,9 @@ validate_sd_level_prior <- function(prior, all_priors, bframe,
   # S2Z prior and cross-predictor constraints depend on the complete effective
   # prior table, so validate them only after ordinary and special priors have
   # been resolved. This also makes public validate_prior() authoritative.
-  validate_re_s2z_prior_global(bframe, prior = prior)
+  validate_re_s2z_prior_global(
+    bframe, prior = prior, stanvars = stanvars
+  )
   if (is_verbose()) {
     # show remaining default priors added to the model
     def_prior <- prepare_print_prior(prior)

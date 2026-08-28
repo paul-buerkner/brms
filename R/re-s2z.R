@@ -210,11 +210,54 @@ all_bframel <- function(x) {
   list()
 }
 
+# One scalar argument of an S2Z population prior. `code` is the original Stan
+# expression and `value` is populated only when R can prove its current value.
+# Keeping these separate lets the completed-square code retain arbitrary
+# parameter dependence without pretending an unknown expression is numeric.
+new_re_s2z_prior_arg <- function(value = NA_real_, code = "", role,
+                                 dependencies = character(),
+                                 dependency_blocks = character(),
+                                 scalarized = FALSE,
+                                 broadcasted = FALSE) {
+  stopifnot(
+    is.character(code), length(code) == 1L,
+    is.character(role), length(role) == 1L,
+    is.character(dependencies), is.character(dependency_blocks),
+    is.logical(scalarized),
+    length(scalarized) == 1L, is.logical(broadcasted),
+    length(broadcasted) == 1L
+  )
+  known <- (is.double(value) || is.integer(value)) &&
+    length(value) == 1L && is.finite(value)
+  if (!known) {
+    value <- NA_real_
+  }
+  structure(
+    nlist(
+      code, value = as.numeric(value), known, role,
+      dependencies = unique(dependencies),
+      dependency_blocks = unique(dependency_blocks),
+      scalarized, broadcasted
+    ),
+    class = "re_s2z_prior_arg"
+  )
+}
+
+is.re_s2z_prior_arg <- function(x) {
+  inherits(x, "re_s2z_prior_arg")
+}
+
 # A neutral placeholder used for fixed-only coordinates. Keeping the prior
 # list full-length makes the descriptor backwards compatible with Stan code
 # that still indexes it in population-coordinate order.
 re_s2z_flat_prior <- function() {
-  list(dist = "flat", location = 0, scale = 1, df = NA_real_)
+  list(
+    dist = "flat",
+    location = new_re_s2z_prior_arg(0, role = "location"),
+    scale = new_re_s2z_prior_arg(1, role = "scale"),
+    df = new_re_s2z_prior_arg(role = "degrees-of-freedom"),
+    scalarized = FALSE, broadcasted = FALSE
+  )
 }
 
 # Collect the model coordinates needed to make an S2Z diagnostic actionable.
@@ -342,7 +385,8 @@ re_s2z_bframel <- function(bframe, r) {
 }
 
 # Effective scalar population-level prior for one active coefficient.
-re_s2z_prior <- function(prior, bframe, class, coef = "", r = NULL) {
+re_s2z_prior <- function(prior, bframe, class, coef = "", r = NULL,
+                         stanvars = NULL) {
   stopifnot(is.brmsprior(prior), is.bframel(bframe))
   context <- re_s2z_context(bframe, r = r, coef = coef)
   px <- check_prefix(bframe)
@@ -396,7 +440,21 @@ re_s2z_prior <- function(prior, bframe, class, coef = "", r = NULL) {
   }
   value <- if (nrow(ans)) ans$prior else ""
   context$prior <- value
-  out <- parse_re_s2z_prior(value, coef = coef, context = context)
+  broadcast_index <- broadcast_length <- NULL
+  if (class == "b" && nzchar(coef) && nrow(ans) && !nzchar(ans$coef)) {
+    fixef <- bframe$frame$fe$vars_stan
+    broadcast_index <- match(coef, fixef)
+    if (!is.na(broadcast_index)) {
+      broadcast_length <- length(fixef)
+    } else {
+      broadcast_index <- NULL
+    }
+  }
+  out <- parse_re_s2z_prior(
+    value, coef = coef, context = context, stanvars = stanvars,
+    broadcast_index = broadcast_index,
+    broadcast_length = broadcast_length
+  )
   out$prior <- value
   out
 }
@@ -404,8 +462,13 @@ re_s2z_prior <- function(prior, bframe, class, coef = "", r = NULL) {
 # Parse the exact scalar priors supported by the S2Z paths. Logistic priors
 # use an explicit omitted-mean fallback; the remaining proper distributions
 # are conditionally Gaussian.
-parse_re_s2z_prior <- function(prior, coef = "", context = NULL) {
-  prior <- gsub("[[:space:]]+", "", prior)
+parse_re_s2z_prior <- function(prior, coef = "", context = NULL,
+                               stanvars = NULL, broadcast_index = NULL,
+                               broadcast_length = NULL) {
+  # Internal whitespace can separate operators from signed literals (for
+  # example `x < -1`); removing it before str2lang() can retokenize the Stan
+  # expression as an R assignment. Only trim the outer prior string.
+  prior <- trimws(prior)
   if (!nzchar(prior)) {
     return(re_s2z_flat_prior())
   }
@@ -424,47 +487,468 @@ parse_re_s2z_prior <- function(prior, coef = "", context = NULL) {
         "Prior '", prior, "' is not supported by the sum-to-zero ",
         "parameterization (coefficient '", coef, "')."
       ),
-      "use flat, normal, student_t, cauchy, or logistic with numeric constants."
+      paste0(
+        "use flat, normal, student_t, cauchy, or logistic with scalar ",
+        "Stan expressions."
+      )
     )
   }
   dist <- as.character(call[[1]])
   args <- as.list(call[-1])
-  number <- function(x) {
-    out <- suppressWarnings(as.numeric(deparse0(x)))
-    if (length(out) != 1L || !is.finite(out)) {
+  stanvars <- if (is.stanvars(stanvars)) stanvars else empty_stanvars()
+  data_stanvars <- if (is.stanvars(stanvars)) {
+    subset_stanvars(stanvars, block = "data")
+  } else {
+    empty_stanvars()
+  }
+  stan_expression_code <- function(x) {
+    is_ternary <- function(expr) {
+      is.call(expr) && identical(as.character(expr[[1L]]), "?") &&
+        length(expr) == 3L && is.call(expr[[3L]]) &&
+        identical(as.character(expr[[3L]][[1L]]), ":") &&
+        length(expr[[3L]]) == 3L
+    }
+    render <- function(expr) {
+      if (is_ternary(expr)) {
+        return(paste0(
+          render(expr[[2L]]), " ? ", render(expr[[3L]][[2L]]),
+          " : ", render(expr[[3L]][[3L]])
+        ))
+      }
+      replacements <- character()
+      mask_ternary <- function(node) {
+        if (is_ternary(node)) {
+          placeholder <- paste0(
+            "s2zTernaryPlaceholder", length(replacements) + 1L
+          )
+          replacements[[placeholder]] <<- paste0("(", render(node), ")")
+          return(as.name(placeholder))
+        }
+        if (is.call(node)) {
+          return(as.call(lapply(as.list(node), mask_ternary)))
+        }
+        node
+      }
+      code <- deparse0(mask_ternary(expr))
+      for (placeholder in names(replacements)) {
+        code <- gsub(
+          placeholder, replacements[[placeholder]], code, fixed = TRUE
+        )
+      }
+      code
+    }
+    render(x)
+  }
+  expression_arg <- function(x, argument) {
+    code <- stan_expression_code(x)
+    numeric_code <- grepl(
+      paste0(
+        "^[+-]?((([0-9]+(\\.[0-9]*)?)|(\\.[0-9]+))",
+        "([eE][+-]?[0-9]+)?)$"
+      ),
+      code, perl = TRUE
+    )
+    if (numeric_code) {
+      value <- suppressWarnings(as.numeric(code))
+      if (!is.finite(value)) {
+        fail(
+          "active_prior_arguments",
+          paste0(
+            "The ", argument, " argument in a population-level prior ",
+            "used with the sum-to-zero parameterization must be finite ",
+            "(coefficient '", coef, "')."
+          ),
+          "replace it with a finite scalar Stan expression."
+        )
+      }
+      return(new_re_s2z_prior_arg(value, role = argument))
+    }
+
+    dependencies <- all.vars(x)
+    strip_stan_comments <- function(code) {
+      code <- paste(code, collapse = "\n")
+      code <- gsub("(?s)/\\*.*?\\*/", " ", code, perl = TRUE)
+      gsub("//[^\r\n]*", " ", code, perl = TRUE)
+    }
+    top_level_stan_code <- function(code) {
+      chars <- strsplit(strip_stan_comments(code), "", fixed = TRUE)[[1L]]
+      if (!length(chars)) {
+        return("")
+      }
+      depth <- 0L
+      quoted <- FALSE
+      escaped <- FALSE
+      for (i in seq_along(chars)) {
+        char <- chars[[i]]
+        if (quoted) {
+          if (depth > 0L && char != "\n") {
+            chars[[i]] <- " "
+          }
+          if (escaped) {
+            escaped <- FALSE
+          } else if (char == "\\") {
+            escaped <- TRUE
+          } else if (char == '"') {
+            quoted <- FALSE
+          }
+          next
+        }
+        if (char == '"') {
+          quoted <- TRUE
+          if (depth > 0L) {
+            chars[[i]] <- " "
+          }
+        } else if (char == "{") {
+          depth <- depth + 1L
+          chars[[i]] <- ";"
+        } else if (char == "}") {
+          depth <- max(0L, depth - 1L)
+          chars[[i]] <- ";"
+        } else if (depth > 0L && char != "\n") {
+          chars[[i]] <- " "
+        }
+      }
+      paste0(chars, collapse = "")
+    }
+    dependency_entry <- function(symbol) {
+      if (symbol %in% names(stanvars) &&
+          stanvars[[symbol]]$block == "data") {
+        return(stanvars[[symbol]])
+      }
+      type_pattern <- paste0(
+        "(real|int|complex|vector|row_vector|matrix|complex_vector|",
+        "complex_row_vector|complex_matrix|simplex|unit_vector|ordered|",
+        "positive_ordered|corr_matrix|cov_matrix|cholesky_factor_corr|",
+        "cholesky_factor_cov)"
+      )
+      declaration <- paste0(
+        "\\b", type_pattern, "\\b[[:space:]]*(<[^;>]+>)?",
+        "[[:space:]]*(\\[[^]]+\\])?[[:space:]]+", symbol, "\\b"
+      )
+      matches <- which(vapply(stanvars, function(info) {
+        info$block != "functions" && grepl(
+          declaration, top_level_stan_code(info$scode), perl = TRUE
+        )
+      }, logical(1)))
+      if (length(matches) == 1L) stanvars[[matches]] else NULL
+    }
+    dependency_info <- lapply(dependencies, dependency_entry)
+    names(dependency_info) <- dependencies
+    missing_dependencies <- dependencies[vapply(
+      dependency_info, is.null, logical(1)
+    )]
+    if (length(missing_dependencies)) {
       fail(
         "active_prior_arguments",
         paste0(
-          "All arguments of population-level priors used with the ",
-          "sum-to-zero parameterization must currently be numeric ",
-          "constants (coefficient '", coef, "')."
+          "Symbolic ", argument, " argument '", code, "' in a ",
+          "population-level prior used with the sum-to-zero ",
+          "parameterization refers to unknown variable(s): ",
+          collapse_comma(missing_dependencies), " (coefficient '", coef,
+          "')."
         ),
-        "replace symbolic arguments with finite numeric constants."
+        paste0(
+          "define each value with stanvar() in the data, transformed-data, ",
+          "parameters, or transformed-parameters-start block."
+        )
       )
     }
-    out
+
+    if (length(dependencies)) {
+      valid_dependency <- vapply(dependency_info, function(info) {
+        info$block %in% c("data", "tdata", "parameters") ||
+          info$block == "tparameters" && info$position == "start"
+      }, logical(1))
+      if (!all(valid_dependency)) {
+        invalid <- dependencies[!valid_dependency]
+        fail(
+          "active_prior_arguments",
+          paste0(
+            "Symbolic ", argument, " argument '", code, "' in a ",
+            "population-level prior used with the sum-to-zero ",
+            "parameterization depends on value(s) declared too late: ",
+            collapse_comma(invalid), " (coefficient '", coef, "')."
+          ),
+          paste0(
+            "declare these values in data, transformed data, parameters, ",
+            "or transformed parameters with position = \"start\"."
+          )
+        )
+      }
+    }
+    dependency_blocks <- unique(vapply(
+      dependency_info, `[[`, character(1), "block"
+    ))
+
+    call_heads <- function(expr) {
+      if (!is.call(expr)) {
+        return(character())
+      }
+      head <- expr[[1L]]
+      out <- if (is.name(head)) as.character(head) else character()
+      nested <- unlist(lapply(as.list(expr[-1L]), call_heads), use.names = FALSE)
+      unique(c(out, nested))
+    }
+    function_names <- call_heads(x)
+    invalid_function <- grepl("(_rng|_lp)$", function_names) |
+      function_names == "target"
+    if (any(invalid_function)) {
+      fail(
+        "active_prior_arguments",
+        paste0(
+          "Symbolic ", argument, " argument '", code, "' in a ",
+          "population-level prior used with the sum-to-zero ",
+          "parameterization contains an RNG or target-modifying function ",
+          "(coefficient '", coef, "')."
+        ),
+        "use a deterministic scalar Stan expression."
+      )
+    }
+
+    symbol <- if (is.name(x)) as.character(x) else ""
+    if (nzchar(symbol) && symbol %in% names(data_stanvars)) {
+      stanvar_info <- data_stanvars[[symbol]]
+      value <- stanvar_info$sdata
+      data_scode <- strip_stan_comments(stanvar_info$scode)
+      numeric_value <- is.double(value) || is.integer(value) ||
+        is.logical(value)
+      scalar_declaration <- paste0(
+        "^[[:space:]]*(real|int)[[:space:]]*",
+        "(<[^>]+>)?[[:space:]]+", symbol,
+        "[[:space:]]*;[[:space:]]*$"
+      )
+      vector_declaration <- paste0(
+        "^[[:space:]]*(vector|row_vector)[[:space:]]*",
+        "(<[^>]+>)?[[:space:]]*\\[[^]]+\\][[:space:]]+", symbol,
+        "[[:space:]]*;[[:space:]]*$"
+      )
+      array_declaration <- paste0(
+        "^[[:space:]]*array[[:space:]]*\\[[^]]+\\][[:space:]]+",
+        "(real|int)[[:space:]]*(<[^>]+>)?[[:space:]]+", symbol,
+        "[[:space:]]*;[[:space:]]*$"
+      )
+      scalar_scode <- length(stanvar_info$scode) == 1L &&
+        grepl(scalar_declaration, data_scode, perl = TRUE)
+      vector_scode <- length(stanvar_info$scode) == 1L &&
+        (grepl(vector_declaration, data_scode, perl = TRUE) ||
+         grepl(array_declaration, data_scode, perl = TRUE))
+      selected_index <- NULL
+      if (scalar_scode && numeric_value && length(value) == 1L) {
+        selected_value <- as.numeric(value)
+        selected_code <- symbol
+      } else if (vector_scode && numeric_value) {
+        if (!is.null(broadcast_index)) {
+          if (length(value) != broadcast_length) {
+            fail(
+              "active_prior_arguments",
+              paste0(
+                "Vector-valued ", argument, " argument '", symbol,
+                "' has length ", length(value), " but the population-level ",
+                "coefficient vector has length ", broadcast_length,
+                " (coefficient '", coef, "')."
+              ),
+              "supply a scalar or a vector with one value per coefficient."
+            )
+          }
+          selected_index <- broadcast_index
+        } else if (length(value) == 1L) {
+          selected_index <- 1L
+        }
+        if (!is.null(selected_index)) {
+          selected_value <- as.numeric(value[selected_index])
+          selected_code <- paste0(symbol, "[", selected_index, "]")
+        }
+      }
+      valid_value <- exists("selected_value", inherits = FALSE) &&
+        length(selected_value) == 1L && is.finite(selected_value)
+      if (!valid_value) {
+        fail(
+          "active_prior_arguments",
+          paste0(
+            "Symbolic ", argument, " argument '", symbol, "' in a ",
+            "population-level prior used with the sum-to-zero ",
+            "parameterization must resolve to one finite scalar value ",
+            "(coefficient '", coef, "')."
+          ),
+          paste0(
+            "use a scalar, index one element explicitly, or supply one ",
+            "value per population-level coefficient."
+          )
+        )
+      }
+      return(new_re_s2z_prior_arg(
+        selected_value, code = selected_code, role = argument,
+        dependencies = dependencies, dependency_blocks = dependency_blocks,
+        scalarized = !identical(selected_code, symbol),
+        broadcasted = !is.null(broadcast_index)
+      ))
+    }
+    if (nzchar(symbol) && length(dependencies) == 1L) {
+      stanvar_info <- dependency_info[[symbol]]
+      scode <- top_level_stan_code(stanvar_info$scode)
+      declaration_boundary <- "(^|[;{}])[[:space:]]*"
+      scalar_declaration <- paste0(
+        declaration_boundary,
+        "(real|int)[[:space:]]*(<[^;>]+>)?[[:space:]]+",
+        symbol, "\\b"
+      )
+      vector_declaration <- paste0(
+        declaration_boundary,
+        "(vector|row_vector)[[:space:]]*(<[^;>]+>)?",
+        "[[:space:]]*\\[([^]]+)\\][[:space:]]+", symbol,
+        "\\b"
+      )
+      array_declaration <- paste0(
+        declaration_boundary,
+        "array[[:space:]]*\\[([^]]+)\\][[:space:]]+",
+        "(real|int)[[:space:]]*(<[^;>]+>)?[[:space:]]+", symbol,
+        "\\b"
+      )
+      scalar_scode <- grepl(scalar_declaration, scode, perl = TRUE)
+      vector_scode <- grepl(vector_declaration, scode, perl = TRUE) ||
+        grepl(array_declaration, scode, perl = TRUE)
+      if (scalar_scode) {
+        return(new_re_s2z_prior_arg(
+          code = symbol, role = argument, dependencies = dependencies,
+          dependency_blocks = dependency_blocks
+        ))
+      }
+      if (vector_scode) {
+        literal_1d_length <- function(pattern) {
+          match <- regexec(pattern, scode, perl = TRUE)
+          hit <- regmatches(scode, match)[[1L]]
+          if (length(hit) < 3L) integer() else as.integer(trimws(hit[3L]))
+        }
+        vector_length_pattern <- paste0(
+          declaration_boundary,
+          "(?:vector|row_vector)[[:space:]]*(?:<[^;>]+>)?",
+          "[[:space:]]*\\[([[:space:]]*[0-9]+[[:space:]]*)\\]",
+          "[[:space:]]+", symbol, "\\b"
+        )
+        array_length_pattern <- paste0(
+          declaration_boundary,
+          "array[[:space:]]*\\[([[:space:]]*[0-9]+[[:space:]]*)\\]",
+          "[[:space:]]+(?:real|int)\\b[[:space:]]*",
+          "(?:<[^;>]+>)?[[:space:]]+", symbol, "\\b"
+        )
+        literal_length <- unique(c(
+          literal_1d_length(vector_length_pattern),
+          literal_1d_length(array_length_pattern)
+        ))
+        selected_index <- broadcast_index
+        if (is.null(selected_index)) {
+          if (length(literal_length) == 1L && literal_length == 1L) {
+            selected_index <- 1L
+          }
+        }
+        if (is.null(selected_index)) {
+          fail(
+            "active_prior_arguments",
+            paste0(
+              "Vector-valued ", argument, " argument '", symbol,
+              "' must identify one scalar coordinate in a population-level ",
+              "prior used with the sum-to-zero parameterization ",
+              "(coefficient '", coef, "')."
+            ),
+            "index one element explicitly or use a scalar declaration."
+          )
+        }
+        if (!is.null(broadcast_index) && length(literal_length) &&
+            (length(literal_length) != 1L ||
+             literal_length != broadcast_length)) {
+          fail(
+            "active_prior_arguments",
+            paste0(
+              "Vector-valued ", argument, " argument '", symbol,
+              "' has declared length ", collapse_comma(literal_length),
+              " but the population-level coefficient vector has length ",
+              broadcast_length, " (coefficient '", coef, "')."
+            ),
+            "supply a scalar or a vector with one value per coefficient."
+          )
+        }
+        selected_code <- paste0(symbol, "[", selected_index, "]")
+        if (!is.null(broadcast_index)) {
+          # Retain ordinary vectorized-prior semantics by checking the complete
+          # runtime length before selecting a coordinate. Literal declarations
+          # have already received the same earlier, contextual size check.
+          selected_code <- paste0(
+            "s2z_prior_coordinate_brms(", symbol, ", ", selected_index,
+            ", ", broadcast_length, ")"
+          )
+        }
+        return(new_re_s2z_prior_arg(
+          code = selected_code,
+          role = argument, dependencies = dependencies,
+          dependency_blocks = dependency_blocks,
+          scalarized = TRUE,
+          broadcasted = !is.null(broadcast_index)
+        ))
+      }
+      fail(
+        "active_prior_arguments",
+        paste0(
+          "Symbolic ", argument, " argument '", symbol, "' must be a ",
+          "scalar or one-dimensional Stan value (coefficient '", coef,
+          "')."
+        ),
+        "use a real, int, vector, row_vector, or one-dimensional array."
+      )
+    }
+    if (!is.null(broadcast_index)) {
+      # The same global prior expression may evaluate to either a scalar
+      # (ordinary Stan broadcasting) or a one-dimensional value. Let Stan's
+      # overload resolution preserve that distinction, and require a vector
+      # result to have exactly one entry per original population coefficient.
+      code <- paste0(
+        "s2z_prior_coordinate_brms(", code, ", ", broadcast_index,
+        ", ", broadcast_length, ")"
+      )
+      return(new_re_s2z_prior_arg(
+        code = code, role = argument, dependencies = dependencies,
+        dependency_blocks = dependency_blocks,
+        scalarized = TRUE, broadcasted = TRUE
+      ))
+    }
+    new_re_s2z_prior_arg(
+      code = code, role = argument, dependencies = dependencies,
+      dependency_blocks = dependency_blocks
+    )
   }
   if (dist == "std_normal" && !length(args)) {
-    out <- list(dist = "normal", location = 0, scale = 1, df = NA_real_)
+    out <- list(
+      dist = "normal",
+      location = new_re_s2z_prior_arg(0, role = "location"),
+      scale = new_re_s2z_prior_arg(1, role = "scale"),
+      df = new_re_s2z_prior_arg(role = "degrees-of-freedom")
+    )
   } else if (dist == "normal" && length(args) == 2L) {
     out <- list(
-      dist = "normal", location = number(args[[1]]),
-      scale = number(args[[2]]), df = NA_real_
+      dist = "normal",
+      location = expression_arg(args[[1]], "location"),
+      scale = expression_arg(args[[2]], "scale"),
+      df = new_re_s2z_prior_arg(role = "degrees-of-freedom")
     )
   } else if (dist == "student_t" && length(args) == 3L) {
     out <- list(
-      dist = "student", df = number(args[[1]]),
-      location = number(args[[2]]), scale = number(args[[3]])
+      dist = "student",
+      df = expression_arg(args[[1]], "degrees-of-freedom"),
+      location = expression_arg(args[[2]], "location"),
+      scale = expression_arg(args[[3]], "scale")
     )
   } else if (dist == "cauchy" && length(args) == 2L) {
     out <- list(
-      dist = "student", df = 1, location = number(args[[1]]),
-      scale = number(args[[2]])
+      dist = "student",
+      df = new_re_s2z_prior_arg(1, role = "degrees-of-freedom"),
+      location = expression_arg(args[[1]], "location"),
+      scale = expression_arg(args[[2]], "scale")
     )
   } else if (dist == "logistic" && length(args) == 2L) {
     out <- list(
-      dist = "logistic", location = number(args[[1]]),
-      scale = number(args[[2]]), df = NA_real_
+      dist = "logistic",
+      location = expression_arg(args[[1]], "location"),
+      scale = expression_arg(args[[2]], "scale"),
+      df = new_re_s2z_prior_arg(role = "degrees-of-freedom")
     )
   } else {
     fail(
@@ -477,7 +961,10 @@ parse_re_s2z_prior <- function(prior, coef = "", context = NULL) {
       "choose one of the supported priors or make this coefficient fixed-only."
     )
   }
-  if (!(out$scale > 0) || out$dist == "student" && !(out$df > 0)) {
+  invalid_scale <- out$scale$known && !(out$scale$value > 0)
+  invalid_df <- out$dist == "student" && out$df$known &&
+    !(out$df$value > 0)
+  if (invalid_scale || invalid_df) {
     fail(
       "active_prior_arguments",
       paste0(
@@ -488,6 +975,16 @@ parse_re_s2z_prior <- function(prior, coef = "", context = NULL) {
       "supply a positive finite scale and, for student_t, positive degrees of freedom."
     )
   }
+  out$scalarized <- any(vapply(
+    out[c("location", "scale", "df")],
+    function(x) is.re_s2z_prior_arg(x) && x$scalarized,
+    logical(1)
+  ))
+  out$broadcasted <- any(vapply(
+    out[c("location", "scale", "df")],
+    function(x) is.re_s2z_prior_arg(x) && x$broadcasted,
+    logical(1)
+  ))
   out
 }
 
@@ -759,7 +1256,7 @@ re_s2z_ordinal_C <- function(r, slope_names) {
 # Preserve the group-effects branch's global validation of latent, centered,
 # varying-scale, covariance, and cross-predictor S2Z blocks. PLAN-02's
 # active-coordinate prior checks are layered on by validate_re_s2z_prior_global.
-.validate_re_s2z_group_effects <- function(bframe, prior) {
+.validate_re_s2z_group_effects <- function(bframe, prior, stanvars = NULL) {
   stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
   all_frames <- all_bframel(bframe)
   for (x in all_frames) {
@@ -842,7 +1339,9 @@ re_s2z_ordinal_C <- function(r, slope_names) {
           "use predictor-local S2Z IDs for ordinal location predictors."
         )
       }
-      validate_re_s2z_cross_id(bframe, prior = prior, id = id)
+      validate_re_s2z_cross_id(
+        bframe, prior = prior, id = id, stanvars = stanvars
+      )
     }
     if (!all(r_id$s2z)) {
       stop2("All coefficients sharing a strict or conventional sum-to-zero ",
@@ -1231,7 +1730,10 @@ re_s2z_ordinal_C <- function(r, slope_names) {
 # Extract and parse the ordinary prior for one primitive ordinal threshold.
 # Threshold metadata stays on the parsed specification so code generation can
 # retain distinct priors for grouped vectors and unequal threshold counts.
-re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
+re_s2z_threshold_prior <- function(prior, bframe, threshold, r,
+                                   stanvars = NULL,
+                                   broadcast_index = NULL,
+                                   broadcast_length = NULL) {
   stopifnot(
     is.brmsprior(prior), is.bframel(bframe), is.data.frame(threshold),
     nrow(threshold) == 1L, is.reframe(r), has_rows(r)
@@ -1304,7 +1806,14 @@ re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
   }
   value <- if (nrow(ans)) ans$prior[[1L]] else ""
   context$prior <- value
-  spec <- parse_re_s2z_prior(value, coef = label, context = context)
+  if (!nrow(ans) || nzchar(ans$coef)) {
+    broadcast_index <- broadcast_length <- NULL
+  }
+  spec <- parse_re_s2z_prior(
+    value, coef = label, context = context, stanvars = stanvars,
+    broadcast_index = broadcast_index,
+    broadcast_length = broadcast_length
+  )
   if (identical(spec$dist, "logistic")) {
     stop_re_s2z(
       context, "ordinal_active_prior_distribution",
@@ -1329,7 +1838,7 @@ re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
 # neutral placeholders. Every ordinal threshold primitive receives its own
 # specification, including H=0 rows, so the joint dense system has one clear
 # owner for all threshold densities.
-.re_s2z_attach_priors <- function(infos, bframe, prior) {
+.re_s2z_attach_priors <- function(infos, bframe, prior, stanvars = NULL) {
   if (!length(infos)) {
     return(infos)
   }
@@ -1340,9 +1849,13 @@ re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
     threshold <- infos[[1L]]$threshold
     for (i in seq_rows(threshold)) {
       qi <- threshold$q[i]
+      same_parameter <- threshold$group == threshold$group[i] &
+        threshold$source == threshold$source[i]
       specs[[qi]] <- re_s2z_threshold_prior(
         prior, bframe, threshold = threshold[i, , drop = FALSE],
-        r = infos[[1L]]$r
+        r = infos[[1L]]$r, stanvars = stanvars,
+        broadcast_index = threshold$threshold_index[i],
+        broadcast_length = max(threshold$threshold_index[same_parameter])
       )
     }
     prior_q <- intersect(active_q, infos[[1L]]$slope_q)
@@ -1360,11 +1873,13 @@ re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
     if (!isTRUE(infos[[1L]]$ordinal) &&
         infos[[1L]]$center && qnames[i] == "Intercept") {
       specs[[i]] <- re_s2z_prior(
-        prior, bframe, class = "Intercept", r = r_context
+        prior, bframe, class = "Intercept", r = r_context,
+        stanvars = stanvars
       )
     } else {
       specs[[i]] <- re_s2z_prior(
-        prior, bframe, class = "b", coef = qnames[i], r = r_context
+        prior, bframe, class = "b", coef = qnames[i], r = r_context,
+        stanvars = stanvars
       )
     }
     if (isTRUE(infos[[1L]]$ordinal) &&
@@ -1394,7 +1909,7 @@ re_s2z_threshold_prior <- function(prior, bframe, threshold, r) {
 
 # Describe all local S2Z blocks in one linear predictor. Blocks retain their
 # own covariance models but share one active-coordinate omitted-mean system.
-re_s2z_infos <- function(bframe, prior = NULL, data = NULL) {
+re_s2z_infos <- function(bframe, prior = NULL, data = NULL, stanvars = NULL) {
   stopifnot(is.bframel(bframe))
   if (!has_re_s2z(bframe)) {
     return(list())
@@ -1406,15 +1921,17 @@ re_s2z_infos <- function(bframe, prior = NULL, data = NULL) {
     out <- .re_s2z_descriptors(bframe, data = data)
   }
   if (!is.null(prior)) {
-    out <- .re_s2z_attach_priors(out, bframe = bframe, prior = prior)
+    out <- .re_s2z_attach_priors(
+      out, bframe = bframe, prior = prior, stanvars = stanvars
+    )
   }
   out
 }
 
 # Describe one local S2Z block, including the fixed/group design mapping.
-re_s2z_info <- function(bframe, prior = NULL, id = NULL) {
+re_s2z_info <- function(bframe, prior = NULL, id = NULL, stanvars = NULL) {
   stopifnot(is.bframel(bframe))
-  infos <- re_s2z_infos(bframe, prior = prior)
+  infos <- re_s2z_infos(bframe, prior = prior, stanvars = stanvars)
   if (!length(infos)) {
     return(NULL)
   }
@@ -1857,9 +2374,11 @@ validate_re_s2z_design <- function(bframe, data) {
 
 # Validate prior-dependent and cross-predictor constraints only after the
 # complete effective prior table exists.
-validate_re_s2z_prior_global <- function(bframe, prior) {
+validate_re_s2z_prior_global <- function(bframe, prior, stanvars = NULL) {
   stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
-  .validate_re_s2z_group_effects(bframe, prior = prior)
+  .validate_re_s2z_group_effects(
+    bframe, prior = prior, stanvars = stanvars
+  )
   all_frames <- all_bframel(bframe)
   frames <- Filter(has_re_s2z, all_frames)
   if (!length(frames)) {
@@ -1950,7 +2469,9 @@ validate_re_s2z_prior_global <- function(bframe, prior) {
     }
     # Attaching priors performs bounds, tags, argument, and distribution
     # validation, restricted to the union of S2Z-active coordinates.
-    prior_infos <- re_s2z_infos(x, prior = prior)
+    prior_infos <- re_s2z_infos(
+      x, prior = prior, stanvars = stanvars
+    )
     validate_re_s2z_logistic_chart(
       prior_infos, bframe = x, global_bframe = bframe
     )
@@ -1963,6 +2484,8 @@ validate_re_s2z_prior_global <- function(bframe, prior) {
 
 # Compatibility entry point for downstream code while callers migrate to the
 # explicitly named prior/global phase.
-validate_re_s2z <- function(bframe, prior) {
-  validate_re_s2z_prior_global(bframe, prior = prior)
+validate_re_s2z <- function(bframe, prior, stanvars = NULL) {
+  validate_re_s2z_prior_global(
+    bframe, prior = prior, stanvars = stanvars
+  )
 }

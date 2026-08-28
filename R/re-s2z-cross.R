@@ -47,7 +47,7 @@ re_s2z_cross_frames <- function(bframe, r) {
 # Describe the global omitted-mean map for one conventional covariance block.
 # Population coordinates remain predictor-local, but are stacked internally
 # so the correlated conventional group mean can be integrated in one system.
-re_s2z_cross_info <- function(bframe, prior, id) {
+re_s2z_cross_info <- function(bframe, prior, id, stanvars = NULL) {
   stopifnot(
     is.anybrmsframe(bframe), is.brmsprior(prior), length(id) == 1L
   )
@@ -56,7 +56,9 @@ re_s2z_cross_info <- function(bframe, prior, id) {
     stop2("Internal error: expected a cross-predictor sum-to-zero ID.")
   }
   frames <- re_s2z_cross_frames(bframe, r)
-  infos <- lapply(frames, re_s2z_info, prior = prior, id = id)
+  infos <- lapply(
+    frames, re_s2z_info, prior = prior, id = id, stanvars = stanvars
+  )
   q <- vapply(infos, function(x) length(x$qnames), integer(1))
   starts <- cumsum(c(1L, head(q, -1L)))
   ends <- starts + q - 1L
@@ -72,7 +74,8 @@ re_s2z_cross_info <- function(bframe, prior, id) {
 # population priors, grouping covariances, and scale mixtures retain the
 # established physical-mean chart.
 re_s2z_cross_mean_noncenter_eligible <- function(bframe, prior, id,
-                                                  cross = NULL) {
+                                                  cross = NULL,
+                                                  stanvars = NULL) {
   stopifnot(
     is.anybrmsframe(bframe), is.brmsprior(prior), length(id) == 1L
   )
@@ -85,23 +88,31 @@ re_s2z_cross_mean_noncenter_eligible <- function(bframe, prior, id,
     return(FALSE)
   }
   if (is.null(cross)) {
-    cross <- re_s2z_cross_info(bframe, prior = prior, id = id)
+    cross <- re_s2z_cross_info(
+      bframe, prior = prior, id = id, stanvars = stanvars
+    )
   }
   if (cross$Q != cross$M || any(cross$q != 1L)) {
     return(FALSE)
   }
   local_ok <- vapply(cross$infos, function(info) {
+    spec <- info$prior[[1L]]
+    early_tparameter_arg <- any(vapply(
+      spec[c("location", "scale")], function(arg) {
+        "tparameters" %in% (arg$dependency_blocks %||% character())
+      }, logical(1)
+    ))
     nrow(info$r) == 1L && identical(info$r$coef, "Intercept") &&
       identical(info$match_q, 1L) && length(info$prior) == 1L &&
-      identical(info$prior[[1L]]$dist, "normal") &&
-      is.finite(info$prior[[1L]]$scale) && info$prior[[1L]]$scale > 0
+      identical(spec$dist, "normal") && !early_tparameter_arg
   }, logical(1))
   all(local_ok) && identical(as.integer(r$cn), seq_len(cross$M))
 }
 
 # Predictor prefixes whose physical finite-population coefficients are
 # supplied by the standardized nonlinear cross-ID chart.
-re_s2z_cross_mean_noncenter_prefixes <- function(bframe, prior) {
+re_s2z_cross_mean_noncenter_prefixes <- function(bframe, prior,
+                                                  stanvars = NULL) {
   stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
   r <- bframe$frame$re
   if (!is.brmsframe(bframe) || !has_rows(r)) {
@@ -110,10 +121,14 @@ re_s2z_cross_mean_noncenter_prefixes <- function(bframe, prior) {
   ids <- unique(r$id[r$s2z & !re_s2z_latent(r)])
   out <- unlist(lapply(ids, function(id) {
     if (!is_re_s2z_cross_id(bframe, id) ||
-        !re_s2z_cross_mean_noncenter_eligible(bframe, prior, id)) {
+        !re_s2z_cross_mean_noncenter_eligible(
+          bframe, prior, id, stanvars = stanvars
+        )) {
       return(character())
     }
-    cross <- re_s2z_cross_info(bframe, prior = prior, id = id)
+    cross <- re_s2z_cross_info(
+      bframe, prior = prior, id = id, stanvars = stanvars
+    )
     vapply(cross$infos, `[[`, character(1), "p")
   }), use.names = FALSE)
   unique(out)
@@ -266,7 +281,7 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
 # predictors.
 # The coefficient covariance, group distribution, scales, and known grouping
 # covariance retain their ordinary meanings; only the sampling chart changes.
-validate_re_s2z_cross_id <- function(bframe, prior, id) {
+validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
   stopifnot(
     is.anybrmsframe(bframe), is.brmsprior(prior), length(id) == 1L
   )
@@ -339,7 +354,9 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   }
   # Constructing the descriptors here also validates every response-local
   # population-column match and effective population prior.
-  re_s2z_cross_info(bframe, prior = prior, id = id)
+  re_s2z_cross_info(
+    bframe, prior = prior, id = id, stanvars = stanvars
+  )
   invisible(NULL)
 }
 
@@ -350,12 +367,15 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
 # The code integrates m exactly and reconstructs beta and b = delta + m in
 # generated quantities while retaining sd and L on their conventional scale.
 .stan_re_s2z_cross <- function(id, bframe, prior, normalize,
-                               out = list(), fisher_info = NULL, ...) {
+                               out = list(), fisher_info = NULL,
+                               ..., stanvars = NULL) {
   if (is.null(out[["tpar_prior"]])) {
     out[["tpar_prior"]] <- ""
   }
   lpdf <- stan_lpdf_name(normalize)
-  cross <- re_s2z_cross_info(bframe, prior = prior, id = id)
+  cross <- re_s2z_cross_info(
+    bframe, prior = prior, id = id, stanvars = stanvars
+  )
   r <- cross$r
   Q <- cross$Q
   M <- cross$M
@@ -370,7 +390,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   s2z_fisher <- !is.null(fisher_info)
   s2z_partial <- s2z_mode %in% c("partial", "auto")
   mean_noncenter <- re_s2z_cross_mean_noncenter_eligible(
-    bframe, prior = prior, id = id, cross = cross
+    bframe, prior = prior, id = id, cross = cross, stanvars = stanvars
   )
   spectral_fisher <- s2z_fisher && has_cov && !varying && !is_student &&
     !is.null(fisher_info$spectral)
@@ -473,7 +493,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
         )
         str_add(out$tpar_prior) <- glue(
           "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-          "{stan_s2z_number(spec$df)});\n"
+          "{stan_s2z_arg_code(spec$df)});\n"
         )
       }
     }
@@ -610,15 +630,15 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
     for (k in seq_along(info$prior)) {
       spec <- info$prior[[k]]
       index <- cross$starts[a] + k - 1L
-      loc <- stan_s2z_number(spec$location)
+      loc <- stan_s2z_arg_code(spec$location)
       if (spec$dist == "flat") {
         prec <- "0.0"
       } else if (spec$dist == "normal") {
-        prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+        prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
       } else {
         prec <- glue(
-          "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-          "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+          "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+          "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
         )
       }
       str_add(out$tpar_comp) <- glue(
@@ -710,16 +730,16 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
         next
       }
       if (spec$dist == "normal") {
-        cond_scale <- stan_s2z_number(spec$scale)
+        cond_scale <- stan_s2z_arg_code(spec$scale)
       } else {
         cond_scale <- glue(
-          "{stan_s2z_number(spec$scale)} * sqrt(",
-          "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+          "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+          "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
         )
       }
       str_add(out$tpar_prior) <- glue(
         "  lprior += normal_{lpdf}(theta_s2z{p}[{k}] | ",
-        "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+        "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
       )
     }
   }

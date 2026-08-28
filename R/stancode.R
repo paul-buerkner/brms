@@ -91,11 +91,11 @@ stancode.default <- function(object, data, family = gaussian(),
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
+  stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   prior <- .validate_prior(
     prior, bframe = bframe,
-    sample_prior = sample_prior
+    sample_prior = sample_prior, stanvars = stanvars
   )
-  stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
 
  .stancode(
@@ -118,13 +118,14 @@ stancode.default <- function(object, data, family = gaussian(),
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
-  validate_re_s2z(bterms, prior = prior)
+  validate_re_s2z(bterms, prior = prior, stanvars = stanvars)
   scode_predictor <- stan_predictor(
     bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
   scode_re <- stan_re(
-    bterms, prior = prior, threads = threads, normalize = normalize
+    bterms, prior = prior, threads = threads, normalize = normalize,
+    stanvars = stanvars
   )
   scode_Xme <- stan_Xme(
     bterms, prior = prior, threads = threads, normalize = normalize

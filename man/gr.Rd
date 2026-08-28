@@ -108,9 +108,15 @@ raw-design thresholds, population slopes, and group effects are reconstructed
 in generated quantities. Sum-to-zero thresholds, fixed or shared
 ordinal-mixture thresholds, custom ordinal families, and category-specific S2Z
 group effects remain unsupported.
-Population-level priors must currently be flat, normal, Student-t, or Cauchy
-with numeric constant arguments. Physically centered, predictor-local blocks
-with shared scales and no fixed \code{cov} also support exact logistic
+Population-level priors must currently be flat, normal, Student-t, or Cauchy.
+Their arguments may be numeric constants or deterministic Stan expressions
+whose variables are declared via \code{stanvar()} in data, transformed data,
+parameters, or transformed parameters at \code{position = "start"}. Arguments
+must be scalar; compatible one-dimensional arguments in global priors are
+mapped by population coefficient. Data values may change without recompilation
+when their declaration and shape remain unchanged. Scales and degrees of
+freedom must be positive. Physically centered, predictor-local blocks with
+shared scales and no fixed \code{cov} also support exact logistic
 active-coordinate priors through an explicit omitted-mean fallback. That
 fallback is not available for ordinal locations or other centering, scale,
 covariance, or cross-predictor charts. Bounds, tags, special priors, prior-only

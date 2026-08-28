@@ -263,14 +263,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
     )
     bframe <- brmsframe(bterms, data = object$data)
+    object$stanvars <- validate_stanvars(dots$stanvars)
     object$prior <- .validate_prior(
       dots$prior, bframe = bframe,
-      sample_prior = dots$sample_prior
+      sample_prior = dots$sample_prior, stanvars = object$stanvars
     )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- frame_re(bterms, data = object$data)
-    object$stanvars <- validate_stanvars(dots$stanvars)
     object$threads <- validate_threads(dots$threads)
     if ("sample_prior" %in% names(dots)) {
       dots$sample_prior <- validate_sample_prior(dots$sample_prior)

@@ -540,11 +540,11 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       data_name = substitute_name(data)
     )
     bframe <- brmsframe(bterms, data)
+    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     prior <- .validate_prior(
       prior, bframe = bframe,
-      sample_prior = sample_prior
+      sample_prior = sample_prior, stanvars = stanvars
     )
-    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     save_pars <- validate_save_pars(
       save_pars, save_ranef = save_ranef,
       save_mevars = save_mevars,

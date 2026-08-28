@@ -29,17 +29,17 @@ s2z_ordinal_frame <- function(formula, family, data = s2z_validation_dat) {
 }
 
 test_that("S2Z logistic prior specifications are exact and validated", {
-  expect_equal(
-    parse_re_s2z_prior("logistic(0, 1)"),
-    list(dist = "logistic", location = 0, scale = 1, df = NA_real_)
-  )
+  spec <- parse_re_s2z_prior("logistic(0, 1)")
+  expect_identical(spec$dist, "logistic")
+  expect_identical(spec$location$value, 0)
+  expect_identical(spec$scale$value, 1)
   expect_error(
     parse_re_s2z_prior("logistic(0, 0)"),
     "Scale and degrees-of-freedom arguments must be positive"
   )
   expect_error(
     parse_re_s2z_prior("logistic(location, 1)"),
-    "must currently be numeric constants"
+    "refers to unknown variable"
   )
 })
 
@@ -317,7 +317,10 @@ test_that("ordinal threshold priors retain per-primitive metadata", {
   expect_equal(vapply(specs, `[[`, character(1), "coef"), c("1", "2", "3"))
   expect_equal(vapply(specs, `[[`, character(1), "group"), rep("", 3L))
   expect_equal(vapply(specs, `[[`, numeric(1), "q"), 1:3)
-  expect_equal(vapply(specs, `[[`, numeric(1), "df"), c(NA, 5, 1))
+  expect_equal(
+    vapply(specs, function(x) x$df$value, numeric(1)),
+    c(NA, 5, 1)
+  )
 })
 
 test_that("ordinal active logistic priors are rejected contextually", {
@@ -440,7 +443,7 @@ test_that("S2Z design and prior/global phases use capability diagnostics", {
   expect_match(
     msg, "S2Z capability 'active_prior_distribution'", fixed = TRUE
   )
-  expect_match(msg, "prior 'double_exponential(0,1)'", fixed = TRUE)
+  expect_match(msg, "prior 'double_exponential(0, 1)'", fixed = TRUE)
   expect_match(msg, "Remedy:", fixed = TRUE)
 
   msg <- s2z_error_message(validate_prior(

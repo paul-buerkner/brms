@@ -85,6 +85,12 @@ The nonlinear path currently supports the centered and non-centered endpoints;
 eligible correlated Gaussian varying-intercept blocks use an exact standardized
 finite-population mean. Both paths reconstruct the ordinary population and group
 effects without changing the meaning of scale and correlation parameters.
+Supported S2Z population priors may use deterministic Stan expressions whose
+variables are declared by `stanvar` in data, transformed data, parameters, or
+transformed parameters at `position = "start"`. Arguments must be scalar;
+compatible one-dimensional arguments in global priors are mapped by population
+coefficient. Data values can change without recompilation when their
+declaration and shape remain unchanged.
 (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

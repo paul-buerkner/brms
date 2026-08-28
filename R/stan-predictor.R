@@ -38,7 +38,8 @@ stan_predictor.bframenl <- function(x, ...) {
 }
 
 #' @export
-stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
+stan_predictor.brmsframe <- function(x, prior, normalize, ...,
+                                     stanvars = NULL) {
   px <- check_prefix(x)
   resp <- usc(combine_prefix(px))
   out <- list()
@@ -48,9 +49,12 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   if (length(family_files)) {
     str_add(out$fun) <- cglue("  #include '{family_files}'\n")
   }
-  s2z_mean_noncenter <- re_s2z_cross_mean_noncenter_prefixes(x, prior)
+  s2z_mean_noncenter <- re_s2z_cross_mean_noncenter_prefixes(
+    x, prior, stanvars = stanvars
+  )
   args <- nlist(
-    prior, normalize, nlpars = names(x$nlpars), s2z_mean_noncenter, ...
+    prior, normalize, stanvars, nlpars = names(x$nlpars),
+    s2z_mean_noncenter, ...
   )
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
   for (nlp in names(x$nlpars)) {
@@ -292,7 +296,9 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   info_s2z <- NULL
   ordinal_s2z <- FALSE
   if (s2z) {
-    infos_s2z <- re_s2z_infos(bframe)
+    infos_s2z <- re_s2z_infos(
+      bframe, prior = prior, stanvars = stanvars
+    )
     stopifnot(length(infos_s2z) > 0L)
     info_s2z <- infos_s2z[[1L]]
     ordinal_s2z <- isTRUE(info_s2z$ordinal)
@@ -343,20 +349,60 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
           inactive_prior$pll_args <- NULL
           str_add_list(out) <- inactive_prior
         } else {
-          inactive_prior <- stan_prior(
-            prior, class = "b", coef = inactive_names,
-            type = glue("vector[{length(inactive_coef_s2z)}]"),
-            suffix = glue("_s2z_inactive{p}"), px = px,
-            comment = "S2Z-inactive regression coefficients",
-            normalize = normalize
-          )
-          inactive_prior <- lapply(inactive_prior, function(code) {
-            gsub(
-              glue("b_s2z_inactive{p}"), glue("fixed_s2z{p}"), code,
-              fixed = TRUE
+          inactive_specs <- lapply(inactive_names, function(coef) {
+            tryCatch(
+              re_s2z_prior(
+                prior, bframe, class = "b", coef = coef,
+                r = info_s2z$r, stanvars = stanvars
+              ),
+              error = function(e) NULL
             )
           })
-          str_add_list(out) <- inactive_prior
+          broadcasted_inactive <- any(vapply(
+            inactive_specs,
+            function(spec) !is.null(spec) && isTRUE(spec$broadcasted),
+            logical(1)
+          ))
+          if (broadcasted_inactive) {
+            # A vector-valued global prior belongs to the original full b
+            # vector. Score fixed-only coordinates one at a time so each uses
+            # its original vector index rather than a shortened inactive
+            # vector, which would change the ordinary brms target.
+            if (any(vapply(inactive_specs, is.null, logical(1)))) {
+              stop2(
+                "Vector-valued global priors cannot currently be mixed with ",
+                "unsupported coefficient-specific priors on S2Z-inactive ",
+                "coordinates. Use scalar or supported coefficient-specific ",
+                "priors for this predictor."
+              )
+            }
+            str_add(out$par) <- glue(
+              "  vector[{length(inactive_names)}] fixed_s2z{p};",
+              "  // S2Z-inactive regression coefficients\n"
+            )
+            for (a in seq_along(inactive_specs)) {
+              str_add(out$tpar_prior) <- stan_re_s2z_prior_target(
+                inactive_specs[[a]],
+                par = glue("fixed_s2z{p}[{a}]"),
+                normalize = normalize
+              )
+            }
+          } else {
+            inactive_prior <- stan_prior(
+              prior, class = "b", coef = inactive_names,
+              type = glue("vector[{length(inactive_coef_s2z)}]"),
+              suffix = glue("_s2z_inactive{p}"), px = px,
+              comment = "S2Z-inactive regression coefficients",
+              normalize = normalize
+            )
+            inactive_prior <- lapply(inactive_prior, function(code) {
+              gsub(
+                glue("b_s2z_inactive{p}"), glue("fixed_s2z{p}"), code,
+                fixed = TRUE
+              )
+            })
+            str_add_list(out) <- inactive_prior
+          }
         }
       }
       str_add(out$tpar_def) <- glue(
@@ -592,7 +638,7 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
 }
 
 # Stan code for group-level effects
-stan_re <- function(bframe, prior, normalize, ...) {
+stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   reframe <- bframe$frame$re
   stopifnot(is.reframe(reframe))
@@ -606,7 +652,9 @@ stan_re <- function(bframe, prior, normalize, ...) {
   # path for a singleton because their H map is affine and may repeat rows.
   joint_s2z_sets <- list()
   for (bfl in Filter(has_re_s2z, all_bframel(bframe))) {
-    infos <- re_s2z_infos(bfl, prior = prior)
+    infos <- re_s2z_infos(
+      bfl, prior = prior, stanvars = stanvars
+    )
     ordinal <- length(infos) && isTRUE(infos[[1L]]$ordinal)
     cross <- length(infos) && is_re_s2z_cross_id(bframe, infos[[1L]]$id)
     if ((length(infos) > 1L || ordinal) && !cross) {
@@ -654,12 +702,14 @@ stan_re <- function(bframe, prior, normalize, ...) {
   tmp <- lapply(IDs, function(id) {
     .stan_re(
       id, bframe = bframe, prior = prior, normalize = normalize,
-      joint_s2z = joint_s2z_by_id[[as.character(id)]], ...
+      joint_s2z = joint_s2z_by_id[[as.character(id)]],
+      stanvars = stanvars, ...
     )
   })
   joint <- lapply(joint_s2z_sets, function(set) {
     .stan_re_s2z_joint(
-      set, prior = prior, normalize = normalize, ...
+      set, prior = prior, normalize = normalize,
+      stanvars = stanvars, ...
     )
   })
   out <- collapse_lists(ls = c(list(out), tmp, joint))
@@ -690,7 +740,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
 # Stan code for group-level effects per ID
 # @param id the ID of the grouping factor
 .stan_re <- function(id, bframe, prior, threads, normalize,
-                     joint_s2z = NULL, ...) {
+                     joint_s2z = NULL, ..., stanvars = NULL) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
   r <- subset2(bframe$frame$re, id = id)
@@ -859,7 +909,7 @@ stan_re <- function(bframe, prior, normalize, ...) {
     return(.stan_re_s2z_cross(
       id, bframe = bframe, prior = prior,
       normalize = normalize, out = out,
-      fisher_info = fisher_info, ...
+      fisher_info = fisher_info, stanvars = stanvars, ...
     ))
   }
 
@@ -867,21 +917,23 @@ stan_re <- function(bframe, prior, normalize, ...) {
     return(.stan_re_s2z_joint_block(
       id, set = joint_s2z, bframe = bframe, prior = prior,
       threads = threads, normalize = normalize, out = out,
-      fisher_info = fisher_info
+      fisher_info = fisher_info, stanvars = stanvars
     ))
   }
 
   if (isTRUE(r$s2z[1]) && identical(r$scale[1], "varying")) {
     return(.stan_re_s2z_varying_scale(
       id, bframe = bframe, prior = prior, threads = threads,
-      normalize = normalize, out = out, fisher_info = fisher_info
+      normalize = normalize, out = out, fisher_info = fisher_info,
+      stanvars = stanvars
     ))
   }
 
   if (isTRUE(r$s2z[1])) {
     return(.stan_re_s2z(
       id, bframe = bframe, prior = prior, threads = threads,
-      normalize = normalize, out = out, fisher_info = fisher_info
+      normalize = normalize, out = out, fisher_info = fisher_info,
+      stanvars = stanvars
     ))
   }
 
@@ -3705,12 +3757,12 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
     return("")
   }
   lpdf <- stan_lpdf_name(normalize)
-  location <- stan_s2z_number(spec$location)
-  scale <- stan_s2z_number(spec$scale)
+  location <- stan_s2z_arg_code(spec$location)
+  scale <- stan_s2z_arg_code(spec$scale)
   if (identical(spec$dist, "normal")) {
     glue("  lprior += normal_{lpdf}({par} | {location}, {scale});\n")
   } else if (identical(spec$dist, "student")) {
-    df <- stan_s2z_number(spec$df)
+    df <- stan_s2z_arg_code(spec$df)
     glue(
       "  lprior += student_t_{lpdf}({par} | {df}, {location}, {scale});\n"
     )
@@ -3967,10 +4019,12 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
 }
 
 .stan_re_s2z_explicit <- function(id, bframe, prior, normalize,
-                                   out = list()) {
+                                   out = list(), stanvars = NULL) {
   r <- subset2(bframe$frame$re, id = id)
   bfl <- re_s2z_bframel(bframe, r)
-  infos <- re_s2z_infos(bfl, prior = prior)
+  infos <- re_s2z_infos(
+    bfl, prior = prior, stanvars = stanvars
+  )
   stopifnot(length(infos) == 1L)
   set <- nlist(set_id = id, ids = id, bfl, infos)
   out <- .stan_re_s2z_explicit_block(
@@ -4031,7 +4085,7 @@ stan_re_s2z_H_code <- function(info) {
 # .stan_re_s2z_joint().
 .stan_re_s2z_joint_block <- function(id, set, bframe, prior, threads,
                                      normalize, out = list(),
-                                     fisher_info = NULL) {
+                                     fisher_info = NULL, stanvars = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   if (is.null(out[["tpar_prior"]])) {
     out[["tpar_prior"]] <- ""
@@ -4044,7 +4098,9 @@ stan_re_s2z_H_code <- function(info) {
   r <- subset2(bframe$frame$re, id = id)
   stopifnot(is.reframe(r), has_rows(r), all(r$s2z), id %in% set$ids)
   bfl <- set$bfl
-  info <- re_s2z_info(bfl, prior = prior, id = id)
+  info <- re_s2z_info(
+    bfl, prior = prior, id = id, stanvars = stanvars
+  )
   q <- length(info$qnames)
   M <- nrow(r)
   J <- seq_rows(r)
@@ -4445,7 +4501,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -4477,16 +4533,16 @@ stan_re_s2z_H_code <- function(info) {
     spec <- info$prior[[k]]
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{set_id}[{k}] = ",
-      "{stan_s2z_number(spec$location)};\n"
+      "{stan_s2z_arg_code(spec$location)};\n"
     )
     cond_scale <- if (spec$dist == "flat") {
       "1.0"
     } else if (spec$dist == "normal") {
-      stan_s2z_number(spec$scale)
+      stan_s2z_arg_code(spec$scale)
     } else {
       glue(
-        "{stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+        "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -4824,7 +4880,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -4842,18 +4898,18 @@ stan_re_s2z_H_code <- function(info) {
   )
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
-    loc <- stan_s2z_number(spec$location)
+    loc <- stan_s2z_arg_code(spec$location)
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{set_id}[{k}] = {loc};\n"
     )
     if (spec$dist == "flat") {
       prec <- "0.0"
     } else if (spec$dist == "normal") {
-      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+      prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
     } else {
       prec <- glue(
-        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+        "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -4919,16 +4975,16 @@ stan_re_s2z_H_code <- function(info) {
       next
     }
     if (spec$dist == "normal") {
-      cond_scale <- stan_s2z_number(spec$scale)
+      cond_scale <- stan_s2z_arg_code(spec$scale)
     } else {
       cond_scale <- glue(
-        "{stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+        "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
       )
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += normal_{lpdf}(theta_s2z{p}[{k}] | ",
-      "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+      "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
     )
   }
   str_add(out$tpar_prior) <- glue(
@@ -5120,7 +5176,8 @@ stan_re_s2z_H_code <- function(info) {
 # meaning and the rotation has unit Jacobian. Only the common effect mean is
 # integrated out.
 .stan_re_s2z_varying_scale <- function(id, bframe, prior, threads, normalize,
-                                       out = list(), fisher_info = NULL) {
+                                       out = list(), fisher_info = NULL,
+                                       stanvars = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   # Avoid partial matching of $tpar_prior to $tpar_prior_const when a scale
   # parameter is fixed.
@@ -5133,7 +5190,9 @@ stan_re_s2z_H_code <- function(info) {
     all(r$scale == "varying")
   )
   bfl <- re_s2z_bframel(bframe, r)
-  info <- re_s2z_info(bfl, prior = prior)
+  info <- re_s2z_info(
+    bfl, prior = prior, stanvars = stanvars
+  )
   stopifnot(!isTRUE(info$ordinal))
   q <- length(info$qnames)
   M <- nrow(r)
@@ -5220,7 +5279,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -5280,18 +5339,18 @@ stan_re_s2z_H_code <- function(info) {
 
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
-    loc <- stan_s2z_number(spec$location)
+    loc <- stan_s2z_arg_code(spec$location)
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{id}[{k}] = {loc};\n"
     )
     if (spec$dist == "flat") {
       prec <- "0.0"
     } else if (spec$dist == "normal") {
-      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+      prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
     } else {
       prec <- glue(
-        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+        "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -5440,16 +5499,16 @@ stan_re_s2z_H_code <- function(info) {
         next
       }
       if (spec$dist == "normal") {
-        cond_scale <- stan_s2z_number(spec$scale)
+        cond_scale <- stan_s2z_arg_code(spec$scale)
       } else {
         cond_scale <- glue(
-          "{stan_s2z_number(spec$scale)} * sqrt(",
-          "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+          "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+          "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
         )
       }
       str_add(out$tpar_prior) <- glue(
         "  lprior += normal_{lpdf}(theta_s2z{p}[{k}] | ",
-        "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+        "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
       )
     }
     str_add(out$tpar_prior) <- glue(
@@ -5653,16 +5712,16 @@ stan_re_s2z_H_code <- function(info) {
         next
       }
       if (spec$dist == "normal") {
-        cond_scale <- stan_s2z_number(spec$scale)
+        cond_scale <- stan_s2z_arg_code(spec$scale)
       } else {
         cond_scale <- glue(
-          "{stan_s2z_number(spec$scale)} * sqrt(",
-          "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+          "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+          "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
         )
       }
       str_add(out$tpar_prior) <- glue(
         "  lprior += normal_{lpdf}(qhat_s2z_{id}[{k}] | ",
-        "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+        "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
       )
     }
     str_add(out$tpar_prior) <- glue(
@@ -5986,7 +6045,7 @@ stan_re_s2z_H_code <- function(info) {
 # Gaussian scale mixtures are handled by a group-specific scale, which makes
 # this exact for both Gaussian and Student-t group effects.
 .stan_re_s2z <- function(id, bframe, prior, threads, normalize, out = list(),
-                         fisher_info = NULL) {
+                         fisher_info = NULL, stanvars = NULL) {
   lpdf <- stan_lpdf_name(normalize)
   # Avoid partial matching of $tpar_prior to $tpar_prior_const when a group
   # scale is fixed. Otherwise the constant assignment is appended to the
@@ -5997,7 +6056,9 @@ stan_re_s2z_H_code <- function(info) {
   r <- subset2(bframe$frame$re, id = id)
   stopifnot(is.reframe(r), has_rows(r), all(r$s2z))
   bfl <- re_s2z_bframel(bframe, r)
-  info <- re_s2z_info(bfl, prior = prior)
+  info <- re_s2z_info(
+    bfl, prior = prior, stanvars = stanvars
+  )
   stopifnot(!isTRUE(info$ordinal))
   q <- length(info$qnames)
   M <- nrow(r)
@@ -6017,7 +6078,7 @@ stan_re_s2z_H_code <- function(info) {
   if (.stan_re_s2z_uses_explicit_mean(single_set)) {
     return(.stan_re_s2z_explicit(
       id, bframe = bframe, prior = prior,
-      normalize = normalize, out = out
+      normalize = normalize, out = out, stanvars = stanvars
     ))
   }
 
@@ -6090,7 +6151,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -6189,18 +6250,18 @@ stan_re_s2z_H_code <- function(info) {
 
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
-    loc <- stan_s2z_number(spec$location)
+    loc <- stan_s2z_arg_code(spec$location)
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{id}[{k}] = {loc};\n"
     )
     if (spec$dist == "flat") {
       prec <- "0.0"
     } else if (spec$dist == "normal") {
-      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+      prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
     } else {
       prec <- glue(
-        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+        "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -6302,16 +6363,16 @@ stan_re_s2z_H_code <- function(info) {
       next
     }
     if (spec$dist == "normal") {
-      cond_scale <- stan_s2z_number(spec$scale)
+      cond_scale <- stan_s2z_arg_code(spec$scale)
     } else {
       cond_scale <- glue(
-        "{stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+        "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
       )
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += normal_{lpdf}(theta_s2z{p}[{k}] | ",
-      "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+      "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
     )
   }
   str_add(out$tpar_prior) <- glue(
@@ -6478,7 +6539,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -6553,18 +6614,18 @@ stan_re_s2z_H_code <- function(info) {
   }
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
-    loc <- stan_s2z_number(spec$location)
+    loc <- stan_s2z_arg_code(spec$location)
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{id}[{k}] = {loc};\n"
     )
     if (spec$dist == "flat") {
       prec <- "0.0"
     } else if (spec$dist == "normal") {
-      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+      prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
     } else {
       prec <- glue(
-        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+        "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -6681,16 +6742,16 @@ stan_re_s2z_H_code <- function(info) {
       next
     }
     if (spec$dist == "normal") {
-      cond_scale <- stan_s2z_number(spec$scale)
+      cond_scale <- stan_s2z_arg_code(spec$scale)
     } else {
       cond_scale <- glue(
-        "{stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+        "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
       )
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += normal_{lpdf}(qhat_s2z_{id}[{k}] | ",
-      "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+      "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
     )
   }
   str_add(out$tpar_prior) <- glue(
@@ -6853,7 +6914,7 @@ stan_re_s2z_H_code <- function(info) {
       )
       str_add(out$tpar_prior) <- glue(
         "  lprior += inv_chi_square_{lpdf}(udf_b_s2z{p}_{k} | ",
-        "{stan_s2z_number(spec$df)});\n"
+        "{stan_s2z_arg_code(spec$df)});\n"
       )
     }
   }
@@ -6918,18 +6979,18 @@ stan_re_s2z_H_code <- function(info) {
   }
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
-    loc <- stan_s2z_number(spec$location)
+    loc <- stan_s2z_arg_code(spec$location)
     str_add(out$tpar_comp) <- glue(
       "  prior_mean_s2z_{id}[{k}] = {loc};\n"
     )
     if (spec$dist == "flat") {
       prec <- "0.0"
     } else if (spec$dist == "normal") {
-      prec <- glue("inv_square({stan_s2z_number(spec$scale)})")
+      prec <- glue("inv_square({stan_s2z_arg_code(spec$scale)})")
     } else {
       prec <- glue(
-        "inv_square({stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k}))"
+        "inv_square({stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k}))"
       )
     }
     str_add(out$tpar_comp) <- glue(
@@ -6994,16 +7055,16 @@ stan_re_s2z_H_code <- function(info) {
       next
     }
     if (spec$dist == "normal") {
-      cond_scale <- stan_s2z_number(spec$scale)
+      cond_scale <- stan_s2z_arg_code(spec$scale)
     } else {
       cond_scale <- glue(
-        "{stan_s2z_number(spec$scale)} * sqrt(",
-        "{stan_s2z_number(spec$df)} * udf_b_s2z{p}_{k})"
+        "{stan_s2z_arg_code(spec$scale)} * sqrt(",
+        "{stan_s2z_arg_code(spec$df)} * udf_b_s2z{p}_{k})"
       )
     }
     str_add(out$tpar_prior) <- glue(
       "  lprior += normal_{lpdf}(qhat_s2z_{id}[{k}] | ",
-      "{stan_s2z_number(spec$location)}, {cond_scale});\n"
+      "{stan_s2z_arg_code(spec$location)}, {cond_scale});\n"
     )
   }
   str_add(out$tpar_prior) <- glue(
@@ -7074,9 +7135,25 @@ stan_re_s2z_H_code <- function(info) {
   out
 }
 
+# Render one validated scalar population-prior argument. Symbolic arguments are
+# checked at runtime because transformed-data and parameter expressions do not
+# necessarily have a value that R can verify before sampling.
+stan_s2z_arg_code <- function(x) {
+  stopifnot(is.re_s2z_prior_arg(x))
+  if (!nzchar(x$code)) {
+    stopifnot(x$known)
+    return(stan_s2z_number(x$value))
+  }
+  if (identical(x$role, "location")) {
+    as.character(glue("s2z_require_finite_brms({x$code})"))
+  } else {
+    as.character(glue("s2z_require_positive_brms({x$code})"))
+  }
+}
+
 # Stable formatting for numeric constants inserted into generated Stan code.
 stan_s2z_number <- function(x) {
-  stopifnot(length(x) == 1L, is.finite(x))
+  stopifnot(length(x) == 1L, is.numeric(x), is.finite(x))
   trimws(formatC(x, digits = 17, format = "g"))
 }
 
