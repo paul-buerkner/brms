@@ -6,11 +6,8 @@
    *   A nrows x nrows matrix
    */
    matrix cholesky_cor_ar1(real ar, int nrows) {
-     matrix[nrows, nrows] mat;
+     matrix[nrows, nrows] mat = identity_matrix(nrows);
      vector[nrows - 1] gamma;
-     for (i in 1:nrows) {
-       mat[i, i] = 1;
-     }
      for (i in 2:nrows) {
        gamma[i - 1] = pow(ar, i - 1);
        for (j in 1:(i - 1)) {

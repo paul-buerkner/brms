@@ -92,9 +92,10 @@
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     for (i in 1:I) {
       array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
-      matrix[nobs[i], nobs[i]] Cov_i;
-      Cov_i = quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]);
-      Cov_i = add_diag(Cov_i, se2[begin[i]:end[i]]);
+      matrix[nobs[i], nobs[i]] Cov_i = add_diag(
+        quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]),
+        se2[begin[i]:end[i]]
+      );
       lp[i] = multi_normal_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], Cov_i);
     }
     return sum(lp);
