@@ -27,6 +27,8 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Align the R-side `com_poisson` distribution functions and mean with the
+  parameterization used by Stan. (#1927)
 * Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
 responses, matching the generated Stan code, so that `loo` and `waic`
 agree with the model that was fitted. Thanks to Ahmed Eldeeb. (#1903)
@@ -2295,5 +2297,4 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-
 

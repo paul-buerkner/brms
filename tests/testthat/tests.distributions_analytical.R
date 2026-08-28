@@ -50,6 +50,49 @@ test_that("com_poisson reduces to Poisson when shape = 1", {
   )
 })
 
+test_that("com_poisson matches the Stan parameterization", {
+  mu <- 3
+  shape <- 2
+  x <- 0:100
+  log_Z <- brms:::log_Z_com_poisson(log(mu), shape)
+  log_pmf <- x * log(mu) - shape * lgamma(x + 1) - log_Z
+  pmf <- exp(log_pmf)
+
+  expect_equal(
+    brms:::dcom_poisson(x, mu = mu, shape = shape),
+    pmf,
+    tolerance = 1e-10
+  )
+
+  x_cdf <- c(0, 1, 3, 8)
+  expect_equal(
+    brms:::pcom_poisson(x_cdf, mu = mu, shape = shape),
+    vapply(x_cdf, function(x) min(1, sum(pmf[seq_len(x + 1)])), numeric(1)),
+    tolerance = 1e-10
+  )
+
+  p <- c(0.1, 0.5, 0.9)
+  expect_equal(
+    brms:::qcom_poisson(p, mu = mu, shape = shape),
+    vapply(p, function(p) which(cumsum(pmf) >= p)[1] - 1, numeric(1))
+  )
+
+  log_Z_exact <- brms:::log_Z_com_poisson(log(mu), shape, approx = FALSE)
+  log_pmf_exact <- x * log(mu) - shape * lgamma(x + 1) - log_Z_exact
+
+  expect_equal(
+    brms:::mean_com_poisson(mu, shape, approx = FALSE),
+    sum(x * exp(log_pmf_exact)),
+    tolerance = 1e-10
+  )
+
+  expect_equal(
+    brms:::mean_com_poisson(10, 2),
+    brms:::mean_com_poisson(10, 2, approx = FALSE),
+    tolerance = 1e-3
+  )
+})
+
 test_that("qexgaussian handles probabilities outside (0, 1)", {
   entry <- dist_registry_get("exgaussian")[[1]]
   res <- SW(call_dist(entry$q, c(-1, 0, 1, 1.5), entry$params))
