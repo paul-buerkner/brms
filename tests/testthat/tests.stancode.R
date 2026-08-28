@@ -832,6 +832,32 @@ test_that("Stan code for ARMA models is correct", {
   expect_match2(scode, "sderr = scales[(1+Kc):(Kc+1)][1];")
 })
 
+test_that("covariance chunks avoid unnecessary diagonal matrices", {
+  for (chunk in c(
+    "fun_cholesky_cor_ar1.stan",
+    "fun_cholesky_cor_arma1.stan",
+    "fun_cholesky_cor_cosy.stan"
+  )) {
+    code <- readLines(system.file("chunks", chunk, package = "brms"))
+    expect_false(any(grepl("diag_matrix", code, fixed = TRUE)), info = chunk)
+    expect_true(any(grepl("mat[i, i] =", code, fixed = TRUE)), info = chunk)
+  }
+
+  # MA(1) leaves off-band entries at zero, so this initializer is required.
+  ma1 <- readLines(system.file(
+    "chunks", "fun_cholesky_cor_ma1.stan", package = "brms"
+  ))
+  expect_true(any(grepl("diag_matrix", ma1, fixed = TRUE)))
+
+  for (chunk in c(
+    "fun_normal_time_se.stan", "fun_student_t_time_se.stan"
+  )) {
+    code <- readLines(system.file("chunks", chunk, package = "brms"))
+    expect_equal(sum(grepl("Cov_i = add_diag(", code, fixed = TRUE)), 4L)
+    expect_false(any(grepl("diag_matrix(se2", code, fixed = TRUE)))
+  }
+})
+
 test_that("Stan code for compound symmetry models is correct", {
   dat <- data.frame(y = rep(1:4, 2), x = 1:8, time = 1:8)
   scode <- stancode(

@@ -119,9 +119,8 @@ test_that("dense multiblock systems build the prior factor blockwise", {
     )
   )
   expect_match2(code, "P_s2z_1 = crossprod(prior_factor_s2z);")
-  expect_match2(
-    code, "P_s2z_1[1:2, 1:2] += P_group_s2z_1;"
-  )
+  expect_match2(code, "P_s2z_1[k, k] += group_info_s2z_1;")
+  expect_false(grepl("P_group_s2z_", code, fixed = TRUE))
   expect_false(grepl("H_joint_s2z_1", code, fixed = TRUE))
   expect_match2(code, "q_recovered_s2z_1 = theta_s2z;")
   expect_match2(
@@ -142,8 +141,12 @@ test_that("Matheron kernels use indexed active rows and row recovery", {
 
   expect_match2(
     code,
-    "diag_matrix(square(prior_scale_s2z_1[{1, 2}]))"
+    "W_matheron_s2z_1 = add_diag("
   )
+  expect_match2(code, "square(prior_scale_s2z_1[{1, 2}])")
+  expect_false(grepl(
+    "diag_matrix(square(prior_scale_s2z_1", code, fixed = TRUE
+  ))
   expect_match2(code, "H_s2z_1[{1, 2}, ];")
   expect_match2(
     code,
@@ -168,8 +171,12 @@ test_that("Matheron indexing preserves noncontiguous active rows", {
 
   expect_match2(
     code,
-    "diag_matrix(square(prior_scale_s2z_1[{1, 4}]))"
+    "W_matheron_s2z_1 = add_diag("
   )
+  expect_match2(code, "square(prior_scale_s2z_1[{1, 4}])")
+  expect_false(grepl(
+    "diag_matrix(square(prior_scale_s2z_1", code, fixed = TRUE
+  ))
   expect_match2(code, "H_s2z_1[{1, 4}, ];")
   expect_match2(
     code,

@@ -7,7 +7,9 @@
    */
    matrix cholesky_cor_cosy(real cosy, int nrows) {
      matrix[nrows, nrows] mat;
-     mat = diag_matrix(rep_vector(1, nrows));
+     for (i in 1:nrows) {
+       mat[i, i] = 1;
+     }
      for (i in 2:nrows) {
        for (j in 1:(i - 1)) {
          mat[i, j] = cosy;

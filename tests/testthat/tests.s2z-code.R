@@ -670,6 +670,13 @@ test_that("Matheron supports overlapping physical S2Z blocks", {
   expect_false(grepl(
     "L_Sigma_s2z_3, r_s2z_3", scode, fixed = TRUE
   ))
+  expect_match2(scode, "W_matheron_s2z_1 = add_diag(")
+  expect_match2(
+    scode, "square(prior_scale_s2z_1[{1, 2, 3, 4}])"
+  )
+  expect_false(grepl(
+    "diag_matrix(square(prior_scale_s2z_1", scode, fixed = TRUE
+  ))
   expect_false(grepl("matrix[7, 7] P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("H_joint_s2z_1", scode, fixed = TRUE))
@@ -678,7 +685,7 @@ test_that("Matheron supports overlapping physical S2Z blocks", {
       scode,
       "W_matheron_s2z_1 += tcrossprod(H_active_s2z * "
     ),
-    3L
+    2L
   )
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
 })
@@ -898,20 +905,20 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
   scode <- stancode(form, data = s2z_dat, prior = bprior)
 
   for (term in c(
-    "P_group_s2z_1 = diag_matrix(rep_vector(1.0 * N_1, M_1));",
+    "group_info_s2z_1 = 1.0 * N_1;",
     "group_scale_s2z_2 = dfm_2;",
     "group_prec_s2z_2 = inv_square(group_scale_s2z_2);",
-    "P_group_s2z_2 = diag_matrix(rep_vector(",
-    "sum(group_prec_s2z_2), M_2));",
+    "group_info_s2z_2 = sum(group_prec_s2z_2);",
     "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
     "- M_2 * sum(log(group_scale_s2z_2))",
-    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;"
+    "P_s2z_1[k, k] += group_info_s2z_1;",
+    "P_s2z_1[2 + k, 2 + k] += group_info_s2z_2;"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
   expect_false(grepl("group_scale_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
+  expect_false(grepl("P_group_s2z_", scode, fixed = TRUE))
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
   expect_equal(
     s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1]"), 1L

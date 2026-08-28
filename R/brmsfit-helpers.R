@@ -161,8 +161,7 @@ get_cov_matrix <- function(sd, cor = NULL) {
   stopifnot(all(sd >= 0))
   ndraws <- nrow(sd)
   size <- ncol(sd)
-  out <- array(diag(1, size), dim = c(size, size, ndraws))
-  out <- aperm(out, perm = c(3, 1, 2))
+  out <- array(0, dim = c(ndraws, size, size))
   for (i in seq_len(size)) {
     out[, i, i] <- sd[, i]^2
   }
@@ -198,8 +197,10 @@ get_cor_matrix <- function(cor, size = NULL, ndraws = NULL) {
   ndraws <- as_one_numeric(ndraws)
   stopifnot(is_wholenumber(size) && size > 0)
   stopifnot(is_wholenumber(ndraws) && ndraws > 0)
-  out <- array(diag(1, size), dim = c(size, size, ndraws))
-  out <- aperm(out, perm = c(3, 1, 2))
+  out <- array(0, dim = c(ndraws, size, size))
+  for (i in seq_len(size)) {
+    out[, i, i] <- 1
+  }
   if (length(cor)) {
     k <- 0
     for (i in seq_len(size)[-1]) {
@@ -250,9 +251,11 @@ get_cov_matrix_ac <- function(prep, obs = NULL, Jtime = NULL, latent = FALSE) {
   }
   # prepare known standard errors
   if (!is.null(prep$data$se)) {
-    se2 <- prep$data$se[obs]^2
-    se2 <- array(diag(se2, nobs), dim = c(nobs, nobs, ndraws))
-    se2 <- aperm(se2, perm = c(3, 1, 2))
+    se2_vector <- prep$data$se[obs]^2
+    se2 <- array(0, dim = c(ndraws, nobs, nobs))
+    for (i in seq_len(nobs)) {
+      se2[, i, i] <- se2_vector[i]
+    }
     # make sure not to add 'se' twice
     prep$data$se <- NULL
   } else {

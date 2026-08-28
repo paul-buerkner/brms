@@ -854,8 +854,8 @@ data_ac <- function(bframe, data, data2, ...) {
           "Consider using type = 'icar' instead."
         )
       }
-      inv_sqrt_D <- diag(1 / sqrt(Nneigh))
-      eigenMcar <- t(inv_sqrt_D) %*% M %*% inv_sqrt_D
+      inv_sqrt_D <- Matrix::Diagonal(x = 1 / sqrt(Nneigh))
+      eigenMcar <- as.matrix(inv_sqrt_D %*% M %*% inv_sqrt_D)
       eigenMcar <- eigen(eigenMcar, TRUE, only.values = TRUE)$values
       c(out) <- nlist(Nneigh, eigenMcar)
     } else if (acframe_car$type %in% "bym2") {

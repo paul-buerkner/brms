@@ -1316,7 +1316,8 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
     str_if(
       !use_matheron,
       glue(
-        "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+        "  real<lower=0> group_info_s2z_{id};",
+        "  // isotropic omitted-mean precision\n",
         "  vector[M_{id}] h_group_s2z_{id};\n"
       )
     ),
@@ -1422,7 +1423,7 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
       "  {{\n",
       "    matrix[M_{id}, N_{id}] white_group_s2z = ",
       "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
-      "    P_group_s2z_{id} = diag_matrix(rep_vector({group_info}, M_{id}));\n",
+      "    group_info_s2z_{id} = {group_info};\n",
       "{group_score_code}",
       "  }}\n"
     )
@@ -1458,7 +1459,7 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
     }
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    P_group_s2z_{id} = diag_matrix(rep_vector({group_info}, M_{id}));\n",
+      "    group_info_s2z_{id} = {group_info};\n",
       "{group_score_code}",
       "  }}\n"
     )
@@ -1553,11 +1554,6 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
       "  W_matheron_s2z_{set_id} = ",
       "square(prior_scale_s2z_{set_id}[{P}]);\n"
     )
-  } else if (rdim > 1L) {
-    str_add(out$tpar_comp) <- glue(
-      "  W_matheron_s2z_{set_id} = diag_matrix(square(",
-      "prior_scale_s2z_{set_id}[{P_index}]));\n"
-    )
   }
   str_add(out$tpar_comp) <- glue(
     "  joint_quad_s2z_{set_id} = 0.0;\n"
@@ -1570,12 +1566,26 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
         "H_s2z_{id}[{P}, ] * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n"
       )
     } else if (rdim > 1L) {
+      W_update <- if (b == 1L) {
+        glue(
+          "add_diag(\n",
+          "      tcrossprod(H_active_s2z * L_Sigma_s2z_{id}) / ",
+          "(1.0 * N_{id}),\n",
+          "      square(prior_scale_s2z_{set_id}[{P_index}])\n",
+          "    )"
+        )
+      } else {
+        glue(
+          "tcrossprod(",
+          "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id})"
+        )
+      }
+      W_operator <- if (b == 1L) "=" else "+="
       str_add(out$tpar_comp) <- glue(
         "  {{\n",
         "    matrix[{rdim}, M_{id}] H_active_s2z = ",
         "H_s2z_{id}[{P_index}, ];\n",
-        "    W_matheron_s2z_{set_id} += tcrossprod(",
-        "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n",
+        "    W_matheron_s2z_{set_id} {W_operator} {W_update};\n",
         "  }}\n"
       )
     }
@@ -1923,8 +1933,11 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
   for (b in seq_along(infos)) {
     id <- infos[[b]]$id
     take <- glue("{starts[b]}:{ends[b]}")
+    index <- if (starts[b] == 1L) "k" else glue("{starts[b] - 1L} + k")
     str_add(out$tpar_comp) <- glue(
-      "    P_s2z_{set_id}[{take}, {take}] += P_group_s2z_{id};\n",
+      "    for (k in 1:M_{id}) {{\n",
+      "      P_s2z_{set_id}[{index}, {index}] += group_info_s2z_{id};\n",
+      "    }}\n",
       "    h_joint_s2z_{set_id}[{take}] = h_group_s2z_{id};\n",
       "    joint_quad_s2z_{set_id} += group_quad_s2z_{id};\n"
     )
