@@ -500,18 +500,47 @@ test_that("known covariance composes with conventional S2Z blocks", {
     cofactor = rep(c(-0.5, 0.5), 6),
     phylo = factor(rep(letters[1:4], each = 3))
   )
-  A <- diag(4)
-  dimnames(A) <- list(levels(phylo_dat$phylo), levels(phylo_dat$phylo))
+  levels_phylo <- levels(phylo_dat$phylo)
+  A <- outer(seq_along(levels_phylo), seq_along(levels_phylo), function(i, j) {
+    0.35^abs(i - j)
+  })
+  dimnames(A) <- list(rev(levels_phylo), rev(levels_phylo))
+  form <- phen ~ cofactor + (1 | gr(phylo, cov = A, s2z = TRUE))
   code <- stancode(
-    phen ~ cofactor + (1 | gr(phylo, cov = A, s2z = TRUE)),
-    data = phylo_dat, data2 = list(A = A)
+    form, data = phylo_dat, data2 = list(A = A), parse = TRUE
   )
   sdata <- standata(
-    phen ~ cofactor + (1 | gr(phylo, cov = A, s2z = TRUE)),
-    data = phylo_dat, data2 = list(A = A)
+    form, data = phylo_dat, data2 = list(A = A)
+  )
+  bframe <- brmsframe(brmsterms(form), phylo_dat, data2 = list(A = A))
+  excluded <- unlist(
+    exclude_pars_re(bframe, save_pars()), use.names = FALSE
   )
 
   expect_s3_class(code, "brmsmodel")
   expect_match(code, "Lcov_1", fixed = TRUE)
-  expect_equal(unname(sdata$Lcov_1), diag(4))
+  expect_match(
+    code,
+    "group_info_s2z_1 = dot_self(one_white_cov_s2z);",
+    fixed = TRUE
+  )
+  expect_match(
+    code,
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "group_info_s2z_1);"
+    ),
+    fixed = TRUE
+  )
+  expect_false(grepl(
+    "matrix[M_1, M_1] P_group_s2z_1;", code, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "P_group_s2z_1 = diag_matrix", code, fixed = TRUE
+  ))
+  expect_true("group_info_s2z_1" %in% excluded)
+  expect_equal(
+    unname(sdata$Lcov_1),
+    unname(t(chol(A[levels_phylo, levels_phylo])))
+  )
 })

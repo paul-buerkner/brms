@@ -694,9 +694,9 @@ posterior_epred_ordinal <- function(prep) {
 # compute 'posterior_epred' for lagsar models
 posterior_epred_lagsar <- function(prep) {
   stopifnot(!is.null(prep$ac$lagsar))
-  I <- diag(prep$nobs)
   .posterior_epred <- function(s) {
-    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
+    IB <- with(prep$ac, -lagsar[s, ] * Msar)
+    diag(IB) <- diag(IB) + 1
     as.numeric(solve(IB, prep$dpars$mu[s, ]))
   }
   out <- rblapply(seq_len(prep$ndraws), .posterior_epred)

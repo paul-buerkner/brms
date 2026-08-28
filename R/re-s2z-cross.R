@@ -379,6 +379,9 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
   } else {
     glue("sd_{id}")
   }
+  group_precision_kind <- stan_re_s2z_group_precision_kind(
+    varying = varying, is_cor = TRUE
+  )
 
   stopifnot(
     M > 1L, all(r$s2z), !any(re_s2z_latent(r)), all(r$cor),
@@ -505,7 +508,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
         "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n"
       )
     ),
-    "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+    stan_re_s2z_group_precision_def(id, group_precision_kind),
     "  vector[M_{id}] h_group_s2z_{id};\n",
     "  real group_quad_s2z_{id};\n",
     str_if(s2z_partial, glue("  real log_det_partial_s2z_{id};\n")),
@@ -627,8 +630,10 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
 
   if (mean_noncenter) {
     str_add(out$tpar_comp) <- glue(
-      "  L_mean_s2z_{id} = cholesky_decompose(diag_matrix(1.0 ./ ",
-      "prior_prec_s2z_{id}) + tcrossprod(L_Sigma_s2z_{id}) / N_{id});\n",
+      "  L_mean_s2z_{id} = cholesky_decompose(add_diag(\n",
+      "    tcrossprod(L_Sigma_s2z_{id}) / N_{id}, ",
+      "1.0 ./ prior_prec_s2z_{id}\n",
+      "  ));\n",
       "  {{\n",
       "    vector[M_{id}] z_mean_s2z;\n",
       "    vector[M_{id}] theta_mean_s2z;\n"
@@ -679,8 +684,11 @@ validate_re_s2z_cross_id <- function(bframe, prior, id) {
     )
   }
   str_add(out$tpar_comp) <- glue(
-    "    P_s2z_{id} = crossprod(prior_factor_s2z) + ",
-    "P_group_s2z_{id};\n",
+    "    P_s2z_{id} = ",
+    stan_re_s2z_add_group_precision(
+      "crossprod(prior_factor_s2z)", id, group_precision_kind
+    ),
+    ";\n",
     "    h_s2z = prior_factor_s2z' * prior_difference_s2z + ",
     "h_group_s2z_{id};\n",
     "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",

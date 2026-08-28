@@ -2871,6 +2871,71 @@ stan_re_s2z_modal_fisher_comp <- function(id, spectral, L, M) {
   paste0(prefix, body, suffix)
 }
 
+# Shape of the group contribution to the omitted-mean precision in reference-
+# whitened coefficient coordinates. Shared scales are isotropic even with a
+# known grouping covariance or Student mixing; independent varying scales are
+# diagonal; only the remaining varying-scale cases require a dense matrix.
+stan_re_s2z_group_precision_kind <- function(varying, is_cor) {
+  if (!varying) {
+    return("scalar")
+  }
+  if (!is_cor) {
+    return("diagonal")
+  }
+  "dense"
+}
+
+stan_re_s2z_group_precision_def <- function(id, kind) {
+  switch(
+    kind,
+    scalar = glue(
+      "  real<lower=0> group_info_s2z_{id};",
+      "  // isotropic omitted-mean precision\n"
+    ),
+    diagonal = glue(
+      "  vector<lower=0>[M_{id}] group_info_s2z_{id};",
+      "  // diagonal omitted-mean precision\n"
+    ),
+    dense = glue(
+      "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n"
+    ),
+    stop2("Invalid S2Z group precision kind: ", kind)
+  )
+}
+
+stan_re_s2z_add_group_precision <- function(base, id, kind) {
+  if (kind %in% c("scalar", "diagonal")) {
+    glue("add_diag({base}, group_info_s2z_{id})")
+  } else {
+    glue("{base} + P_group_s2z_{id}")
+  }
+}
+
+stan_re_s2z_add_group_precision_block <- function(set_id, id, kind, start,
+                                                   end) {
+  index <- if (start == 1L) "k" else glue("{start - 1L} + k")
+  if (kind == "scalar") {
+    return(glue(
+      "    for (k in 1:M_{id}) {{\n",
+      "      P_s2z_{set_id}[{index}, {index}] += ",
+      "group_info_s2z_{id};\n",
+      "    }}\n"
+    ))
+  }
+  if (kind == "diagonal") {
+    return(glue(
+      "    for (k in 1:M_{id}) {{\n",
+      "      P_s2z_{set_id}[{index}, {index}] += ",
+      "group_info_s2z_{id}[k];\n",
+      "    }}\n"
+    ))
+  }
+  glue(
+    "    P_s2z_{set_id}[{start}:{end}, {start}:{end}] += ",
+    "P_group_s2z_{id};\n"
+  )
+}
+
 # Map unrestricted modal coordinates into physical arithmetic-S2Z effects and
 # evaluate the exact known-covariance group normal equations in those modes.
 # The rank-one coupling term retains the dependence between the arithmetic mean
@@ -2970,9 +3035,7 @@ stan_re_s2z_modal_transform_group_comp <- function(id, L, M) {
     "    r_s2z_{id} = Ecov_s2z_{id} * effect_modal_s2z;\n",
     "    coupling_score_modal_s2z = ",
     "coef_white_modal_s2z' * coupling_cov_s2z_{id};\n",
-    "    P_group_s2z_{id} = diag_matrix(rep_vector(\n",
-    "      mean_prec_cov_s2z_{id}, M_{id}\n",
-    "    ));\n",
+    "    group_info_s2z_{id} = mean_prec_cov_s2z_{id};\n",
     "    h_group_s2z_{id} = -coupling_score_modal_s2z;\n",
     "    group_quad_s2z_{id} = dot_product(\n",
     "      inv(lambda_cov_s2z_{id}), rows_dot_self(coef_white_modal_s2z)\n",
@@ -3037,8 +3100,9 @@ stan_re_s2z_fisher_tdata <- function(out, id, r, fisher_info) {
 # J_j = sum_n w_F z_n z_n' and Sigma = L L', the posterior covariance is
 # V_j = L (I + L' J_j L)^-1 L'. Its marginal variance contractions are valid
 # diagonal fractions for the existing exact restricted S2Z transform.
-stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L, scale = NULL,
-                                    row_var = NULL) {
+stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
+                                    scale = NULL, row_var = NULL,
+                                    diag_scale = NULL) {
   fixed_design <- isTRUE(fisher_info$fixed_design)
   sources <- fisher_info$sources
   M <- fisher_info$M
@@ -3107,15 +3171,25 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L, scale = NULL,
     ))
   }
 
+  diagonal <- !is.null(diag_scale)
+  stopifnot(xor(!is.null(L), diagonal))
+
   if (fixed_design) {
     info_def <- glue(
       "    real obs_prec_fisher_s2z = {fisher_info$obs_prec};\n"
     )
     initialization <- accumulation <- ""
-    K_j <- glue(
-      "{row_var_j} * obs_prec_fisher_s2z * quad_form(",
-      "gram_fisher_s2z_{id}[j], {L})"
-    )
+    K_j <- if (diagonal) {
+      glue(
+        "{row_var_j} * obs_prec_fisher_s2z * quad_form_diag(",
+        "gram_fisher_s2z_{id}[j], {diag_scale})"
+      )
+    } else {
+      glue(
+        "{row_var_j} * obs_prec_fisher_s2z * quad_form(",
+        "gram_fisher_s2z_{id}[j], {L})"
+      )
+    }
   } else {
     info_def <- glue(
       "    array[N_{id}] matrix[M_{id}, M_{id}] info_fisher_s2z;\n"
@@ -3164,35 +3238,81 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L, scale = NULL,
         )
       }, character(1)), collapse = "")
     }
-    K_j <- glue("{row_var_j} * quad_form(info_fisher_s2z[j], {L})")
+    K_j <- if (diagonal) {
+      glue(
+        "{row_var_j} * quad_form_diag(info_fisher_s2z[j], ",
+        "{diag_scale})"
+      )
+    } else {
+      glue("{row_var_j} * quad_form(info_fisher_s2z[j], {L})")
+    }
+  }
+
+  variance_def <- if (diagonal) {
+    glue(
+      "      vector[M_{id}] unit_rhs_fisher_s2z = zeros_vector(M_{id});\n"
+    )
+  } else {
+    glue(
+      "      matrix[M_{id}, M_{id}] white_factor_fisher_s2z;\n",
+      "      row_vector[M_{id}] post_var_fisher_s2z;\n"
+    )
+  }
+  variance_comp <- if (diagonal) {
+    ""
+  } else {
+    glue(
+      "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
+      "        L_post_precision_fisher_s2z, sqrt({row_var_j}) * ({L})'\n",
+      "      );\n",
+      "      post_var_fisher_s2z = columns_dot_self(",
+      "white_factor_fisher_s2z);\n"
+    )
+  }
+  reliability_comp <- if (diagonal) {
+    glue(
+      "      for (k in 1:M_{id}) {{\n",
+      "        vector[M_{id}] unit_column_fisher_s2z;\n",
+      "        unit_rhs_fisher_s2z[k] = 1.0;\n",
+      "        unit_column_fisher_s2z = mdivide_left_tri_low(\n",
+      "          L_post_precision_fisher_s2z, unit_rhs_fisher_s2z\n",
+      "        );\n",
+      "        // The exact ratio is in [0, 1]; clamp roundoff.\n",
+      "        rho_s2z_{id}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
+      "          dot_self(unit_column_fisher_s2z)));\n",
+      "        unit_rhs_fisher_s2z[k] = 0.0;\n",
+      "      }}\n"
+    )
+  } else {
+    glue(
+      "      for (k in 1:M_{id}) {{\n",
+      "        // The exact ratio is in [0, 1]; clamp roundoff.\n",
+      "        rho_s2z_{id}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
+      "          post_var_fisher_s2z[k] / ",
+      "({row_var_j} * prior_var_fisher_s2z[k])));\n",
+      "      }}\n"
+    )
   }
 
   glue(
     "  {{\n",
     "{info_def}",
-    "    vector[M_{id}] prior_var_fisher_s2z = rows_dot_self({L});\n",
+    str_if(
+      !diagonal,
+      glue("    vector[M_{id}] prior_var_fisher_s2z = rows_dot_self({L});\n")
+    ),
     "{initialization}",
     "{accumulation}",
     "    for (j in 1:N_{id}) {{\n",
     "      matrix[M_{id}, M_{id}] K_fisher_s2z = {K_j};\n",
     "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
-    "      matrix[M_{id}, M_{id}] white_factor_fisher_s2z;\n",
-    "      row_vector[M_{id}] post_var_fisher_s2z;\n",
+    "{variance_def}",
     "      K_fisher_s2z = 0.5 * (K_fisher_s2z + K_fisher_s2z');\n",
     "      L_post_precision_fisher_s2z = cholesky_decompose(\n",
     "        add_diag(K_fisher_s2z, 1.0)\n",
     "      );\n",
-    "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
-    "        L_post_precision_fisher_s2z, sqrt({row_var_j}) * ({L})'\n",
-    "      );\n",
-    "      post_var_fisher_s2z = columns_dot_self(",
-    "white_factor_fisher_s2z);\n",
-    "      for (k in 1:M_{id}) {{\n",
-    "        // The exact ratio is in [0, 1]; clamp roundoff at its endpoints.\n",
-    "        rho_s2z_{id}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
-    "          post_var_fisher_s2z[k] / ",
-    "({row_var_j} * prior_var_fisher_s2z[k])));\n",
-    "      }}\n",
+    "{variance_comp}",
+    "{reliability_comp}",
     "    }}\n",
     "    for (k in 1:M_{id}) {{\n",
     "      mean_rho_s2z_{id}[k] = mean(rho_s2z_{id}[, k]);\n",
@@ -3257,11 +3377,10 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
   } else {
     glue("rep_matrix(sd_{id}', N_{id})")
   }
-  L_coef <- if (is_cor) {
-    glue("L_{id}")
-  } else {
-    glue("diag_matrix(rep_vector(1.0, M_{id}))")
-  }
+  L_coef_def <- str_if(
+    is_cor,
+    glue("    matrix[M_{id}, M_{id}] L_coef_cov_s2z = L_{id};\n")
+  )
   student_scale <- str_if(
     is_student,
     glue(
@@ -3288,26 +3407,65 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
     } else {
       mean_rhs
     }
+    coef_white <- if (is_cor) {
+      "mdivide_left_tri_low(L_coef_cov_s2z, scaled_delta_cov_s2z')"
+    } else {
+      "scaled_delta_cov_s2z'"
+    }
     return(glue(
       "  {{\n",
       "    matrix[N_{id}, M_{id}] scale_cov_s2z = {scale_level};\n",
-      "    matrix[M_{id}, M_{id}] L_coef_cov_s2z = {L_coef};\n",
+      "{L_coef_def}",
       "    matrix[N_{id}, M_{id}] scaled_delta_cov_s2z;\n",
       "    matrix[M_{id}, N_{id}] coef_white_cov_s2z;\n",
       "    matrix[N_{id}, M_{id}] white_delta_cov_s2z;\n",
       "    vector[N_{id}] one_white_cov_s2z;\n",
       "{student_scale}",
       "    scaled_delta_cov_s2z = {delta} ./ scale_cov_s2z;\n",
-      "    coef_white_cov_s2z = mdivide_left_tri_low(",
-      "L_coef_cov_s2z, scaled_delta_cov_s2z');\n",
+      "    coef_white_cov_s2z = {coef_white};\n",
       "    white_delta_cov_s2z = {white_delta};\n",
       "    one_white_cov_s2z = {one_white};\n",
-      "    P_group_s2z_{id} = diag_matrix(rep_vector(",
-      "dot_self(one_white_cov_s2z), M_{id}));\n",
+      "    group_info_s2z_{id} = dot_self(one_white_cov_s2z);\n",
       "    h_group_s2z_{id} = -white_delta_cov_s2z' * ",
       "one_white_cov_s2z;\n",
       "    group_quad_s2z_{id} = dot_self(",
       "to_vector(white_delta_cov_s2z));\n",
+      "  }}\n"
+    ))
+  }
+  if (!is_cor) {
+    white_delta <- if (has_cov) {
+      glue(
+        "mdivide_left_tri_low(Lcov_{id}, scaled_delta_cov_s2z[, k])"
+      )
+    } else {
+      "scaled_delta_cov_s2z[, k]"
+    }
+    white_basis <- if (has_cov) {
+      glue("mdivide_left_tri_low(Lcov_{id}, mean_basis_cov_s2z)")
+    } else {
+      "mean_basis_cov_s2z"
+    }
+    return(glue(
+      "  group_info_s2z_{id} = zeros_vector(M_{id});\n",
+      "  {{\n",
+      "    matrix[N_{id}, M_{id}] scale_cov_s2z = {scale_level};\n",
+      "    matrix[N_{id}, M_{id}] scaled_delta_cov_s2z;\n",
+      "{student_scale}",
+      "    scaled_delta_cov_s2z = {delta} ./ scale_cov_s2z;\n",
+      "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
+      "    group_quad_s2z_{id} = 0.0;\n",
+      "    for (k in 1:M_{id}) {{\n",
+      "      vector[N_{id}] white_delta_cov_s2z = {white_delta};\n",
+      "      vector[N_{id}] mean_basis_cov_s2z = ",
+      "rep_vector(reference_sd_s2z_{id}[k], N_{id}) ./ ",
+      "scale_cov_s2z[, k];\n",
+      "      vector[N_{id}] white_basis_cov_s2z = {white_basis};\n",
+      "      group_info_s2z_{id}[k] = dot_self(white_basis_cov_s2z);\n",
+      "      h_group_s2z_{id}[k] = -dot_product(",
+      "white_basis_cov_s2z, white_delta_cov_s2z);\n",
+      "      group_quad_s2z_{id} += dot_self(white_delta_cov_s2z);\n",
+      "    }}\n",
       "  }}\n"
     ))
   }
@@ -3330,7 +3488,7 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
   glue(
     "  {{\n",
     "    matrix[N_{id}, M_{id}] scale_cov_s2z = {scale_level};\n",
-    "    matrix[M_{id}, M_{id}] L_coef_cov_s2z = {L_coef};\n",
+    "{L_coef_def}",
     "    matrix[N_{id}, M_{id}] scaled_delta_cov_s2z;\n",
     "    matrix[M_{id}, N_{id}] coef_white_cov_s2z;\n",
     "    matrix[N_{id}, M_{id}] white_delta_cov_s2z;\n",
@@ -3897,6 +4055,9 @@ stan_re_s2z_H_code <- function(info) {
   is_student <- identical(r$dist[1], "student")
   has_cov <- nzchar(r$cov[1])
   varying <- identical(r$scale[1], "varying")
+  group_precision_kind <- stan_re_s2z_group_precision_kind(
+    varying = varying, is_cor = is_cor
+  )
   use_matheron <- .stan_re_s2z_joint_uses_matheron(set)
   s2z_mode <- re_s2z_center_mode(r)
   s2z_center <- identical(s2z_mode, "centered")
@@ -3969,7 +4130,7 @@ stan_re_s2z_H_code <- function(info) {
     str_if(
       !use_matheron,
       glue(
-        "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+        stan_re_s2z_group_precision_def(id, group_precision_kind),
         "  vector[M_{id}] h_group_s2z_{id};\n"
       )
     ),
@@ -4052,9 +4213,10 @@ stan_re_s2z_H_code <- function(info) {
   if (s2z_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
       id, r = r, fisher_info = fisher_info,
-      L = glue("L_Sigma_s2z_{id}"),
+      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
       scale = if (M == 1L) glue("{scale}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
+      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
+      diag_scale = if (!is_cor && M > 1L) scale else NULL
     )
   }
 
@@ -4164,8 +4326,8 @@ stan_re_s2z_H_code <- function(info) {
       is_student, glue("group_prec_s2z_{id}[j] * ")
     )
     str_add(out$tpar_comp) <- glue(
+      "  group_info_s2z_{id} = zeros_vector(M_{id});\n",
       "  {{\n",
-      "    vector[M_{id}] group_info_s2z = zeros_vector(M_{id});\n",
       "    h_group_s2z_{id} = zeros_vector(M_{id});\n",
       "    group_quad_s2z_{id} = 0.0;\n",
       "    for (j in 1:N_{id}) {{\n",
@@ -4173,14 +4335,13 @@ stan_re_s2z_H_code <- function(info) {
       "reference_sd_s2z_{id} ./ sd_level_s2z_{id}[j]';\n",
       "      vector[M_{id}] white_level_s2z = ",
       "r_s2z_{id}[j]' ./ sd_level_s2z_{id}[j]';\n",
-      "      group_info_s2z += {level_weight}",
+      "      group_info_s2z_{id} += {level_weight}",
       "square(relative_precision_s2z);\n",
       "      h_group_s2z_{id} -= {level_weight}",
       "relative_precision_s2z .* white_level_s2z;\n",
       "      group_quad_s2z_{id} += {level_weight}",
       "dot_self(white_level_s2z);\n",
       "    }}\n",
-      "    P_group_s2z_{id} = diag_matrix(group_info_s2z);\n",
       "  }}\n"
     )
   } else if (is_cor) {
@@ -4206,7 +4367,7 @@ stan_re_s2z_H_code <- function(info) {
       "  {{\n",
       "    matrix[M_{id}, N_{id}] white_group_s2z = ",
       "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
-      "    P_group_s2z_{id} = diag_matrix(rep_vector({group_info}, M_{id}));\n",
+      "    group_info_s2z_{id} = {group_info};\n",
       "{group_score_code}",
       "  }}\n"
     )
@@ -4242,7 +4403,7 @@ stan_re_s2z_H_code <- function(info) {
     }
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
-      "    P_group_s2z_{id} = diag_matrix(rep_vector({group_info}, M_{id}));\n",
+      "    group_info_s2z_{id} = {group_info};\n",
       "{group_score_code}",
       "  }}\n"
     )
@@ -4337,11 +4498,6 @@ stan_re_s2z_H_code <- function(info) {
       "  W_matheron_s2z_{set_id} = ",
       "square(prior_scale_s2z_{set_id}[{P}]);\n"
     )
-  } else if (rdim > 1L) {
-    str_add(out$tpar_comp) <- glue(
-      "  W_matheron_s2z_{set_id} = diag_matrix(square(",
-      "prior_scale_s2z_{set_id}[{P_index}]));\n"
-    )
   }
   str_add(out$tpar_comp) <- glue(
     "  joint_quad_s2z_{set_id} = 0.0;\n"
@@ -4354,12 +4510,26 @@ stan_re_s2z_H_code <- function(info) {
         "H_s2z_{id}[{P}, ] * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n"
       )
     } else if (rdim > 1L) {
+      W_update <- if (b == 1L) {
+        glue(
+          "add_diag(\n",
+          "      tcrossprod(H_active_s2z * L_Sigma_s2z_{id}) / ",
+          "(1.0 * N_{id}),\n",
+          "      square(prior_scale_s2z_{set_id}[{P_index}])\n",
+          "    )"
+        )
+      } else {
+        glue(
+          "tcrossprod(",
+          "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id})"
+        )
+      }
+      W_operator <- if (b == 1L) "=" else "+="
       str_add(out$tpar_comp) <- glue(
         "  {{\n",
         "    matrix[{rdim}, M_{id}] H_active_s2z = ",
         "H_s2z_{id}[{P_index}, ];\n",
-        "    W_matheron_s2z_{set_id} += tcrossprod(",
-        "H_active_s2z * L_Sigma_s2z_{id}) / (1.0 * N_{id});\n",
+        "    W_matheron_s2z_{set_id} {W_operator} {W_update};\n",
         "  }}\n"
       )
     }
@@ -4717,8 +4887,16 @@ stan_re_s2z_H_code <- function(info) {
   for (b in seq_along(infos)) {
     id <- infos[[b]]$id
     take <- glue("{starts[b]}:{ends[b]}")
+    r <- infos[[b]]$r
+    group_precision_kind <- stan_re_s2z_group_precision_kind(
+      varying = identical(r$scale[1], "varying"),
+      is_cor = nrow(r) > 1L && isTRUE(r$cor[1])
+    )
+    group_precision_code <- stan_re_s2z_add_group_precision_block(
+      set_id, id, group_precision_kind, starts[b], ends[b]
+    )
     str_add(out$tpar_comp) <- glue(
-      "    P_s2z_{set_id}[{take}, {take}] += P_group_s2z_{id};\n",
+      "{group_precision_code}",
       "    h_joint_s2z_{set_id}[{take}] = h_group_s2z_{id};\n",
       "    joint_quad_s2z_{set_id} += group_quad_s2z_{id};\n"
     )
@@ -4966,6 +5144,9 @@ stan_re_s2z_H_code <- function(info) {
   is_cor <- M > 1L && isTRUE(r$cor[1])
   is_student <- identical(r$dist[1], "student")
   has_cov <- nzchar(r$cov[1])
+  group_precision_kind <- stan_re_s2z_group_precision_kind(
+    varying = TRUE, is_cor = is_cor
+  )
   s2z_mode <- re_s2z_center_mode(r)
   s2z_center <- identical(s2z_mode, "centered")
   s2z_fisher <- !is.null(fisher_info)
@@ -5085,12 +5266,15 @@ stan_re_s2z_H_code <- function(info) {
     L_fisher <- if (is_cor) {
       glue("diag_pre_multiply(reference_sd_s2z_{id}, L_{id})")
     } else {
-      glue("diag_matrix(reference_sd_s2z_{id})")
+      NULL
     }
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
       id, r = r, fisher_info = fisher_info, L = L_fisher,
       scale = if (M == 1L) glue("reference_sd_s2z_{id}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
+      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
+      diag_scale = if (!is_cor && M > 1L) {
+        glue("reference_sd_s2z_{id}")
+      }
     )
   }
 
@@ -5144,7 +5328,7 @@ stan_re_s2z_H_code <- function(info) {
       str_if(
         has_cov,
         glue(
-          "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+          stan_re_s2z_group_precision_def(id, group_precision_kind),
           "  vector[M_{id}] h_group_s2z_{id};\n"
         )
       ),
@@ -5193,8 +5377,11 @@ stan_re_s2z_H_code <- function(info) {
         "    vector[M_{id}] h_s2z = prior_factor_s2z' * ",
         "prior_difference_s2z + h_group_s2z_{id};\n",
         "    vector[M_{id}] forward_solve_s2z;\n",
-        "    P_s2z_{id} = crossprod(prior_factor_s2z) + ",
-        "P_group_s2z_{id};\n",
+        "    P_s2z_{id} = ",
+        stan_re_s2z_add_group_precision(
+          "crossprod(prior_factor_s2z)", id, group_precision_kind
+        ),
+        ";\n",
         "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
         "    forward_solve_s2z = mdivide_left_tri_low(",
         "L_P_s2z_{id}, h_s2z);\n",
@@ -5723,8 +5910,10 @@ stan_re_s2z_H_code <- function(info) {
   )
   if (s2z_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
-      id, r = r, fisher_info = fisher_info, L = glue("L_Sigma_s2z_{id}"),
-      scale = if (M == 1L) glue("sd_{id}[1]") else NULL
+      id, r = r, fisher_info = fisher_info,
+      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
+      scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
+      diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
     )
     str_add(out$tpar_comp) <- stan_re_s2z_partial_cor_transform(id)
   } else if (!s2z_center) {
@@ -5925,7 +6114,7 @@ stan_re_s2z_H_code <- function(info) {
     str_if(
       has_cov,
       glue(
-        "  matrix[M_{id}, M_{id}] P_group_s2z_{id};\n",
+        stan_re_s2z_group_precision_def(id, "scalar"),
         "  vector[M_{id}] h_group_s2z_{id};\n"
       )
     ),
@@ -5974,9 +6163,11 @@ stan_re_s2z_H_code <- function(info) {
   }
   if (s2z_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
-      id, r = r, fisher_info = fisher_info, L = glue("L_Sigma_s2z_{id}"),
+      id, r = r, fisher_info = fisher_info,
+      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
       scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
+      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
+      diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
     )
   }
   partial_transform <- if (s2z_partial) {
@@ -6038,8 +6229,8 @@ stan_re_s2z_H_code <- function(info) {
       "(theta_s2z{p} - prior_mean_s2z_{id});\n",
       "    vector[M_{id}] h_s2z;\n",
       "    vector[M_{id}] whitened_h_s2z;\n",
-      "    P_s2z_{id} = crossprod(prior_factor_s2z) + ",
-      "P_group_s2z_{id};\n",
+      "    P_s2z_{id} = add_diag(crossprod(prior_factor_s2z), ",
+      "group_info_s2z_{id});\n",
       "    h_s2z = prior_factor_s2z' * prior_difference_s2z + ",
       "h_group_s2z_{id};\n",
       "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
@@ -6338,7 +6529,7 @@ stan_re_s2z_H_code <- function(info) {
   if (s2z_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
       id, r = r, fisher_info = fisher_info,
-      L = glue("diag_matrix(sd_{id})")
+      diag_scale = glue("sd_{id}")
     )
   }
   if (s2z_partial) {
@@ -6708,7 +6899,7 @@ stan_re_s2z_H_code <- function(info) {
   if (s2z_fisher) {
     str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
       id, r = r, fisher_info = fisher_info,
-      L = glue("diag_matrix(sd_{id})"), scale = glue("sd_{id}[1]")
+      scale = glue("sd_{id}[1]")
     )
   }
   if (s2z_partial) {

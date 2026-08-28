@@ -149,7 +149,7 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
         "L_W_matheron_s2z", "theta_white_matheron_s2z",
         "group_scale_s2z", "group_prec_s2z",
         "L_Sigma_s2z", "L_mean_s2z", "Q_Sigma_s2z",
-        "P_group_s2z", "h_group_s2z",
+        "P_group_s2z", "group_info_s2z", "h_group_s2z",
         "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
         "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
         "rank1_info_s2z", "group_quad_s2z", "joint_quad_s2z",

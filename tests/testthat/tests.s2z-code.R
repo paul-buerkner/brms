@@ -282,16 +282,42 @@ test_that("multivariate Fisher S2Z hoists Gram matrices and solves diagonals", {
   )
   expect_false(grepl("J_1[n]", independent_tpar, fixed = TRUE))
   expect_match2(
-    independent_tpar, "post_var_fisher_s2z = columns_dot_self("
+    independent_tpar,
+    "quad_form_diag(gram_fisher_s2z_1[j], sd_1)"
   )
+  expect_match2(independent_tpar, "unit_rhs_fisher_s2z")
+  expect_match2(independent_tpar, "dot_self(unit_column_fisher_s2z)")
   expect_equal(
-    s2z_count_fixed(independent_tpar, "quad_form("), 1L
+    s2z_count_fixed(independent_tpar, "quad_form("), 0L
   )
+  expect_false(grepl("diag_matrix(sd_1)", independent_tpar, fixed = TRUE))
+  expect_false(grepl("identity_matrix(M_1)", independent_tpar, fixed = TRUE))
   expect_false(grepl(
     "mdivide_left_spd", independent_code, fixed = TRUE
   ))
   expect_false(grepl(
     "post_cov_fisher_s2z", independent_code, fixed = TRUE
+  ))
+
+  varying_form <- y ~ x + (1 + x || gr(
+    g, s2z = TRUE, center = "fisher", scale = "varying"
+  ))
+  varying_code <- stancode(varying_form, data = s2z_dat)
+  varying_tpar <- s2z_stan_between(
+    varying_code, "transformed parameters {", "\nmodel {"
+  )
+  expect_match2(
+    varying_tpar,
+    paste0(
+      "quad_form_diag(gram_fisher_s2z_1[j], ",
+      "reference_sd_s2z_1)"
+    )
+  )
+  expect_false(grepl(
+    "diag_matrix(reference_sd_s2z_1)", varying_tpar, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "identity_matrix(M_1)", varying_tpar, fixed = TRUE
   ))
 })
 
@@ -3133,13 +3159,19 @@ test_that("a conventional correlated S2Z ID spans response predictors", {
   )
   expect_match2(
     scode,
-    "P_group_s2z_1 = diag_matrix(rep_vector("
+    "real<lower=0> group_info_s2z_1;"
   )
-  expect_match2(scode, "dot_self(one_white_cov_s2z), M_1));")
+  expect_match2(
+    scode, "group_info_s2z_1 = dot_self(one_white_cov_s2z);"
+  )
   expect_match2(
     scode,
-    "P_s2z_1 = crossprod(prior_factor_s2z) + P_group_s2z_1;"
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "group_info_s2z_1);"
+    )
   )
+  expect_false(grepl("P_group_s2z_1", scode, fixed = TRUE))
   expect_match2(
     scode, "group_quad_s2z_1 -= dot_self(whitened_h_s2z);"
   )
@@ -3372,6 +3404,11 @@ test_that("cross-response S2Z composes charts, scales, Student, and cov", {
     "denominator11_modal_s2z =",
     "r_s2z_1 = Ecov_s2z_1 * effect_modal_s2z;",
     "coupling_score_modal_s2z = coef_white_modal_s2z' *",
+    "group_info_s2z_1 = mean_prec_cov_s2z_1;",
+    paste0(
+      "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+      "group_info_s2z_1);"
+    ),
     "group_quad_s2z_1 = dot_product(",
     "+ log_det_partial_s2z_1"
   )) {
@@ -3393,6 +3430,7 @@ test_that("cross-response S2Z composes charts, scales, Student, and cov", {
     "row_var_fisher_s2z_1",
     "one_white_cov_s2z",
     "mean_factor_cov_s2z",
+    "P_group_s2z_1",
     "L_post_modal_fisher_s2z"
   )) {
     expect_false(grepl(term, fisher_rescor, fixed = TRUE))
@@ -3551,9 +3589,7 @@ test_that("known group covariance composes with conventional S2Z charts", {
     scode <- stancode(form, data = s2z_dat, data2 = data2)
     for (term in c(
       "matrix[N_1, N_1] Lcov_1;",
-      "P_group_s2z_1",
       "h_group_s2z_1",
-      "P_s2z_1 = crossprod(prior_factor_s2z) + P_group_s2z_1;",
       "- M_1 * sum(log(diagonal(Lcov_1)))"
     )) {
       expect_match2(scode, term)
@@ -3561,9 +3597,26 @@ test_that("known group covariance composes with conventional S2Z charts", {
     if (!startsWith(names(forms)[i], "varying")) {
       expect_match2(scode, "one_white_cov_s2z")
       expect_match2(scode, paste0(
-        "P_group_s2z_1 = diag_matrix(rep_vector(",
-        "dot_self(one_white_cov_s2z), M_1));"
+        "group_info_s2z_1 = dot_self(one_white_cov_s2z);"
       ))
+      expect_match2(scode, paste0(
+        "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+        "group_info_s2z_1);"
+      ))
+      expect_false(grepl("P_group_s2z_1", scode, fixed = TRUE))
+    } else if (names(forms)[i] == "varying_fisher") {
+      expect_match2(
+        scode, "vector<lower=0>[M_1] group_info_s2z_1;"
+      )
+      expect_match2(
+        scode, "group_info_s2z_1[k] = dot_self(white_basis_cov_s2z);"
+      )
+      expect_match2(scode, paste0(
+        "P_s2z_1 = add_diag(crossprod(prior_factor_s2z), ",
+        "group_info_s2z_1);"
+      ))
+      expect_false(grepl("P_group_s2z_1", scode, fixed = TRUE))
+      expect_false(grepl("mean_factor_cov_s2z", scode, fixed = TRUE))
     } else {
       expect_match2(
         scode, "matrix[N_1 * M_1, M_1] mean_factor_cov_s2z;"
@@ -3597,8 +3650,9 @@ test_that("known group covariance composes with conventional S2Z charts", {
     (0 + x | gr(g, id = "b", s2z = TRUE, cov = Omega))
   joint_code <- stancode(joint_form, data = s2z_dat, data2 = data2)
   expect_false(grepl("Matheron system", joint_code, fixed = TRUE))
-  expect_match2(joint_code, "P_group_s2z_1")
-  expect_match2(joint_code, "P_group_s2z_2")
+  expect_match2(joint_code, "group_info_s2z_1")
+  expect_match2(joint_code, "group_info_s2z_2")
+  expect_false(grepl("P_group_s2z_", joint_code, fixed = TRUE))
 
   mv_data <- transform(
     s2z_dat, phen = y, cofactor = 0.4 * y + sin(seq_len(nrow(s2z_dat)))
@@ -3676,10 +3730,8 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     "// fast Gaussian Matheron system for S2Z blocks 1, 2, 3",
     "matrix[4, 4] W_matheron_s2z_1;",
     "matrix[4, 4] L_W_matheron_s2z_1;",
-    paste0(
-      "W_matheron_s2z_1 = diag_matrix(square(",
-      "prior_scale_s2z_1[{1, 2, 3, 4}]));"
-    ),
+    "W_matheron_s2z_1 = add_diag(",
+    "square(prior_scale_s2z_1[{1, 2, 3, 4}])",
     "H_active_s2z = H_s2z_1[{1, 2, 3, 4}, ];",
     paste0(
       "theta_difference_s2z = theta_s2z[{1, 2, 3, 4}] - ",
@@ -3716,12 +3768,15 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
   expect_false(grepl(
     "W_matheron_s2z_1 = rep_matrix", scode, fixed = TRUE
   ))
+  expect_false(grepl(
+    "diag_matrix(square(prior_scale_s2z_1", scode, fixed = TRUE
+  ))
   expect_equal(
     s2z_count_fixed(
       scode,
       "W_matheron_s2z_1 += tcrossprod(H_active_s2z * "
     ),
-    3L
+    2L
   )
   expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
 
@@ -3729,10 +3784,8 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     prior(normal(0, 1), class = b, coef = "x:z")
   selective_code <- stancode(form, data = s2z_dat, prior = selective_prior)
   for (term in c(
-    paste0(
-      "W_matheron_s2z_1 = diag_matrix(square(",
-      "prior_scale_s2z_1[{1, 4}]));"
-    ),
+    "W_matheron_s2z_1 = add_diag(",
+    "square(prior_scale_s2z_1[{1, 4}])",
     "H_active_s2z = H_s2z_1[{1, 4}, ];",
     paste0(
       "theta_difference_s2z = theta_s2z[{1, 4}] - ",
@@ -3859,7 +3912,7 @@ test_that("joint Student varying scales retain precision weights", {
   for (term in c(
     "group_prec_s2z_1 = inv_square(group_scale_s2z_1);",
     paste0(
-      "group_info_s2z += group_prec_s2z_1[j] * ",
+      "group_info_s2z_1 += group_prec_s2z_1[j] * ",
       "square(relative_precision_s2z);"
     ),
     paste0(
@@ -4091,19 +4144,24 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
   scode <- stancode(form, data = s2z_dat, prior = bprior)
 
   for (term in c(
-    "P_group_s2z_1 = diag_matrix(rep_vector(1.0 * N_1, M_1));",
+    "group_info_s2z_1 = 1.0 * N_1;",
     "group_scale_s2z_2 = dfm_2;",
     "group_prec_s2z_2 = inv_square(group_scale_s2z_2);",
-    "P_group_s2z_2 = diag_matrix(rep_vector(",
-    "sum(group_prec_s2z_2), M_2));",
+    "group_info_s2z_2 = sum(group_prec_s2z_2);",
     "h_group_s2z_2 = -white_group_s2z * group_prec_s2z_2;",
     paste0(
       "group_quad_s2z_2 = columns_dot_self(white_group_s2z) * ",
       "group_prec_s2z_2;"
     ),
     "- M_2 * sum(log(group_scale_s2z_2))",
-    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;"
+    paste0(
+      "P_s2z_1[k, k] += ",
+      "group_info_s2z_1;"
+    ),
+    paste0(
+      "P_s2z_1[2 + k, 2 + k] += ",
+      "group_info_s2z_2;"
+    )
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
@@ -4149,10 +4207,16 @@ test_that("shared and varying scales compose in a joint S2Z model", {
       "vector[M_1] relative_precision_s2z = ",
       "reference_sd_s2z_1 ./ sd_level_s2z_1[j]';"
     ),
-    "P_group_s2z_1 = diag_matrix(group_info_s2z);",
+    "group_info_s2z_1 = zeros_vector(M_1);",
     "L_Sigma_s2z_2 = diag_pre_multiply(sd_2, L_2);",
-    "P_s2z_1[1:2, 1:2] += P_group_s2z_1;",
-    "P_s2z_1[3:4, 3:4] += P_group_s2z_2;",
+    paste0(
+      "P_s2z_1[k, k] += ",
+      "group_info_s2z_1[k];"
+    ),
+    paste0(
+      "P_s2z_1[2 + k, 2 + k] += ",
+      "group_info_s2z_2;"
+    ),
     "matrix<lower=0>[N_1, M_1] sd_level_1;",
     "sd_level_1 = sd_level_s2z_1;"
   )) {

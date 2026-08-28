@@ -58,10 +58,9 @@ test_that("a correlated S2Z ID spans nonlinear predictors", {
     "H_s2z_1[2, 2] = 1.0;",
     "H_s2z_1[3, 3] = 1.0;",
     "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';",
-    paste0(
-      "L_mean_s2z_1 = cholesky_decompose(diag_matrix(1.0 ./ ",
-      "prior_prec_s2z_1) + tcrossprod(L_Sigma_s2z_1) / N_1);"
-    ),
+    "L_mean_s2z_1 = cholesky_decompose(add_diag(",
+    "tcrossprod(L_Sigma_s2z_1) / N_1,",
+    "1.0 ./ prior_prec_s2z_1",
     "z_mean_s2z[1] = z_theta_s2z_ult[1];",
     "z_mean_s2z[2] = z_theta_s2z_omega[1];",
     "z_mean_s2z[3] = z_theta_s2z_theta[1];",
@@ -81,6 +80,9 @@ test_that("a correlated S2Z ID spans nonlinear predictors", {
   )) {
     expect_match2(scode, term)
   }
+  expect_false(grepl(
+    "diag_matrix(1.0 ./ prior_prec_s2z_1)", scode, fixed = TRUE
+  ))
 
   # Population, scale, and correlation priors retain their conventional
   # meanings while the likelihood is evaluated in restricted coordinates.

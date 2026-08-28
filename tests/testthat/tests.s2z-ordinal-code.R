@@ -407,7 +407,7 @@ test_that("fixed ordinal centering charts retain the local dense system", {
   expect_equal(unname(partial_data$rho_s2z_1), matrix(0.35, 6L, 2L))
 })
 
-test_that("ordinal varying scales and fixed covariance use local dense blocks", {
+test_that("ordinal omitted-mean precision uses its smallest exact shape", {
   bprior <- prior(normal(0, 1), class = Intercept) +
     prior(normal(0, 1), class = b)
   varying_form <- y ~ x + (1 + x || gr(
@@ -424,7 +424,11 @@ test_that("ordinal varying scales and fixed covariance use local dense blocks", 
     "vector[M_1 * N_1] z_sd_s2z_1;",
     "matrix<lower=0>[N_1, M_1] sd_level_s2z_1;",
     "reference_sd_s2z_1 = sd_1 .* exp(sdlog_1 .*",
-    "P_group_s2z_1 = diag_matrix(group_info_s2z);",
+    "group_info_s2z_1 = zeros_vector(M_1);",
+    paste0(
+      "P_s2z_1[k, k] += ",
+      "group_info_s2z_1[k];"
+    ),
     "sd_level_1 = sd_level_s2z_1;",
     "+ log_det_partial_s2z_1",
     "finite_Intercept"
@@ -453,13 +457,18 @@ test_that("ordinal varying scales and fixed covariance use local dense blocks", 
     "// joint omitted-mean system for S2Z blocks 1",
     "matrix[N_1, N_1] Lcov_1;",
     "vector[N_1] one_white_cov_s2z;",
-    "P_group_s2z_1 = diag_matrix(rep_vector(",
+    "group_info_s2z_1 = dot_self(one_white_cov_s2z);",
+    paste0(
+      "P_s2z_1[k, k] += ",
+      "group_info_s2z_1;"
+    ),
     "h_group_s2z_1 = -white_delta_cov_s2z' * one_white_cov_s2z;",
     "- M_1 * sum(log(diagonal(Lcov_1)))",
     "q_recovered_s2z_1 -= H_s2z_1 * mean_r_s2z_1;"
   )) {
     expect_match2(covariance_code, term)
   }
+  expect_false(grepl("P_group_s2z_1", covariance_code, fixed = TRUE))
   covariance_data <- standata(
     covariance_form, data = s2z_ordinal_dat, family = cumulative(),
     data2 = list(Omega = Omega)

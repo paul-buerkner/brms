@@ -980,6 +980,33 @@ test_that("diagonal-only Fisher reliabilities equal the dense contraction", {
   }
 })
 
+test_that("independent Fisher reliabilities cancel diagonal prior scales", {
+  set.seed(4147)
+  for (k in c(2L, 4L)) {
+    for (iteration in seq_len(20L)) {
+      design <- matrix(rnorm((k + 3L) * k), ncol = k)
+      gram <- crossprod(design)
+      scale <- exp(rnorm(k, sd = 0.8))
+      row_var <- exp(rnorm(1L, sd = 0.6))
+      obs_prec <- exp(rnorm(1L, sd = 1.1))
+      K <- row_var * obs_prec * (scale * gram * rep(scale, each = k))
+      C <- t(chol(diag(k) + 0.5 * (K + t(K))))
+      relative_post_var <- numeric(k)
+      for (j in seq_len(k)) {
+        rhs <- numeric(k)
+        rhs[j] <- 1
+        relative_post_var[j] <- sum(forwardsolve(C, rhs)^2)
+      }
+      optimized <- 1 - relative_post_var
+      dense <- .s2z_fisher_reliability_diag(
+        gram, diag(scale), row_var * obs_prec
+      )
+
+      expect_equal(optimized, dense, tolerance = 2e-12, scale = 1)
+    }
+  }
+})
+
 test_that("correlated partial S2Z uses the exact restricted Jacobian", {
   n <- 6L
   k <- 4L
@@ -2387,4 +2414,42 @@ test_that("known covariance S2Z kernels equal the dense conventional model", {
       expect_true(all(eigen(case$conditional_cov_x, symmetric = TRUE)$values > 0))
     }
   }
+})
+
+test_that("independent varying scales have diagonal omitted-mean precision", {
+  set.seed(819)
+  G <- 5L
+  M <- 3L
+  B <- .s2z_basis(G)
+  delta <- B %*% matrix(rnorm((G - 1L) * M), G - 1L, M)
+  covariance_factor <- matrix(rnorm(G * G), G, G)
+  Lcov <- t(chol(tcrossprod(covariance_factor) + diag(G)))
+  reference_sd <- exp(rnorm(M, 0, 0.25))
+  scale_level <- exp(matrix(rnorm(G * M, 0, 0.2), G, M))
+  group_scale <- exp(rnorm(G, 0, 0.15))
+  scale_cov <- scale_level * group_scale
+  Lref <- diag(reference_sd)
+
+  scaled_delta <- delta / scale_cov
+  white_delta <- forwardsolve(Lcov, scaled_delta)
+  mean_factor <- matrix(0, G * M, M)
+  group_info <- numeric(M)
+  h_group <- numeric(M)
+  for (k in seq_len(M)) {
+    mean_basis <- matrix(Lref[, k], G, M, byrow = TRUE) / scale_cov
+    white_basis <- forwardsolve(Lcov, mean_basis)
+    mean_factor[, k] <- as.vector(white_basis)
+    white_basis_k <- forwardsolve(
+      Lcov, reference_sd[k] / scale_cov[, k]
+    )
+    group_info[k] <- sum(white_basis_k^2)
+    h_group[k] <- -sum(white_basis_k * white_delta[, k])
+  }
+
+  expect_equal(crossprod(mean_factor), diag(group_info), tolerance = 1e-12)
+  expect_equal(
+    -drop(crossprod(mean_factor, as.vector(white_delta))),
+    h_group,
+    tolerance = 1e-12
+  )
 })
