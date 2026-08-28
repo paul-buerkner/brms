@@ -1383,12 +1383,11 @@ mean_discrete_weibull <- function(mu, shape, M = 1000, thres = 0.001) {
 }
 
 # PDF of the COM-Poisson distribution
-# com_poisson in brms uses the mode parameterization
 dcom_poisson <- function(x, mu, shape, log = FALSE) {
   x <- round(x)
   log_mu <- log(mu)
   log_Z <- log_Z_com_poisson(log_mu, shape)
-  out <- shape * (x * log_mu - lgamma(x + 1)) - log_Z
+  out <- x * log_mu - shape * lgamma(x + 1) - log_Z
   if (!log) {
     out <- exp(out)
   }
@@ -1413,13 +1412,13 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   log_Z <- log_Z_com_poisson(log_mu, shape)
   out <- rep(0, length(x))
   dim(out) <- attributes(args)$max_dim
-  out[x > 0] <- log1p_exp(shape * log_mu)
+  out[x > 0] <- log1p_exp(log_mu[x > 0])
   k <- 2
   lfac <- 0
   while (any(x >= k)) {
     lfac <- lfac + log(k)
-    term <- shape * (k * log_mu - lfac)
-    out[x >= k] <- log_sum_exp(out[x >= k], term)
+    term <- k * log_mu - shape * lfac
+    out[x >= k] <- log_sum_exp(out[x >= k], term[x >= k])
     k <- k + 1
   }
   out <- out - log_Z
@@ -1477,7 +1476,7 @@ qcom_poisson <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE,
     y <- y + 1
     out_t[not_found] <- y
     lfac <- lfac + log(y)
-    cdf <- cdf + exp(shape_t * (y * log_mu - lfac) - log_Z)
+    cdf <- cdf + exp(y * log_mu - shape_t * lfac - log_Z)
     not_found <- cdf < p_t
   }
 
@@ -1538,13 +1537,13 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
     log_mu <- log_mu[use_exact]
     shape <- shape[use_exact]
     # first 2 terms of the series
-    out_exact <- log1p_exp(shape * log_mu)
+    out_exact <- log1p_exp(log_mu)
     lfac <- 0
     k <- 2
     converged <- FALSE
     while (!converged && k <= M) {
       lfac <- lfac + log(k)
-      term <- shape * (k * log_mu - lfac)
+      term <- k * log_mu - shape * lfac
       out_exact <- log_sum_exp(out_exact, term)
       converged <- all(term <= log_thres)
       k <- k + 1
@@ -1563,17 +1562,19 @@ log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
 # approximate the log normalizing constant of the COM Poisson distribution
 # based on doi:10.1007/s10463-017-0629-6
 log_Z_com_poisson_approx <- function(log_mu, shape) {
-  shape_mu <- shape * exp(log_mu)
+  log_common <- log(shape) + log_mu / shape
+  shape_mu <- shape * exp(log_mu / shape)
   shape2 <- shape^2
   # first 4 terms of the residual series
   log_sum_resid <- log(
-    1 + shape_mu^(-1) * (shape2 - 1) / 24 +
-      shape_mu^(-2) * (shape2 - 1) / 1152 * (shape2 + 23) +
-      shape_mu^(-3) * (shape2 - 1) / 414720 *
+    1 + exp(-log_common) * (shape2 - 1) / 24 +
+      exp(-2 * log_common) * (shape2 - 1) / 1152 * (shape2 + 23) +
+      exp(-3 * log_common) * (shape2 - 1) / 414720 *
         (5 * shape2^2 - 298 * shape2 + 11237)
   )
   shape_mu + log_sum_resid -
-    ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
+    ((shape - 1) / (2 * shape) * log_mu +
+      (shape - 1) / 2 * log(2 * pi) + 0.5 * log(shape))
 }
 
 # compute the log mean of the COM Poisson distribution
@@ -1621,15 +1622,15 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
     shape <- shape[use_exact]
     log_mu <- log(mu)
     # first 2 terms of the series
-    log_num <- shape * log_mu  # numerator
-    log_Z <- log1p_exp(shape * log_mu)  # denominator
+    log_num <- log_mu  # numerator
+    log_Z <- log1p_exp(log_mu)  # denominator
     lfac <- 0
     k <- 2
     converged <- FALSE
     while (!converged && k <= M) {
       log_k <- log(k)
       lfac <- lfac + log_k
-      term <- shape * (k * log_mu - lfac)
+      term <- k * log_mu - shape * lfac
       log_num <- log_sum_exp(log_num, log_k + term)
       log_Z <- log_sum_exp(log_Z, term)
       converged <- all(term <= log_thres)
@@ -1649,10 +1650,11 @@ mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
 # approximate the mean of COM-Poisson distribution
 # based on doi:10.1007/s10463-017-0629-6
 mean_com_poisson_approx <- function(mu, shape) {
-  term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) -
-    (shape^2 - 1) / (24 * shape^2) * mu^(-2) -
-    (shape^2 - 1) / (24 * shape^3) * mu^(-3)
-  mu * term
+  mu_root <- mu^(1 / shape)
+  term <- 1 - (shape - 1) / (2 * shape) * mu_root^(-1) -
+    (shape^2 - 1) / (24 * shape^2) * mu_root^(-2) -
+    (shape^2 - 1) / (24 * shape^3) * mu_root^(-3)
+  mu_root * term
 }
 
 #' The Dirichlet Distribution
