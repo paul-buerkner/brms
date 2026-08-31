@@ -90,6 +90,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   silent <- dots$silent
   object <- restructure(object)
+  previous_autocenter <- object$autocenter %||% NULL
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
@@ -108,7 +109,19 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
 
   if (missing(formula.) || is.null(formula.)) {
-    dots$formula <- object$formula
+    rerun_autocenter <- !is.null(dots$center_control)
+    if (rerun_autocenter) {
+      request_formula <- object$autocenter$request_formula %||% NULL
+      if (is.null(request_formula)) {
+        stop2(
+          "This fit has no stored automatic-centering request formula. ",
+          "Supply 'formula.' with center = \"auto\" to run a new precursor."
+        )
+      }
+      dots$formula <- request_formula
+    } else {
+      dots$formula <- object$formula
+    }
     if (!is.null(dots[["family"]])) {
       dots$formula <- bf(dots$formula, family = dots$family)
     }
@@ -141,7 +154,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       }
     } else {
       mvars <- all.vars(dots$formula$formula)
-      mvars <- setdiff(mvars, c(names(object$data), "."))
+      mvars <- setdiff(
+        mvars,
+        c(names(object$data), ".", re_center_formula_vars(dots$formula))
+      )
       if (length(mvars) && is.null(newdata)) {
         stop2("New variables found: ", collapse_comma(mvars),
               "\nPlease supply your data again via argument 'newdata'.")
@@ -151,6 +167,12 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   # update response categories and ordinal thresholds
   dots$formula <- validate_formula(dots$formula, data = dots$data)
+  dots$formula <- materialize_re_center(dots$formula)
+  if (has_unresolved_re_autocenter_formula(dots$formula) &&
+      is.null(dots$center_control) &&
+      !is.null(object$autocenter$control)) {
+    dots$center_control <- object$autocenter$control
+  }
 
   if (is.null(dots$prior)) {
     dots$prior <- normalize_brmsprior(object$prior)
@@ -249,6 +271,17 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     dots$fit <- NA
     if (!testmode) {
       object <- do_call(brm, dots)
+      if (!is.null(object$autocenter) &&
+          !is.null(previous_autocenter)) {
+        object$autocenter$request_formula <-
+          object$autocenter$request_formula %||%
+          previous_autocenter$request_formula
+        object$autocenter$diagnostics <-
+          object$autocenter$diagnostics %||%
+          previous_autocenter$diagnostics
+        object$autocenter$control <-
+          object$autocenter$control %||% previous_autocenter$control
+      }
     }
   } else {
     # refit the model without compiling it again

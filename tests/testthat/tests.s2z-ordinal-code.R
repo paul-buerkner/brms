@@ -479,10 +479,10 @@ test_that("ordinal omitted-mean precision uses its smallest exact shape", {
   )
 })
 
-test_that("ordinal Fisher charts reject with local predictor context", {
+test_that("ordinal automatic proposals reject with local predictor context", {
   forms <- list(
     fisher = y ~ x + (1 + x | gr(
-      g, id = "ordinal-fisher", s2z = TRUE, center = "fisher"
+      g, id = "ordinal-fisher", s2z = TRUE, center = "auto"
     )),
     auto = y ~ x + (1 + x | gr(
       g, id = "ordinal-auto", s2z = TRUE, center = "auto"
@@ -562,7 +562,7 @@ test_that("ordinal-only gates leave nonordinal advanced charts available", {
   dimnames(Omega) <- list(levels_g, levels_g)
   form <- y_continuous ~ x + (1 + x | gr(
     g, id = "nonordinal-advanced", s2z = TRUE,
-    center = "fisher", scale = "varying", cov = Omega
+    center = "auto", scale = "varying", cov = Omega
   ))
   code <- stancode(
     form, data = dat, data2 = list(Omega = Omega), parse = TRUE

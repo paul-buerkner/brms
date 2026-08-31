@@ -15,6 +15,7 @@ brmsframe <- function(x, ...) {
 #' @export
 brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   x$frame <- initialize_frame(x, data = data, basis = basis, ...)
+  x$frame$re_latent_center <- basis[["re_s2z_latent_center"]]
   for (r in names(x$terms)) {
     x$terms[[r]] <- brmsframe(
       x$terms[[r]], data = data, frame = x$frame,
@@ -39,6 +40,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   if (!is.null(basis)) {
     x$frame$basis <- basis[c("resp_levels")]
   }
+  x$frame$re_latent_center <- basis[["re_s2z_latent_center"]]
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
@@ -100,6 +102,9 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
   validate_re_s2z_structure(x, data = data)
+  x$frame$re_center_mean <- frame_re_center_mean(
+    x, data = data, cached = basis[["re_center_mean"]]
+  )
   if (has_re_s2z_conventional(x) &&
       is.list(basis[["re_s2z"]]) && length(basis[["re_s2z"]])) {
     # The affine map is part of the fitted coordinate system. In prediction
@@ -334,6 +339,14 @@ frame_basis.default <- function(x, data, ...) {
 #' @export
 frame_basis.mvbrmsterms <- function(x, data, ...) {
   out <- list()
+  re_s2z_latent_center <- if (is.anybrmsframe(x)) {
+    data_re_s2z_latent_center(x)
+  } else {
+    list()
+  }
+  if (length(re_s2z_latent_center)) {
+    out$re_s2z_latent_center <- re_s2z_latent_center
+  }
   # old levels are required to select the right indices for new levels
   levels <- get_levels(x, data = data)
   for (r in names(x$terms)) {
@@ -348,6 +361,14 @@ frame_basis.mvbrmsterms <- function(x, data, ...) {
 #' @export
 frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
   out <- list()
+  re_s2z_latent_center <- if (is.anybrmsframe(x)) {
+    data_re_s2z_latent_center(x)
+  } else {
+    list()
+  }
+  if (length(re_s2z_latent_center)) {
+    out$re_s2z_latent_center <- re_s2z_latent_center
+  }
   data <- subset_data(data, x)
   for (dp in names(x$dpars)) {
     out$dpars[[dp]] <- frame_basis(x$dpars[[dp]], data, ...)
@@ -382,7 +403,9 @@ frame_basis.btl <- function(x, data, ...) {
   out$sp <- frame_basis_sp(x, data, ...)
   out$ac <- frame_basis_ac(x, data, ...)
   out$bhaz <- frame_basis_bhaz(x, data, ...)
-  if (is.bframel(x) && has_re_s2z(x)) {
+  has_center_data <- is.bframel(x) && has_rows(x$frame$re) &&
+    re_center_has_data(x$frame$re)
+  if (is.bframel(x) && (has_re_s2z(x) || has_center_data)) {
     re_s2z_center <- x$sdata[["re_s2z_center"]]
     if (is.null(re_s2z_center)) {
       re_s2z_center <- data_re_s2z_center(x, data = data)
@@ -394,6 +417,9 @@ frame_basis.btl <- function(x, data, ...) {
         is.list(x$frame$re_s2z) && length(x$frame$re_s2z)) {
       out$re_s2z <- x$frame$re_s2z
     }
+  }
+  if (is.bframel(x) && length(x$frame$re_center_mean)) {
+    out$re_center_mean <- x$frame$re_center_mean
   }
   out
 }

@@ -372,7 +372,7 @@ test_that("exact logistic means compose with every S2Z centering chart", {
     ),
     fisher = list(
       formula = y ~ x +
-        (1 + x | gr(g, s2z = TRUE, center = "fisher")),
+        (1 + x | gr(g, s2z = TRUE, center = "auto")),
       family = gaussian(), prior = population_prior
     ),
     independent = list(
@@ -382,14 +382,14 @@ test_that("exact logistic means compose with every S2Z centering chart", {
     ),
     Student = list(
       formula = y ~ x + (1 + x | gr(
-        g, s2z = TRUE, dist = "student", center = "fisher"
+        g, s2z = TRUE, dist = "student", center = "auto"
       )),
       family = gaussian(), prior = population_prior
     ),
     multiblock = list(
       formula = y ~ x +
         (1 + x | gr(g, id = "first", s2z = TRUE, center = 0.3)) +
-        (1 | gr(h, id = "second", s2z = TRUE, center = "fisher")),
+        (1 | gr(h, id = "second", s2z = TRUE, center = "auto")),
       family = gaussian(), prior = population_prior
     )
   )

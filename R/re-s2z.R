@@ -117,8 +117,8 @@ re_s2z_center_values <- function(r) {
   value
 }
 
-# Return the per-coefficient automatic-Fisher flags, defaulting to FALSE for
-# old reframes.
+# Return the per-coefficient automatic-precursor flags, defaulting to FALSE
+# for old reframes.
 re_s2z_center_auto <- function(r) {
   stopifnot(is.reframe(r), has_rows(r))
   value <- r[["s2z_center_auto"]]
@@ -131,6 +131,285 @@ re_s2z_center_auto <- function(r) {
   value
 }
 
+# Does a group-effect block carry user-supplied level-specific centering
+# fractions? Scalar fractions remain in the historical per-coefficient
+# metadata; vectors and matrices are retained on the original gr() call until
+# the grouping levels and coefficient columns are known.
+re_center_has_data <- function(r) {
+  stopifnot(is.reframe(r), has_rows(r))
+  if (!"gcall" %in% names(r) || !is.list(r$gcall)) {
+    return(FALSE)
+  }
+  any(vapply(r$gcall, function(x) {
+    !is.null(x[["s2z_center_data"]])
+  }, logical(1)))
+}
+
+# Align one slide-style level vector or its multivariate extension to a framed
+# group-effect occurrence. The public `center` values are centering fractions
+# rho = 1 - w, where w is the non-centering weight in the tutorial slides.
+# A vector supplies one value per group level and is shared by the occurrence's
+# coefficient columns. A matrix supplies level-by-coefficient values; a
+# one-column matrix is shared across those columns.
+.re_center_data_matrix <- function(value, levels, coef) {
+  stopifnot(is.numeric(value), is.character(levels), is.character(coef))
+  resolved_auto <- inherits(value, "brmsautocenter_resolved")
+  if (!length(value) || anyNA(value) || any(!is.finite(value)) ||
+      any(value < 0 | value > 1)) {
+    stop2("Level-specific 'center' values must be finite numbers in [0, 1].")
+  }
+  if (is.null(dim(value))) {
+    value_names <- names(value)
+    if (is.null(value_names)) {
+      if (length(value) != length(levels)) {
+        stop2("An unnamed level-specific 'center' vector must have one ",
+              "value per grouping level (expected ", length(levels),
+              ", found ", length(value), ").")
+      }
+      aligned <- as.numeric(value)
+    } else {
+      if (any(!nzchar(value_names)) || anyDuplicated(value_names) ||
+          !setequal(value_names, levels)) {
+        stop2("Names of a level-specific 'center' vector must match the ",
+              "grouping levels exactly.")
+      }
+      aligned <- as.numeric(value[match(levels, value_names)])
+    }
+    return(matrix(
+      rep(aligned, length(coef)), nrow = length(levels), ncol = length(coef),
+      dimnames = list(levels, coef)
+    ))
+  }
+
+  if (!is.matrix(value) || !all(dim(value) > 0L)) {
+    stop2("Level-specific 'center' values must be a numeric vector or matrix.")
+  }
+  value <- as.matrix(value)
+  value_levels <- rownames(value)
+  if (is.null(value_levels)) {
+    if (nrow(value) != length(levels)) {
+      stop2("An unnamed level-by-coefficient 'center' matrix must have one ",
+            "row per grouping level (expected ", length(levels),
+            ", found ", nrow(value), ").")
+    }
+  } else {
+    invalid_levels <- any(!nzchar(value_levels)) ||
+      anyDuplicated(value_levels)
+    if (resolved_auto) {
+      if (invalid_levels || !all(levels %in% value_levels)) {
+        stop2(
+          "Frozen automatic-centering weights do not contain every current ",
+          "grouping level. Request center = \"auto\" again to run a new ",
+          "precursor for changed levels."
+        )
+      }
+    } else if (invalid_levels || !setequal(value_levels, levels)) {
+      stop2("Row names of a level-by-coefficient 'center' matrix must match ",
+            "the grouping levels exactly.")
+    }
+    value <- value[match(levels, value_levels), , drop = FALSE]
+  }
+
+  if (ncol(value) == 1L) {
+    value <- matrix(
+      rep(value[, 1L], length(coef)),
+      nrow = length(levels), ncol = length(coef),
+      dimnames = list(levels, coef)
+    )
+  } else {
+    value_coef <- colnames(value)
+    if (is.null(value_coef)) {
+      if (ncol(value) != length(coef)) {
+        stop2("An unnamed level-by-coefficient 'center' matrix must have one ",
+              "column per group-level coefficient (expected ", length(coef),
+              ", found ", ncol(value), ").")
+      }
+    } else {
+      invalid_coef <- any(!nzchar(value_coef)) ||
+        anyDuplicated(value_coef) || anyDuplicated(coef)
+      if (resolved_auto) {
+        if (invalid_coef || !all(coef %in% value_coef)) {
+          stop2(
+            "Frozen automatic-centering weights do not contain every ",
+            "current group-level coefficient. Request center = \"auto\" ",
+            "again to run a new precursor for changed coefficients."
+          )
+        }
+      } else if (invalid_coef || !setequal(value_coef, coef)) {
+        stop2("Column names of a level-by-coefficient 'center' matrix must ",
+              "match the group-level coefficients exactly.")
+      }
+      value <- value[, match(coef, value_coef), drop = FALSE]
+    }
+    dimnames(value) <- list(levels, coef)
+  }
+  value
+}
+
+# Return the full level-by-coefficient fixed centering map for one covariance
+# block. Separate gr() occurrences sharing an ID may each supply a level vector
+# or a matrix for their own coefficient columns.
+re_center_data_matrix <- function(r, levels) {
+  stopifnot(is.reframe(r), has_rows(r), is.character(levels))
+  rho <- matrix(
+    rep(re_s2z_center_values(r), each = length(levels)),
+    nrow = length(levels), ncol = nrow(r),
+    dimnames = list(levels, r$coef)
+  )
+  if (!re_center_has_data(r)) {
+    return(rho)
+  }
+  # `gn` identifies the shared covariance block, not a particular gr()
+  # occurrence. A strict latent ID may intentionally collect terms from
+  # several nonlinear predictors, each with its own vector or matrix.
+  occurrence_label <- vapply(r$gcall, function(x) {
+    as.character(x$label %||% "")
+  }, character(1))
+  occurrence_key <- paste(
+    r$resp, r$dpar, r$nlpar, occurrence_label, sep = "\r"
+  )
+  occurrences <- split(seq_rows(r), occurrence_key)
+  for (take in occurrences) {
+    values <- lapply(r$gcall[take], `[[`, "s2z_center_data")
+    supplied <- !vapply(values, is.null, logical(1))
+    if (!any(supplied)) {
+      next
+    }
+    supplied_values <- values[supplied]
+    if (length(supplied_values) > 1L &&
+        !all(vapply(supplied_values[-1L], identical, logical(1),
+                    supplied_values[[1L]]))) {
+      stop2("All coefficients from one group-level term must use the same ",
+            "level-specific 'center' data.")
+    }
+    rho[, take] <- .re_center_data_matrix(
+      supplied_values[[1L]], levels = levels, coef = r$coef[take]
+    )
+  }
+  rho
+}
+
+# Build the population-location map used by the slide-style centering chart.
+# If X is the raw population design and Z is the raw varying-coefficient
+# design, each exactly representable column of X is written as Z %*% C.  This
+# is more general than matching coefficient names: for example, treatment
+# coding in X and cell-mean coding in Z imply locations (beta_0,
+# beta_0 + beta_1). Population columns outside span(Z) have no corresponding
+# group-level location and therefore receive a zero column in C.
+.re_center_mean_matrix <- function(r, bframe, data) {
+  stopifnot(
+    is.reframe(r), has_rows(r), is.bframel(bframe), is.data.frame(data)
+  )
+  px <- check_prefix(bframe)
+  p <- usc(combine_prefix(px))
+  X <- bframe$sdata$fe[[paste0("X", p)]]
+  if (is.null(X)) {
+    stop2("Internal mismatch in the population design for group centering.")
+  }
+  X <- as.matrix(X)
+  Z <- .re_s2z_design_matrix_r(r, data = data)
+  if (nrow(X) != nrow(Z)) {
+    stop2("Internal row mismatch in the population and group designs for ",
+          "group centering.")
+  }
+  K <- ncol(X)
+  M <- ncol(Z)
+  C <- matrix(
+    0, nrow = M, ncol = K,
+    dimnames = list(r$coef, colnames(X))
+  )
+  if (!K || !M) {
+    return(C)
+  }
+
+  # An ordinal location intercept is a threshold coordinate rather than a
+  # population location. Slopes retain the ordinary design-span map.
+  eligible <- rep(TRUE, K)
+  if (re_s2z_is_ordinal_location(bframe)) {
+    eligible[colnames(X) == "Intercept"] <- FALSE
+  }
+  if (!any(eligible)) {
+    return(C)
+  }
+  fit <- lm.fit(
+    x = Z, y = X[, eligible, drop = FALSE],
+    tol = sqrt(.Machine$double.eps), singular.ok = TRUE
+  )
+  candidate <- fit$coefficients
+  if (is.null(dim(candidate))) {
+    candidate <- matrix(candidate, ncol = 1L)
+  }
+  candidate[is.na(candidate)] <- 0
+  # Stabilize the serialized coordinate map and generated Stan expressions.
+  for (value in c(-1, 0, 1)) {
+    close <- abs(candidate - value) <=
+      128 * .Machine$double.eps * pmax(1, abs(candidate))
+    candidate[close] <- value
+  }
+  reconstructed <- Z %*% candidate
+  target <- X[, eligible, drop = FALSE]
+  error <- apply(abs(reconstructed - target), 2L, max)
+  scale <- pmax(
+    1, apply(abs(target), 2L, max), apply(abs(reconstructed), 2L, max)
+  )
+  exact <- is.finite(error) & error <= 64 * .Machine$double.eps * scale
+  if (any(exact)) {
+    C[, which(eligible)[exact]] <- candidate[, exact, drop = FALSE]
+  }
+  C
+}
+
+# Return one fitted design-basis map per ordinary centered covariance block.
+# These matrices are cached as part of the fitted basis so newdata cannot
+# silently redefine the meaning of saved latent coordinates.
+frame_re_center_mean <- function(bframe, data, cached = NULL) {
+  stopifnot(is.bframel(bframe), is.data.frame(data))
+  r_all <- bframe$frame$re
+  if (!has_rows(r_all)) {
+    return(list())
+  }
+  requested <- !r_all$s2z &
+    (re_s2z_center_auto(r_all) | re_s2z_center_values(r_all) > 0)
+  ids <- unique(r_all$id[requested])
+  if (!length(ids)) {
+    return(list())
+  }
+  if (!is.null(cached)) {
+    if (!is.list(cached)) {
+      stop2("Invalid stored population-location maps for group centering.")
+    }
+    out <- list()
+    for (id in ids) {
+      r <- subset2(r_all, id = id)
+      C <- cached[[as.character(id)]]
+      if (!is.matrix(C) || !is.numeric(C) || anyNA(C) ||
+          any(!is.finite(C)) || nrow(C) != nrow(r) ||
+          ncol(C) != length(bframe$frame$fe$vars)) {
+        stop2("Stored population-location map does not match group-level ID ",
+              id, ".")
+      }
+      old_r <- rownames(C)
+      old_x <- colnames(C)
+      if (!is.null(old_r) && !identical(old_r, r$coef) ||
+          !is.null(old_x) && !identical(old_x, bframe$frame$fe$vars)) {
+        stop2("Stored population-location map does not match group-level ID ",
+              id, ".")
+      }
+      dimnames(C) <- list(r$coef, bframe$frame$fe$vars)
+      out[[as.character(id)]] <- C
+    }
+    return(out)
+  }
+  out <- list()
+  for (id in ids) {
+    r <- subset2(r_all, id = id)
+    out[[as.character(id)]] <- .re_center_mean_matrix(
+      r, bframe = bframe, data = data
+    )
+  }
+  out
+}
+
 # Classify a group-effect block without changing the legacy endpoint paths.
 re_s2z_center_mode <- function(r) {
   rho <- re_s2z_center_values(r)
@@ -138,7 +417,7 @@ re_s2z_center_mode <- function(r) {
   if (any(auto)) {
     if (!all(auto)) {
       stop2("All coefficients sharing a group-level ID must use ",
-            "Fisher centering if any coefficient does.")
+            "automatic centering if any coefficient does.")
     }
     return("auto")
   }
@@ -166,22 +445,6 @@ re_s2z_basis <- function(n) {
     out[j + 1L, j] <- -j * weight
   }
   out
-}
-
-# Is a conventional S2Z covariance block eligible to receive its restricted
-# covariance eigensystem as fixed Stan data? The subsequent generator may
-# impose narrower fast-path requirements (in particular shared Fisher
-# information), so preparing these small data objects does not itself select
-# the spectral chart.
-re_s2z_cov_eigen_eligible <- function(r) {
-  stopifnot(is.reframe(r))
-  if (!has_rows(r) || !all(r$s2z) || any(re_s2z_latent(r))) {
-    return(FALSE)
-  }
-  identical(re_s2z_center_mode(r), "auto") &&
-    length(unique(r$cov)) == 1L && isTRUE(nzchar(r$cov[1L])) &&
-    length(unique(r$scale)) == 1L && identical(r$scale[1L], "shared") &&
-    length(unique(r$dist)) == 1L && identical(r$dist[1L], "gaussian")
 }
 
 # Does the ordinary location component of a brmsterms object contain an S2Z
@@ -1295,7 +1558,7 @@ validate_re_centered_group_effects <- function(bframe, prior) {
     }
     auto <- re_s2z_center_auto(r)
     if (any(auto) && !all(auto)) {
-      stop2("All coefficients sharing a group-level ID must use Fisher ",
+      stop2("All coefficients sharing a group-level ID must use automatic ",
             "centering if any coefficient does.")
     }
     if (length(unique(r$group)) != 1L) {
@@ -1341,16 +1604,22 @@ validate_re_centered_group_effects <- function(bframe, prior) {
             "use distinct IDs in separate response, distributional, or ",
             "nonlinear predictors, or use center = 0.")
     }
+    if (has_re_s2z_conventional(id_frames[[1L]])) {
+      stop2("Slide-style centering for ordinary group effects cannot yet be ",
+            "combined with a conventional sum-to-zero group effect in the ",
+            "same linear predictor; use center = 0 for the ordinary block ",
+            "or place the blocks in separate predictors.")
+    }
     if (identical(mode, "auto")) {
       if (re_s2z_is_ordinal_location(id_frames[[1L]])) {
-        stop2("Fisher centering is not yet supported for ordinary group ",
-              "effects in ordinal location predictors; use a fixed center ",
-              "value in [0, 1].")
+        stop2("The automatic-centering precursor is not yet supported for ",
+              "ordinary group effects in ordinal location predictors; use ",
+              "a fixed center value in [0, 1].")
       }
       if (any(nzchar(r$nlpar))) {
-        stop2("Fisher centering is not yet supported for ordinary group ",
-              "effects in nonlinear predictors; use a fixed center value ",
-              "in [0, 1].")
+        stop2("The automatic-centering precursor is not yet supported for ",
+              "ordinary group effects in nonlinear predictors; use a fixed ",
+              "center value in [0, 1].")
       }
     }
     validate_re_s2z_sd_prior(prior, r, bframe = id_frames[[1L]])
@@ -1482,9 +1751,10 @@ validate_re_centered_group_effects <- function(bframe, prior) {
             "the same 'cor' setting.")
     }
     mode <- re_s2z_center_mode(r_id)
-    if (!mode %in% c("centered", "noncentered", "auto")) {
+    if (!mode %in% c("centered", "noncentered", "partial", "auto")) {
       stop2("Strict latent-score S2Z blocks currently support only ",
-            "centered, noncentered, and Fisher centering modes.")
+            "centered, noncentered, fixed partial, and automatic centering ",
+            "modes.")
     }
     if (any(nzchar(r_id$gtype)) || any(nzchar(r_id$type))) {
       stop2("Strict latent-score S2Z blocks currently support only ",
@@ -1583,7 +1853,7 @@ validate_re_centered_group_effects <- function(bframe, prior) {
       auto <- re_s2z_center_auto(r)
       if (any(auto) && !all(auto)) {
         stop2("All coefficients sharing a sum-to-zero group-level ID must use ",
-              "Fisher centering if any coefficient does.")
+              "automatic centering if any coefficient does.")
       }
       if (any(nzchar(r$gtype)) || any(nzchar(r$type))) {
         stop2("The sum-to-zero parameterization currently ",
@@ -2210,7 +2480,7 @@ validate_re_s2z_structure <- function(bframe, data) {
       stop_re_s2z(
         context, "ordinal_fisher_centering",
         paste0(
-          "Automatic Fisher centering is not yet supported for ordinal ",
+          "The automatic-centering precursor is not yet supported for ordinal ",
           "sum-to-zero location predictors."
         ),
         "use a fixed center value in [0, 1], or set s2z = FALSE."

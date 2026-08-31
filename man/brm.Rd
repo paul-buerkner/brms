@@ -46,6 +46,7 @@ brm(
   file_refit = getOption("brms.file_refit", "never"),
   empty = FALSE,
   rename = TRUE,
+  center_control = NULL,
   ...
 )
 }
@@ -229,6 +230,13 @@ behavior. It defaults to \code{NULL} so all the default values are used.
 The most important control parameters are discussed in the 'Details'
 section below. For a comprehensive overview see
 \code{\link[rstan:stan]{stan}}.}
+
+\item{center_control}{Optional controls created by
+\code{\link{autocenter_control}}. When the formula contains
+\code{gr(..., center = "auto")}, a fully non-centered precursor is fit
+first, its generated-quantities centering proposals are frozen, and the
+requested final fit starts from a fresh warmup with those values as data.
+If \code{NULL}, default controls are used whenever such a term is present.}
 
 \item{algorithm}{Character string naming the estimation approach to use.
 Options are \code{"sampling"} for MCMC (the default), \code{"meanfield"} for

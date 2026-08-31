@@ -379,16 +379,23 @@ terms_fe <- function(formula) {
 # gather information of group-level terms
 # @return a data.frame with one row per group-level term
 terms_re <- function(formula) {
+  formula_env <- if (is.formula(formula)) environment(formula) else NULL
+  if (is.null(formula_env)) {
+    formula_env <- parent.frame()
+  }
+  re_eval_env <- new.env(parent = formula_env)
+  re_eval_env$gr <- gr
+  re_eval_env$mm <- mm
   re_terms <- get_re_terms(formula, brackets = FALSE)
   if (!length(re_terms)) {
     return(NULL)
   }
-  re_terms <- split_re_terms(re_terms)
+  re_terms <- split_re_terms(re_terms, envir = formula_env)
   re_parts <- re_parts(re_terms)
   out <- allvars <- vector("list", length(re_terms))
   type <- attr(re_terms, "type")
   for (i in seq_along(re_terms)) {
-    gcall <- eval2(re_parts$rhs[i])
+    gcall <- eval2(re_parts$rhs[i], envir = re_eval_env)
     form <- str2formula(re_parts$lhs[i])
     group <- paste0(gcall$type, collapse(gcall$groups))
     out[[i]] <- data.frame(

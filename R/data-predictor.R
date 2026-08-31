@@ -245,46 +245,79 @@ data_re <- function(bframe, data) {
   out
 }
 
-# Prepare fixed numeric partial-centering fractions for S2Z group effects.
-# Endpoint and automatic expected-Fisher parameterizations deliberately receive
-# no extra Stan data.
+# Prepare fixed level-specific partial-centering fractions. S2Z charts already
+# consume a matrix for every fixed partial map. Ordinary charts need one only
+# when the user supplied a level vector or level-by-coefficient matrix; scalar
+# fractions remain compile-time constants for backward compatibility.
+# Endpoint parameterizations deliberately receive no extra Stan data.  An
+# automatic precursor receives a zero map by default; brm() replaces it with
+# the frozen proposal before the final fit.
 data_re_s2z_center <- function(bframe, data) {
   stopifnot(is.bframel(bframe))
-  if (!has_re_s2z(bframe)) {
+  r_all <- bframe$frame$re
+  if (!has_rows(r_all)) {
     return(list())
   }
-  infos <- re_s2z_infos(bframe)
+  entries <- list()
+  if (has_re_s2z(bframe)) {
+    infos <- re_s2z_infos(bframe)
+    for (info in infos) {
+      if (re_s2z_center_mode(info$r) %in% c("partial", "auto")) {
+        entries[[as.character(info$id)]] <- list(id = info$id, r = info$r)
+      }
+    }
+  }
+  ordinary_ids <- unique(r_all$id[!r_all$s2z])
+  for (id in ordinary_ids) {
+    r <- subset2(r_all, id = id)
+    if (re_s2z_center_mode(r) == "auto" ||
+        (re_s2z_center_mode(r) == "partial" && re_center_has_data(r))) {
+      entries[[as.character(id)]] <- nlist(id, r)
+    }
+  }
+  if (!length(entries)) {
+    return(list())
+  }
   cached <- bframe$sdata[["re_s2z_center"]]
   out <- list()
-  for (info in infos) {
-    r <- info$r
-    if (re_s2z_center_mode(r) != "partial") {
-      next
-    }
+  for (entry in entries) {
+    id <- entry$id
+    r <- entry$r
     levels <- get_levels(r)[[r$group[1]]]
-    rho_value <- re_s2z_center_values(r)
-    rho <- matrix(
-      rep(rho_value, each = length(levels)),
-      nrow = length(levels), ncol = nrow(r),
-      dimnames = list(levels, r$coef)
-    )
-    data_name <- paste0("rho_s2z_", info$id)
+    data_name <- paste0("rho_s2z_", id)
     cached_rho <- cached[[data_name]]
-    if (is.null(cached_rho) && length(infos) == 1L && length(cached) == 1L) {
+    if (is.null(cached_rho) && length(entries) == 1L && length(cached) == 1L) {
       cached_rho <- cached[[1]]
     }
     if (is.null(cached_rho) && length(cached)) {
-      stop2("Stored sum-to-zero partial-centering data do not contain ",
-            "the fitted coordinate map for group-level ID ", info$id, ".")
+      stop2("Stored partial-centering data do not contain the fitted ",
+            "coordinate map for group-level ID ", id, ".")
+    }
+    if (is.null(cached_rho) && identical(re_s2z_center_mode(r), "auto") &&
+        !re_center_has_data(r)) {
+      rho <- matrix(
+        0, nrow = length(levels), ncol = nrow(r),
+        dimnames = list(levels, r$coef)
+      )
+    } else if (is.null(cached_rho)) {
+      rho <- re_center_data_matrix(r, levels = levels)
+    } else {
+      # The fitted cache is authoritative. In particular, do not first
+      # reevaluate or validate an external object referenced by the formula;
+      # its shape and labels may have changed since fitting.
+      rho <- matrix(
+        NA_real_, nrow = length(levels), ncol = nrow(r),
+        dimnames = list(levels, r$coef)
+      )
     }
     if (!is.null(cached_rho)) {
       if (!is.matrix(cached_rho)) {
-        stop2("Invalid stored sum-to-zero partial-centering data.")
+        stop2("Invalid stored partial-centering data.")
       }
       if (!is.numeric(cached_rho) || anyNA(cached_rho) ||
           any(!is.finite(cached_rho)) ||
           any(cached_rho < 0 | cached_rho > 1)) {
-        stop2("Stored sum-to-zero centering fractions must be in [0, 1].")
+        stop2("Stored centering fractions must be in [0, 1].")
       }
       old_levels <- rownames(cached_rho)
       old_coef <- colnames(cached_rho)
@@ -296,21 +329,129 @@ data_re_s2z_center <- function(bframe, data) {
         # a missing cached row or coefficient would instead reinterpret saved
         # latent coordinates and therefore indicates an incompatible basis.
         if (anyNA(old_row) || anyNA(old_col)) {
-          stop2("Stored sum-to-zero partial-centering data do not match the ",
+          stop2("Stored partial-centering data do not match the ",
                 "fitted grouping levels and coefficients.")
         }
         rho[,] <- cached_rho[old_row, old_col, drop = FALSE]
       } else if (identical(dim(cached_rho), dim(rho))) {
         rho[,] <- cached_rho
       } else {
-        stop2("Stored sum-to-zero partial-centering data do not match the ",
+        stop2("Stored partial-centering data do not match the ",
               "fitted grouping levels and coefficients.")
       }
       # Stan does not need the fitted labels; keep them only in the basis cache.
       out[[data_name]] <- unname(rho)
+      if (identical(re_s2z_center_mode(r), "auto")) {
+        out[[paste0("compute_rho_center_candidate_", id)]] <- 0L
+      }
       next
     }
     out[[data_name]] <- rho
+    if (identical(re_s2z_center_mode(r), "auto")) {
+      out[[paste0("compute_rho_center_candidate_", id)]] <- 0L
+    }
+  }
+  out
+}
+
+# Prepare fixed partial-centering fractions for strict latent-score blocks.
+# These blocks are owned by the top-level group covariance rather than by one
+# local linear predictor, so their rho matrix is assembled in covariance-
+# dimension order and added alongside the other global group data.
+data_re_s2z_latent_center <- function(bframe) {
+  stopifnot(is.anybrmsframe(bframe))
+  r_all <- bframe$frame$re
+  if (!has_rows(r_all)) {
+    return(list())
+  }
+  ids <- unique(r_all$id[
+    r_all$s2z & re_s2z_latent(r_all)
+  ])
+  if (!length(ids)) {
+    return(list())
+  }
+  # Avoid a `re_s2z_*` frame name here: historical `$re_s2z` lookups may use
+  # partial matching when loading the conventional S2Z design descriptor.
+  cached <- bframe$frame[["re_latent_center"]]
+  if (is.null(cached)) {
+    cached <- list()
+  } else if (!is.list(cached)) {
+    stop2("Invalid stored strict latent partial-centering data.")
+  }
+  out <- list()
+  for (id in ids) {
+    r <- subset2(r_all, id = id)
+    mode <- re_s2z_center_mode(r)
+    if (!mode %in% c("partial", "auto")) {
+      next
+    }
+    levels <- get_levels(r)[[r$group[1]]]
+    key <- re_s2z_latent_key(r)
+    first <- !duplicated(key)
+    labels <- paste(r$nlpar[first], r$coef[first], sep = ":")
+    data_name <- paste0("rho_s2z_", id)
+    cached_rho <- cached[[data_name]]
+    if (is.null(cached_rho) && length(ids) == 1L && length(cached) == 1L) {
+      cached_rho <- cached[[1L]]
+    }
+
+    if (is.null(cached_rho) && length(cached)) {
+      stop2("Stored strict latent partial-centering data do not contain ",
+            "the fitted coordinate map for group-level ID ", id, ".")
+    }
+    if (is.null(cached_rho) && identical(mode, "auto") &&
+        !re_center_has_data(r)) {
+      rho <- matrix(
+        0, nrow = length(levels), ncol = sum(first),
+        dimnames = list(levels, labels)
+      )
+    } else if (is.null(cached_rho)) {
+      rho_all <- re_center_data_matrix(r, levels = levels)
+      first_index <- which(first)
+      for (j in seq_along(first_index)) {
+        aliases <- which(key == key[first_index[j]])
+        reference <- rho_all[, first_index[j]]
+        same <- vapply(aliases, function(alias) {
+          identical(as.numeric(rho_all[, alias]), as.numeric(reference))
+        }, logical(1))
+        if (!all(same)) {
+          stop2("Every occurrence of a shared strict latent-score dimension ",
+                "must use the same fixed partial-centering fractions.")
+        }
+      }
+      rho <- rho_all[, first, drop = FALSE]
+      dimnames(rho) <- list(levels, labels)
+    } else {
+      rho <- matrix(
+        NA_real_, nrow = length(levels), ncol = sum(first),
+        dimnames = list(levels, labels)
+      )
+      if (!is.matrix(cached_rho) || !is.numeric(cached_rho) ||
+          anyNA(cached_rho) || any(!is.finite(cached_rho)) ||
+          any(cached_rho < 0 | cached_rho > 1)) {
+        stop2("Invalid stored strict latent partial-centering data.")
+      }
+      old_levels <- rownames(cached_rho)
+      old_labels <- colnames(cached_rho)
+      if (!is.null(old_levels) && !is.null(old_labels)) {
+        old_row <- match(levels, old_levels)
+        old_col <- match(labels, old_labels)
+        if (anyNA(old_row) || anyNA(old_col)) {
+          stop2("Stored strict latent partial-centering data do not match ",
+                "the fitted grouping levels and score dimensions.")
+        }
+        rho[,] <- cached_rho[old_row, old_col, drop = FALSE]
+      } else if (identical(dim(cached_rho), dim(rho))) {
+        rho[,] <- cached_rho
+      } else {
+        stop2("Stored strict latent partial-centering data do not match ",
+              "the fitted grouping levels and score dimensions.")
+      }
+    }
+    out[[data_name]] <- rho
+    if (identical(mode, "auto")) {
+      out[[paste0("compute_rho_center_candidate_", id)]] <- 0L
+    }
   }
   out
 }
@@ -339,7 +480,7 @@ data_re_s2z_cross_center <- function(bframe, data) {
       next
     }
     r_id <- subset2(r_global, id = id)
-    if (re_s2z_center_mode(r_id) != "partial") {
+    if (!re_s2z_center_mode(r_id) %in% c("partial", "auto")) {
       next
     }
     M <- nrow(r_id)
@@ -380,6 +521,9 @@ data_re_s2z_cross_center <- function(bframe, data) {
             "centering columns.")
     }
     out[[data_name]] <- rho
+    if (identical(re_s2z_center_mode(r_id), "auto")) {
+      out[[paste0("compute_rho_center_candidate_", id)]] <- 0L
+    }
   }
   out
 }
@@ -517,47 +661,11 @@ data_gr_global <- function(bframe, data2) {
       }
       cov_mat <- cov_mat[levels, levels, drop = FALSE]
       tmp$Lcov <- t(chol(cov_mat))
-      if (re_s2z_cov_eigen_eligible(id_reframe) &&
-          is_re_s2z_cross_spectral_candidate(bframe, id_reframe, id)) {
-        # Work in the exact orthonormal coordinate system used by the Stan
-        # sum-to-zero transform. If B spans 1^perp, diagonalizing B' A B
-        # yields the positive modes of the restricted covariance P A P while
-        # avoiding numerical identification of its structural zero mode.
-        B_s2z <- re_s2z_basis(length(levels))
-        restricted_cov <- crossprod(B_s2z, cov_mat %*% B_s2z)
-        restricted_cov <- 0.5 * (restricted_cov + t(restricted_cov))
-        eigen_cov <- eigen(restricted_cov, symmetric = TRUE)
-        if (any(eigen_cov$values <= 0)) {
-          stop2("The covariance restricted to the sum-to-zero space must ",
-                "be positive definite.")
-        }
-        # eigenvector signs are otherwise arbitrary. Fix each sign using its
-        # largest-magnitude entry so generated data and sampling coordinates
-        # are reproducible across LAPACK implementations.
-        eigen_sign <- vapply(seq_len(ncol(eigen_cov$vectors)), function(j) {
-          column <- eigen_cov$vectors[, j]
-          sign(column[which.max(abs(column))])
-        }, numeric(1))
-        eigen_cov$vectors <- sweep(
-          eigen_cov$vectors, 2L, eigen_sign, FUN = "*"
-        )
-        Ecov_s2z <- B_s2z %*% eigen_cov$vectors
-
-        # These contractions eliminate repeated Lcov^-1 1 calculations in
-        # the modal prior and omitted-mean system. Cholesky solves retain the
-        # same reordered covariance matrix used by the fallback path.
-        one_cov_solve <- backsolve(
-          t(tmp$Lcov), forwardsolve(tmp$Lcov, rep(1, length(levels)))
-        )
-        tmp$Ecov_s2z <- Ecov_s2z
-        tmp$lambda_cov_s2z <- eigen_cov$values
-        tmp$coupling_cov_s2z <- drop(crossprod(Ecov_s2z, one_cov_solve))
-        tmp$mean_prec_cov_s2z <- sum(one_cov_solve)
-      }
     }
     names(tmp) <- paste0(names(tmp), "_", id)
     c(out) <- tmp
   }
+  c(out) <- data_re_s2z_latent_center(bframe)
   out
 }
 

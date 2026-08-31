@@ -12,17 +12,6 @@ is_re_s2z_cross_id <- function(bframe, id) {
   length(unique(combine_prefix(check_prefix(r)))) > 1L
 }
 
-# Data and Stan generation must agree on whether a cross-predictor block can
-# use the restricted-covariance eigenmode chart. The remaining Fisher checks
-# (Gaussian identity responses and scalar residual scales) issue their usual
-# contextual diagnostics while building the response information.
-is_re_s2z_cross_spectral_candidate <- function(bframe, r, id = unique(r$id)) {
-  stopifnot(is.anybrmsframe(bframe), is.reframe(r), length(id) == 1L)
-  is.mvbrmsframe(bframe) && isTRUE(bframe$rescor) &&
-    is_re_s2z_cross_id(bframe, id) &&
-    nrow(r) == length(unique(r$resp)) && all(r$coef == "Intercept")
-}
-
 # Return the response-local frames touched by one cross-predictor ID, ordered
 # by the first occurrence of their prefix in the global covariance block.
 re_s2z_cross_frames <- function(bframe, r) {
@@ -145,7 +134,7 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
     is_re_s2z_cross_id(bframe, id)
   )
   unsupported <- function(detail) {
-    stop2("Fisher centering for a cross-predictor S2Z ID ", detail, ".")
+    stop2("Automatic centering for a cross-predictor S2Z ID ", detail, ".")
   }
   responses <- unique(r$resp)
   local <- lapply(responses, function(response) {
@@ -185,9 +174,9 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
   }
 
   # Residual correlation is currently modeled only for multivariate Gaussian
-  # or Student responses. Restrict Fisher centering to the Gaussian identity-
-  # link case with observation-invariant residual scales; this admits an exact
-  # joint location-information matrix in transformed parameters.
+  # or Student responses. Restrict the automatic proposal to the Gaussian
+  # identity-link case with observation-invariant residual scales; this admits
+  # an exact joint location-information matrix for each precursor draw.
   response_order <- bframe$responses
   terms <- bframe$terms[response_order]
   families <- vapply(terms, function(x) x$family$family, character(1))
@@ -222,37 +211,6 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
       "{as.integer(x$r_source$cn)}] = {x$info$design_at_n};\n"
     )
   }, character(1)), collapse = "")
-  # A residual-correlated intercept-only block has one observation-invariant
-  # embedded design matrix.  Its residual Fisher matrix can be formed once and
-  # then carried into the restricted grouping-covariance eigenmodes.  Unequal
-  # group counts remain valid: their diagonal modal information is represented
-  # by a transformed-data exposure.  With equal counts this is the exact modal
-  # Fisher decomposition.
-  spectral <- NULL
-  spectral_intercept <-
-    is_re_s2z_cross_spectral_candidate(bframe, r, id) &&
-    length(local) == M && all(vapply(
-    local,
-    function(x) {
-      nrow(x$r_source) == 1L &&
-        identical(x$r_source$coef, "Intercept") &&
-        isTRUE(x$info$fixed_design)
-    },
-    logical(1)
-  ))
-  if (spectral_intercept) {
-    spectral_assignments <- paste0(vapply(local, function(x) {
-      response_index <- match(x$response, response_order)
-      cglue(
-        "      design_modal_fisher_s2z[{response_index}, ",
-        "{as.integer(x$r_source$cn)}] = 1.0;\n"
-      )
-    }, character(1)), collapse = "")
-    spectral <- nlist(
-      N = first$N, group = first$group,
-      assignments = spectral_assignments, sigma
-    )
-  }
   joint_info_comp <- glue(
     "    {{\n",
     "      vector[nresp] sigma_fisher_s2z = {stan_vector(sigma)};\n",
@@ -273,7 +231,7 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
   )
   nlist(
     M, fixed_design = FALSE, sources = list(), joint_info_comp,
-    spectral, fun = ""
+    fun = ""
   )
 }
 
@@ -392,8 +350,6 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
   mean_noncenter <- re_s2z_cross_mean_noncenter_eligible(
     bframe, prior = prior, id = id, cross = cross, stanvars = stanvars
   )
-  spectral_fisher <- s2z_fisher && has_cov && !varying && !is_student &&
-    !is.null(fisher_info$spectral)
   scale <- if (varying) {
     glue("reference_sd_s2z_{id}")
   } else {
@@ -411,21 +367,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
 
   if (s2z_fisher) {
     out <- stan_re_s2z_fisher_def(out, id)
-    if (spectral_fisher) {
-      str_add(out$data) <- glue(
-        "  matrix[N_{id}, N_{id} - 1] Ecov_s2z_{id};",
-        "  // eigenvectors of the covariance restricted to the S2Z space\n",
-        "  vector<lower=0>[N_{id} - 1] lambda_cov_s2z_{id};",
-        "  // restricted covariance eigenvalues\n",
-        "  vector[N_{id} - 1] coupling_cov_s2z_{id};",
-        "  // mean-contrast coupling E' Omega^-1 1\n",
-        "  real<lower=0> mean_prec_cov_s2z_{id};",
-        "  // precision 1' Omega^-1 1 of the omitted arithmetic mean\n"
-      )
-      out <- stan_re_s2z_modal_fisher_tdata(
-        out, id, spectral = fisher_info$spectral
-      )
-    } else if (has_cov) {
+    if (has_cov) {
       out <- stan_re_s2z_cov_fisher_tdata(out, id)
     }
   } else if (s2z_partial) {
@@ -583,7 +525,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
       "  group_prec_s2z_{id} = inv_square(group_scale_s2z_{id});\n"
     )
   }
-  partial_transform <- if (s2z_partial && !spectral_fisher) {
+  partial_transform <- if (s2z_partial) {
     stan_re_s2z_partial_cor_transform(id)
   } else {
     str_if(
@@ -595,34 +537,21 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
     "  L_Sigma_s2z_{id} = diag_pre_multiply({scale}, L_{id});\n"
   )
   if (s2z_fisher) {
-    if (spectral_fisher) {
-      str_add(out$tpar_comp) <- stan_re_s2z_modal_fisher_comp(
-        id, spectral = fisher_info$spectral,
-        L = glue("L_Sigma_s2z_{id}"), M = M
-      )
-    } else {
-      str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
-        id, r = r, fisher_info = fisher_info,
-        L = glue("L_Sigma_s2z_{id}"),
-        row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
-      )
-    }
+    str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
+      id, r = r, fisher_info = fisher_info,
+      L = glue("L_Sigma_s2z_{id}"),
+      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
+    )
   }
 
-  if (spectral_fisher) {
-    str_add(out$tpar_comp) <- stan_re_s2z_modal_transform_group_comp(
-      id, L = glue("L_Sigma_s2z_{id}"), M = M
-    )
-  } else {
-    str_add(out$tpar_comp) <- glue(
-      "  for (k in 1:M_{id}) {{\n",
-      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
-      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
-      "N_{id} - 1));\n",
-      "  }}\n",
-      "{partial_transform}"
-    )
-  }
+  str_add(out$tpar_comp) <- glue(
+    "  for (k in 1:M_{id}) {{\n",
+    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+    "N_{id} - 1));\n",
+    "  }}\n",
+    "{partial_transform}"
+  )
 
   for (a in seq_along(cross$infos)) {
     info <- cross$infos[[a]]
@@ -679,12 +608,10 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
     str_add(out$tpar_comp) <- "  }\n"
   }
 
-  if (!spectral_fisher) {
-    str_add(out$tpar_comp) <- stan_re_s2z_cov_group_comp(
-      id, varying = varying, is_cor = TRUE, is_student = is_student,
-      has_cov = has_cov
-    )
-  }
+  str_add(out$tpar_comp) <- stan_re_s2z_cov_group_comp(
+    id, varying = varying, is_cor = TRUE, is_student = is_student,
+    has_cov = has_cov
+  )
   str_add(out$tpar_comp) <- glue(
     "  {{\n",
     "    matrix[{Q}, M_{id}] prior_factor_s2z = diag_pre_multiply(",

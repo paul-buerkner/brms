@@ -1,7 +1,7 @@
-# Analysis helpers for Stan-side Fisher centering of S2Z nonlinear parameters
+# Analysis helpers for expected-information proposals for nonlinear S2Z terms.
 
 .stop_re_s2z_fisher_nl <- function(...) {
-  stop2("Stan-side Fisher centering for nonlinear S2Z effects ", ...)
+  stop2("Automatic centering for nonlinear S2Z effects ", ...)
 }
 
 # Does a nonlinear parameter contain coordinates that vary below the

@@ -142,9 +142,14 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
     r <- subset2(reframe, id = id)
     if (!save_pars$all && !isTRUE(r$s2z[1]) &&
         !identical(re_s2z_center_mode(r), "noncentered")) {
-      c(out) <- paste0(c("L_center_re_", "log_jacobian_re_"), id)
+      c(out) <- paste0(c(
+        "L_center_re_", "mean_center_re_", "b_center_re_",
+        "log_jacobian_re_"
+      ), id)
       if (identical(re_s2z_center_mode(r), "auto")) {
-        c(out) <- paste0(c("rho_s2z_", "mean_rho_s2z_"), id)
+        c(out) <- paste0(c(
+          "rho_center_candidate_", "mean_rho_center_candidate_"
+        ), id)
       }
     }
     if (!save_pars$all && isTRUE(r$s2z[1])) {
@@ -169,7 +174,9 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
       rp <- usc(combine_prefix(r))
       c(out) <- paste0("r_s2z_", r$id, rp, "_", r$cn)
       if (identical(re_s2z_center_mode(r), "auto")) {
-        c(out) <- paste0(c("rho_s2z_", "mean_rho_s2z_"), id)
+        c(out) <- paste0(c(
+          "rho_center_candidate_", "mean_rho_center_candidate_"
+        ), id)
         if (all(re_s2z_latent(r))) {
           fisher_info <- stan_re_s2z_latent_fisher_info(
             id, r = r, bframe = bframe, threads = NULL

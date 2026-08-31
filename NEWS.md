@@ -4,17 +4,43 @@
 
 * Extend `gr(..., center = ...)` to ordinary Gaussian and Student-t
 group-level effects. The historical default (`NULL`, `FALSE`, or `0`) remains
-non-centered, while `TRUE` or `1` selects centered coordinates and intermediate
-numeric values provide exact partial centering. Student-t effects use the exact
-conditional scale-mixture chart. `center = "fisher"` (and its `"auto"` alias)
-chooses response-free, level- and coefficient-specific fractions from the
-current group covariance and the existing expected-information catalog. Fixed
-fractions also support ordinal, distributional, multivariate, and nonlinear
-predictor-local blocks. Fisher fractions currently exclude ordinal and
-nonlinear predictors, and positive ordinary centering currently excludes
-cross-predictor IDs, `by`, `cov`, `pw`, multi-membership, and special group
-coefficients. Predictor-local ordinary Fisher blocks in multivariate models
-currently require `set_rescor(FALSE)`.
+non-centered, while `TRUE` or `1` samples total group coefficients in centered
+coordinates and intermediate numeric values provide the exact location-aware
+partial centering map. Numeric vectors (one value per grouping level) and
+level-by-coefficient matrices supply fixed heterogeneous fractions, including
+fractions frozen from a Pathfinder run. These fractions use the `center`
+orientation, which is one minus the non-centering weight in the tutorial
+construction. Their fitted values and fixed-to-random design map are stored in
+the model, so later new-data calls do not depend on the original R object.
+Equivalent fixed and varying contrast bases are mapped exactly. Student-t
+effects use the exact conditional scale-mixture chart. `center = "auto"`
+chooses fixed, level- and coefficient-specific fractions in a two-stage
+workflow. brms first fits the model in fully non-centered coordinates, using
+CmdStanR Pathfinder by default or a separate short HMC run when requested via
+`autocenter_control()`. Candidate fractions are evaluated only in generated
+quantities, aggregated across precursor draws (by the median by default), and
+then supplied as fixed data to the final model. The final HMC fit starts a new
+warmup; the proposal calculation is absent from its target density, and the
+fixed centering weights are not updated during an active HMC run. The former
+dynamic spelling `center = "fisher"` is no longer supported.
+Resolved matrices are retained across ordinary refits (and aligned by level
+name for subsets); explicitly requesting automatic centering again reruns the
+precursor. `brm_multiple()` reuses the common compiled program but estimates
+weights separately for each fitted data set.
+For multicategory shorthand that expands one source group term into several
+mean predictors, the predictor-specific proposals are combined elementwise by
+the requested aggregation rule and shared as one fixed matrix.
+The proposal combines precursor draws of the current group covariance with
+the existing expected-information catalog. The information calculation uses
+the design and missingness but does not inspect observed response values
+directly; the resulting weights can nevertheless be data-informed through the
+precursor draws. Fixed fractions also support ordinal, distributional,
+multivariate, and nonlinear predictor-local blocks. Automatic proposals
+currently exclude ordinal and conventional nonlinear predictors, and positive
+ordinary centering currently excludes cross-predictor IDs, `by`, `cov`, `pw`,
+multi-membership, and special group coefficients. Predictor-local automatic
+ordinary blocks in multivariate models currently require
+`set_rescor(FALSE)`.
 
 * Add experimental sum-to-zero parameterizations via
 `gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
@@ -27,11 +53,12 @@ coefficients in diagonal covariance blocks use dedicated component-wise scalar
 implementations. The default `center = NULL` samples the physical constrained
 effects directly for backward compatibility, while `center = FALSE` selects a
 non-centered sum-to-zero parameterization. Numeric `center` values between zero
-and one provide exact partial non-centering. With `center = "fisher"`, brms
-combines the current Gaussian group-effect covariance with response-free
-likelihood information computed in Stan; observed response values are not
-used, and `center = "auto"` is an alias. Closed-form expected Fisher
-information is used when available. Other supported native likelihood
+and one provide exact partial non-centering. With `center = "auto"`, brms uses
+the separate precursor workflow described above. For each precursor draw it
+combines the current Gaussian group-effect covariance with likelihood
+information in generated quantities, then freezes the aggregated result before
+the final warmup. Closed-form expected Fisher information is used when
+available. Other supported native likelihood
 coordinates use explicitly defined positive analytic, coarsened-outcome, or
 moment approximations. Most observation-local native families are supported;
 COM-Poisson uses asymptotic count variance for location and a second-order
@@ -66,14 +93,15 @@ both shared and varying scales. With varying scales, their conditional
 cross-level covariance is `Omega[g, h] * A_g %*% t(A_h)`, where
 `A_g = diag(sd_level[g, ]) %*% L` and `L` is the coefficient-correlation
 Cholesky factor. Correlated IDs spanning multivariate response-location
-predictors support fixed and Fisher centering, shared or varying scales,
-Gaussian or Student-t effects, and `cov`. Fisher information is combined across
-conditionally independent responses. With residual response correlation,
-Fisher centering currently requires Gaussian identity-link responses with one
+predictors support fixed and automatic centering, shared or varying scales,
+Gaussian or Student-t effects, and `cov`. Proposal information is combined
+across conditionally independent responses. With residual response correlation,
+automatic centering currently requires Gaussian identity-link responses with one
 observation-invariant residual scale per response and includes the full current
-residual precision. Eligible shared-scale intercept blocks with fixed `cov`
-use its eigenmodes restricted to the S2Z space. Strict latent scores exclude
-`cov`, and `by` and `pw` remain unsupported for S2Z blocks.
+residual precision. With fixed `cov`, proposals use levelwise marginal
+variances from the centered grouping covariance, while the final fixed chart
+retains the exact full-covariance target. Strict latent scores exclude `cov`,
+and `by` and `pw` remain unsupported for S2Z blocks.
 Multiple S2Z grouping factors may occur in one linear predictor; their omitted
 mean vectors are integrated and recovered jointly while retaining separate
 scale and correlation structures for each factor. For Gaussian blocks with
@@ -89,7 +117,7 @@ with flexible, equidistant, or grouped thresholds. The checked affine map
 population slopes and reconstructs conventional public thresholds, slopes,
 and group effects. Ordinal systems use the dense joint omitted-mean kernel and
 compose with fixed centering fractions, shared or varying scales, Gaussian or
-Student-t effects, and fixed `cov`. Fisher centering and cross-predictor IDs
+Student-t effects, and fixed `cov`. Automatic centering and cross-predictor IDs
 touching an ordinal location remain gated, as do sum-to-zero thresholds, fixed
 or shared ordinal-mixture thresholds, category-specific S2Z effects, custom
 ordinal families, and non-Gaussian active-coordinate priors.

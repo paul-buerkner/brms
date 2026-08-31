@@ -23,7 +23,7 @@ s2z_fisher_factor_frame <- function(outer = alpha + loading * eta,
     alpha ~ 0 + item,
     loading,
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE,
     family = family
@@ -42,14 +42,14 @@ test_that("closed-form Fisher rules are response-free", {
     brmsframe(brmsterms(form), data = dat)
   }
   com_poisson_frame <- make_frame(bf(
-    y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
-    shape ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+    y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+    shape ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
     family = brmsfamily("com_poisson")
   ))
   cases <- list(
     saturated_logit = list(
       frame = make_frame(bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
         family = bernoulli()
       )),
       dpar = "mu",
@@ -61,7 +61,7 @@ test_that("closed-form Fisher rules are response-free", {
     ),
     exact = list(
       frame = make_frame(bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
         family = poisson()
       )),
       dpar = "mu", marker = "value_fisher_s2z_mu"
@@ -69,8 +69,8 @@ test_that("closed-form Fisher rules are response-free", {
     coarsened = list(
       frame = make_frame(bf(
         y | trials(trials) ~ 1 +
-          (1 | gr(g, s2z = TRUE, center = "fisher")),
-        phi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+          (1 | gr(g, s2z = TRUE, center = "auto")),
+        phi ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
         family = beta_binomial()
       )),
       dpar = "phi",
@@ -78,16 +78,16 @@ test_that("closed-form Fisher rules are response-free", {
     ),
     moment = list(
       frame = make_frame(bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
-        shape ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+        shape ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
         family = negbinomial()
       )),
       dpar = "shape", marker = "log_shape_info_fisher_s2z_nb"
     ),
     atom = list(
       frame = make_frame(bf(
-        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
-        zi ~ 1 + (1 | gr(g, s2z = TRUE, center = "fisher")),
+        y ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
+        zi ~ 1 + (1 | gr(g, s2z = TRUE, center = "auto")),
         family = zero_inflated_poisson()
       )),
       dpar = "mu", marker = "atom_derivative_fisher_s2z_zi"
@@ -154,7 +154,7 @@ test_that("the scalar native Fisher catalog is exhaustive", {
     trials = rep(6L, N),
     dec = rep(0:1, length.out = N)
   )
-  term <- "(1 | gr(g, s2z = TRUE, center = 'fisher'))"
+  term <- "(1 | gr(g, s2z = TRUE, center = 'auto'))"
   make_frame <- function(response, family, target) {
     rhs <- if (target == "mu") paste("1 +", term) else "1"
     main <- as.formula(paste(response, "~", rhs))
@@ -290,7 +290,7 @@ test_that("the multicategory native Fisher catalog is exhaustive", {
   simplex_data$y <- I(as.matrix(
     simplex_data[c("y1", "y2", "y3")]
   ))
-  term <- "(1 | gr(g, s2z = TRUE, center = 'fisher'))"
+  term <- "(1 | gr(g, s2z = TRUE, center = 'auto'))"
   cases <- list(
     categorical = list(
       bf(y ~ 1, as.formula(paste("mub ~ 1 +", term)),
@@ -450,11 +450,11 @@ test_that("dependency aliases are isolated across Fisher factor IDs", {
     eta ~ 1 +
       (1 | gr(
         person, id = "person_factor", s2z = TRUE,
-        center = "fisher", latent = TRUE
+        center = "auto", latent = TRUE
       )) +
       (1 | gr(
         batch, id = "batch_factor", s2z = TRUE,
-        center = "fisher", latent = TRUE
+        center = "auto", latent = TRUE
       )),
     nl = TRUE
   )
@@ -486,11 +486,11 @@ test_that("row metadata aligns dimensions shared across nonlinear targets", {
     loading2 ~ 0 + item,
     eta1 ~ 1 + (1 | gr(
       person, id = "factor", s2z = TRUE,
-      center = "fisher", latent = TRUE
+      center = "auto", latent = TRUE
     )),
     eta2 ~ 1 + (1 | gr(
       person, id = "factor", s2z = TRUE,
-      center = "fisher", latent = TRUE
+      center = "auto", latent = TRUE
     )),
     nl = TRUE
   )
@@ -566,7 +566,7 @@ test_that("nonlinear Fisher analysis rejects centered loading predictors", {
     alpha ~ 0 + item,
     lf(loading ~ item, center = TRUE),
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE
   )
@@ -585,7 +585,7 @@ test_that("nonlinear Fisher analysis reports likelihood capability metadata", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE
   )
@@ -601,7 +601,7 @@ test_that("nonlinear Fisher analysis reports likelihood capability metadata", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     sigma ~ 0 + item,
     nl = TRUE
@@ -650,7 +650,7 @@ test_that("nonlinear Fisher analysis supports scalar non-Gaussian locations", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE,
     family = bernoulli()
@@ -668,7 +668,7 @@ test_that("nonlinear Fisher analysis supports scalar non-Gaussian locations", {
     y ~ alpha + mystery(eta),
     alpha ~ 0 + item,
     eta ~ 1 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE
   )
@@ -694,7 +694,7 @@ test_that("strict latent references retain population score coordinates", {
     alpha ~ 0 + item,
     loading ~ 0 + item,
     eta ~ 0 + (1 | gr(
-      person, s2z = TRUE, center = "fisher", latent = TRUE
+      person, s2z = TRUE, center = "auto", latent = TRUE
     )),
     nl = TRUE,
     family = bernoulli()

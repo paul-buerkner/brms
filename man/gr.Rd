@@ -91,8 +91,9 @@ A correlated group-effect block may also use one ID across multivariate
 response-location predictors or across nonlinear parameters of one
 response. Shared or varying scales, Gaussian or Student-t effects, and a
 fixed \code{cov} matrix compose on both paths. The multivariate-response
-path accepts fixed or Fisher centering; the nonlinear path currently
-accepts only \code{center = TRUE} or \code{FALSE}. The ordinary Bayesian
+path accepts fixed or automatic precursor centering; the conventional
+nonlinear path currently accepts only \code{center = TRUE} or
+\code{FALSE}. The ordinary Bayesian
 \code{| id |} group model is sampled through zero-sum deviations and
 finite-population coefficients, then conventional population coefficients
 and group effects are recovered in generated quantities. Non-centered,
@@ -101,13 +102,13 @@ no fixed \code{cov}, and proper normal population priors use an exact
 standardized finite-population mean with covariance
 \eqn{S_\beta + \Sigma / G}, where \eqn{S_\beta} is the population-prior
 covariance, \eqn{\Sigma} is the group-effect covariance, and \eqn{G} is the
-number of observed grouping levels. Fisher
-information is combined across conditionally independent responses. With
-residual response correlation, Fisher centering currently requires Gaussian
+number of observed grouping levels. Expected-information proposals are
+combined across conditionally independent responses. With residual
+response correlation, automatic centering currently requires Gaussian
 identity-link responses with one observation-invariant residual scale per
 response and uses the full current residual precision. For an eligible
-shared-scale intercept block with fixed \code{cov}, the chart is computed
-in the covariance eigenmodes restricted to the S2Z space.
+shared-scale intercept block with fixed \code{cov}, the proposal is
+computed in the covariance eigenmodes restricted to the S2Z space.
 When all such blocks are Gaussian with shared scales, \pkg{brms} uses an
 induced population-coordinate covariance and joint Matheron recovery if
 that system is smaller than the stacked omitted-mean system. Crossed
@@ -118,7 +119,7 @@ Conventional S2Z blocks may use a fixed \code{cov} matrix together with
 any otherwise supported \code{center} setting and either shared or varying
 scales. Supported local ordinal location blocks use the dense joint system
 for fixed centering fractions, shared or varying scales, and fixed
-\code{cov}; Fisher centering and IDs spanning ordinal and other predictors
+\code{cov}; automatic centering and IDs spanning ordinal and other predictors
 remain unsupported. The \code{by} and \code{pw} arguments remain
 unsupported, and
 \code{cov} is not supported for strict latent scores.
@@ -178,39 +179,72 @@ controls dependence across grouping levels while the realized scales act
 at their respective levels.
 This is a new statistical model rather than only a change of coordinates.}
 
-\item{center}{Logical, a single number in \code{[0, 1]}, \code{"fisher"},
-  \code{"auto"}, or \code{NULL}. For ordinary group effects,
+\item{center}{Logical, a number, numeric vector or matrix with values in
+  \code{[0, 1]}, \code{"auto"}, or \code{NULL}. For
+  ordinary group effects,
   \code{NULL}, \code{FALSE}, and \code{0} retain the existing non-centered
   parameterization, while \code{TRUE} and \code{1} use centered
   coordinates. For S2Z effects, \code{NULL}, \code{TRUE}, and \code{1}
   use centered physical coordinates, while \code{FALSE} and \code{0} use
   non-centered coordinates. Intermediate numbers partially center either
-  kind of group effect without changing its statistical model.
+  kind of group effect without changing its statistical model. A numeric
+  vector supplies one fraction per grouping level and is shared across the
+  term's group-level coefficients. A numeric matrix supplies grouping
+  levels by group-level coefficients; a one-column matrix is also shared
+  across coefficients (and its single column name is not used). Named rows
+  are recommended; otherwise values follow the fitted grouping-factor level
+  order. Row names and coefficient column names, when applicable, must match
+  exactly and are reordered to the fitted design. These
+  level-specific inputs use the \code{center} orientation: they are
+  \eqn{\rho=1-w}, where \eqn{w} is the non-centering weight used in the
+  partial-centering tutorial.
 
   Ordinary Gaussian effects use the exact per-level map
-  \eqn{u_j=L_j A_j^{-1}q_j}, where
+  \eqn{u_j=L_j A_j^{-1}(q_j-R_j\mu)}, where
   \eqn{A_j=\mathop{diag}(\rho_j)L_j+\mathop{diag}(1-\rho_j)} and
-  \eqn{L_j} is the conditional group-covariance Cholesky factor. The
+  \eqn{R_j=\mathop{diag}(\rho_j)}, and \eqn{L_j} is the conditional
+  group-covariance Cholesky factor. The fitted design-basis map constructs
+  \eqn{\mu} from every population column exactly representable by the
+  varying-coefficient design (and uses zero for other columns), so equivalent
+  contrast codings such as treatment and cell-mean bases are handled. Thus
+  \code{center = 1} samples the total group coefficient \eqn{q_j=\mu+u_j},
+  while \code{center = 0} samples a standardized residual coordinate. The
   log-Jacobian is \eqn{\log|L_j|-\log|A_j|}. Student-t effects use the same
   map conditional on their existing scale-mixture variable, so numeric
   partial centering is also exact and \code{center = 0} retains the
   existing conditionally non-centered chart. Correlated and independent
   Gaussian and Student-t \code{gr} blocks are eligible. Positive centering
   is not currently available with \code{by}, \code{cov}, \code{pw},
-  multi-membership, or special group coefficients.
+  multi-membership, special group coefficients, or a conventional S2Z
+  block in the same linear predictor.
 
-  \code{center = "fisher"} chooses level- and coefficient-specific fractions
-  by combining the current Gaussian group-effect covariance with
-  response-free likelihood information computed in Stan. If \eqn{J_j} is
-  the group likelihood information, \eqn{\Sigma} the group covariance, and
+  \code{center = "auto"} chooses fixed level- and coefficient-specific
+  fractions through a separate precursor fit. The precursor always uses the
+  fully non-centered parameterization. It runs with CmdStanR Pathfinder by
+  default; \code{autocenter_control(method = "hmc")} instead requests a
+  separate short HMC precursor. At each precursor draw, candidate fractions
+  are evaluated only in generated quantities. They do not enter the
+  precursor target density. brms aggregates the candidates across draws and
+  supplies the resulting numeric matrix as fixed data to a new final HMC
+  fit, which starts with a fresh warmup. The centering weights are therefore
+  not parameters, do not change during the final fit, and are never updated
+  inside an active HMC run. See \code{\link{autocenter_control}} to choose
+  the precursor and aggregation method, and
+  \code{\link{centering_weights}} to inspect the fixed result.
+
+  Candidate fractions combine the precursor draw of the Gaussian
+  group-effect covariance with likelihood information. If \eqn{J_j} is the
+  group likelihood information, \eqn{\Sigma} the group covariance, and
   \eqn{V_j=(\Sigma^{-1}+J_j)^{-1}}, the fraction for coefficient \eqn{k} is
   \eqn{1-(V_j)_{kk}/\Sigma_{kk}}. Thus \eqn{\Sigma} supplies the prior
-  metric; it is not estimated from the response. The rule uses design and
-  missingness together with current scale, covariance, likelihood, and
-  supported loading parameters, but not observed response values. With a
-  fixed \code{cov} matrix, its covariance on the arithmetic S2Z space is
-  included in this prior metric.
-  \code{"auto"} is an alias.
+  metric. The information calculation uses design and missingness together
+  with precursor draws of scale, covariance, likelihood, and supported
+  loading parameters, but does not inspect observed response values
+  directly. Because those parameter draws come from the precursor posterior,
+  the aggregated fractions may nevertheless be data-informed. With a fixed
+  \code{cov} matrix, its covariance on the arithmetic S2Z space is included
+  in this prior metric. The former dynamic spelling
+  \code{center = "fisher"} is not supported.
 
   Closed-form expected Fisher information is used when available. Other
   supported native likelihood coordinates use documented positive analytic,
@@ -229,7 +263,7 @@ This is a new statistical model rather than only a change of coordinates.}
   bias---require
   an explicit compatible population \code{Intercept} prior when they contain
   an ordinary S2Z intercept, because their default logistic prior is not
-  supported. The ordinary Fisher path excludes nonlinear parameters. For a
+  supported. The ordinary automatic path excludes nonlinear parameters. For a
   conventional correlated ID spanning multivariate response-location
   predictors, response-local information is combined when responses are
   conditionally independent. With residual response correlation, all
@@ -239,18 +273,19 @@ This is a new statistical model rather than only a change of coordinates.}
   location predictors for supported scalar response families. Their
   likelihood information is evaluated at a population-only nonlinear
   reference, so sampled population-level loadings and conditionally
-  independent wide responses remain dynamic without using score contrasts.
+  independent wide responses contribute draw-specific proposals without
+  using score contrasts.
   Varying-scale and Student-t group-effect models use the Gaussian reference
-  covariance for Fisher reliability; their exact physical targets still use
+  covariance for proposal reliability; their exact physical targets still use
   every realized scale and Student-t mixing variable.
-  All coefficients sharing an \code{id} must use Fisher centering together.
+  All coefficients sharing an \code{id} must use automatic centering together.
   For correlated blocks, the chart can depend on coefficient order, although
   the posterior remains unchanged.
-  For ordinary effects, Fisher centering is currently limited to one
+  For ordinary effects, automatic centering is currently limited to one
   predictor-local ordinary \code{gr} covariance block and the same
   response-likelihood information catalog described above. In particular,
   ordinal locations, nonlinear predictors, and IDs spanning predictors use
-  fixed centering values instead. Predictor-local ordinary Fisher blocks in
+  fixed centering values instead. Predictor-local ordinary automatic blocks in
   multivariate models currently require \code{set_rescor(FALSE)}. This
   argument does not center the population-level design matrix.}
 
@@ -312,9 +347,11 @@ form5_nc <- count ~ zAge * Trt +
 form5_partial <- count ~ zAge * Trt +
   (1 + zAge * Trt | gr(patient, s2z = TRUE, center = 0.5))
 
-# choose fractions from response-free likelihood information in Stan
-form_fisher <- y ~ x +
-  (1 + x | gr(g, s2z = TRUE, center = "fisher"))
+# choose fixed fractions with a fully non-centered Pathfinder precursor
+form_auto <- y ~ x +
+  (1 + x | gr(g, s2z = TRUE, center = "auto"))
+# pass center_control = autocenter_control(method = "hmc") to brm() to use
+# a separate short HMC precursor instead
 
 # allow the intercept, slope, and interaction scales to vary by patient
 scale_prior <- s2z_prior +
