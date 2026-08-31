@@ -136,13 +136,43 @@ test_that("S2Z centering API defaults compatibly and reaches the reframe", {
   expect_equal(
     brms:::frame_re(conventional_terms, s2z_dat)$s2z_center, c(0, 0)
   )
-  expect_error(
-    gr(g, center = TRUE),
-    "not yet supported for ordinary group-level effects"
+  conventional_centered <- stancode(
+    y ~ x + (1 + x | gr(g, center = TRUE)), data = s2z_dat
   )
-  expect_error(gr(g, center = 0.01), "ordinary group-level effects")
-  expect_error(gr(g, center = "auto"), "ordinary group-level effects")
-  expect_error(gr(g, center = "fisher"), "ordinary group-level effects")
+  expect_identical(
+    conventional_centered,
+    stancode(y ~ x + (1 + x | gr(g, center = 1)), data = s2z_dat)
+  )
+  expect_false(identical(conventional_centered, conventional))
+  conventional_partial <- stancode(
+    y ~ x + (1 + x | gr(g, center = 0.35)), data = s2z_dat
+  )
+  expect_false(identical(conventional_partial, conventional_centered))
+  expect_identical(
+    stancode(
+      y ~ x + (1 + x | gr(g, center = "fisher")), data = s2z_dat
+    ),
+    stancode(
+      y ~ x + (1 + x | gr(g, center = "auto")), data = s2z_dat
+    )
+  )
+  conventional_partial_terms <- brmsterms(
+    y ~ x + (1 + x | gr(g, center = 0.35))
+  )
+  expect_equal(
+    brms:::frame_re(
+      conventional_partial_terms, s2z_dat
+    )$s2z_center,
+    c(0.35, 0.35)
+  )
+  # Old ordinary reframes did not carry centering metadata and must retain
+  # their historical non-centered default.
+  legacy_conventional <- conventional_terms
+  legacy_conventional$dpars$mu$re$gcall[[1]]$s2z_center <- NULL
+  legacy_conventional$dpars$mu$re$gcall[[1]]$s2z_center_auto <- NULL
+  expect_equal(
+    brms:::frame_re(legacy_conventional, s2z_dat)$s2z_center, c(0, 0)
+  )
   expect_error(gr(g, s2z = TRUE, center = NA), "center")
   expect_error(
     gr(g, s2z = TRUE, center = c(TRUE, FALSE)), "center"
@@ -942,9 +972,13 @@ test_that("Fisher S2Z rejects nonlocal likelihood structures", {
                        center = "fisher"))
     ) +
     set_rescor(FALSE)
+  mv_code <- stancode(mv_form, data = mv_data)
+  expect_match2(mv_code, "rho_s2z_1[j, 1]")
+  expect_match2(mv_code, "rho_s2z_2[j, 1]")
+
   expect_error(
-    stancode(mv_form, data = mv_data),
-    "is not yet supported for multivariate response models",
+    stancode(mv_form + set_rescor(TRUE), data = mv_data),
+    "currently requires set_rescor(FALSE)",
     fixed = TRUE
   )
 })

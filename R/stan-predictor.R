@@ -758,8 +758,9 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
   px_cov <- check_prefix(r_cov)
   s2z_cross <- isTRUE(r$s2z[1]) && !s2z_latent &&
     is_re_s2z_cross_id(bframe, id)
-  s2z_fisher <- isTRUE(r$s2z[1]) &&
-    identical(re_s2z_center_mode(r), "auto")
+  center_mode <- re_s2z_center_mode(r)
+  center_fisher <- identical(center_mode, "auto")
+  s2z_fisher <- isTRUE(r$s2z[1]) && center_fisher
   s2z_ordinal <- isTRUE(r$s2z[1]) && !s2z_latent && any(vapply(
     all_bframel(bframe), function(bfl) {
       r_local <- bfl$frame$re
@@ -779,8 +780,12 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
     stop2("Fisher centering is not yet supported for ordinal S2Z effects.")
   }
   fisher_info <- NULL
-  if (s2z_fisher) {
-    fisher_info <- if (s2z_latent) {
+  if (center_fisher) {
+    fisher_info <- if (!isTRUE(r$s2z[1])) {
+      stan_re_s2z_fisher_info(
+        id, r = r, bframe = bframe, threads = threads
+      )
+    } else if (s2z_latent) {
       stan_re_s2z_latent_fisher_info(
         id, r = r, bframe = bframe, threads = threads
       )
@@ -937,6 +942,13 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
     ))
   }
 
+  if (!identical(center_mode, "noncentered")) {
+    return(.stan_re_centered(
+      id, r = r, bframe = bframe, prior = prior,
+      normalize = normalize, out = out, fisher_info = fisher_info
+    ))
+  }
+
   # define group-level coefficients
   dfm <- ""
   tr <- subset_reframe_dist(r, "student")
@@ -1090,6 +1102,241 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
   out
 }
 
+# Exact unrestricted centering chart for ordinary group effects. For one
+# grouping level with conditional Cholesky factor L and centering fractions
+# rho, define A = diag(rho) L + diag(1 - rho) and map the sampled coordinate q
+# to the conventional effect r = L A^-1 q. The Jacobian is |L| / |A|. Unlike
+# the S2Z chart, this full-space map needs neither a zero-sum projection nor a
+# restricted-determinant correction. Student-t effects use their existing
+# conditional scale-mixture factor in L, which preserves the legacy chart at
+# rho = 0 exactly.
+.stan_re_centered <- function(id, r, bframe, prior, normalize,
+                              out = list(), fisher_info = NULL) {
+  stopifnot(is.reframe(r), has_rows(r), !any(r$s2z))
+  lpdf <- stan_lpdf_name(normalize)
+  mode <- re_s2z_center_mode(r)
+  stopifnot(mode %in% c("centered", "partial", "auto"))
+  is_cor <- nrow(r) > 1L && isTRUE(r$cor[1L])
+  is_student <- identical(r$dist[1L], "student")
+  has_by <- nzchar(r$by[1L])
+  has_cov <- nzchar(r$cov[1L])
+  has_pw <- isTRUE(nzchar(r$gcall[[1L]]$pw))
+  stopifnot(!has_by, !has_cov, !has_pw)
+  M <- nrow(r)
+  J <- seq_rows(r)
+  px <- check_prefix(r)
+  idp <- paste0(r$id, usc(combine_prefix(px)))
+  rho <- re_s2z_center_values(r)
+  tr <- subset_reframe_dist(r, "student")
+  g <- if (is_student) usc(tr$ggn[1L]) else ""
+
+  if (!is.null(fisher_info)) {
+    stopifnot(identical(mode, "auto"))
+    out <- stan_re_s2z_fisher_def(out, id)
+    if (isTRUE(fisher_info$fixed_design)) {
+      out <- stan_re_s2z_fisher_tdata(out, id, r, fisher_info)
+    }
+  }
+
+  # Keep the established internal z_ID names so default save/exclude behavior
+  # and downstream public r_ID naming remain unchanged.
+  chart_comment <- if (identical(mode, "centered")) {
+    "centered group-level coordinates"
+  } else if (identical(mode, "auto")) {
+    "Fisher-centered group-level coordinates"
+  } else {
+    "partially centered group-level coordinates"
+  }
+
+  if (is_cor) {
+    str_add(out$data) <- glue(
+      "  int<lower=1> NC_{id};  // number of group-level correlations\n"
+    )
+    str_add_list(out) <- stan_prior(
+      prior, class = "L", group = r$group[1L], suffix = usc(id),
+      type = glue("cholesky_factor_corr[M_{id}]"),
+      comment = "cholesky factor of correlation matrix",
+      normalize = normalize
+    )
+    str_add(out$par) <- glue(
+      "  matrix[M_{id}, N_{id}] z_{id};  // {chart_comment}\n"
+    )
+    str_add(out$tpar_def) <- glue(
+      "  matrix[M_{id}, M_{id}] L_center_re_{id};",
+      "  // Gaussian-reference group Cholesky factor\n",
+      "  matrix[N_{id}, M_{id}] r_{id};",
+      "  // actual group-level effects\n",
+      "  real log_jacobian_re_{id};",
+      "  // unrestricted centering log-Jacobian\n"
+    )
+    str_add(out$tpar_comp) <- glue(
+      "  L_center_re_{id} = diag_pre_multiply(sd_{id}, L_{id});\n"
+    )
+    if (!is.null(fisher_info)) {
+      str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+        id, r = r, fisher_info = fisher_info,
+        L = glue("L_center_re_{id}")
+      )
+    }
+    if (identical(mode, "centered")) {
+      str_add(out$tpar_comp) <- glue(
+        "  r_{id} = z_{id}';\n",
+        "  log_jacobian_re_{id} = 0.0;\n"
+      )
+    } else {
+      rho_def <- if (identical(mode, "auto")) {
+        ""
+      } else {
+        rho_code <- stan_vector(vapply(rho, stan_s2z_number, character(1)))
+        glue("    vector[M_{id}] rho_center_re = {rho_code};\n")
+      }
+      rho_j <- if (identical(mode, "auto")) {
+        "rho_level_center_re"
+      } else {
+        "rho_center_re"
+      }
+      rho_level_def <- if (identical(mode, "auto")) {
+        glue(
+          "      vector[M_{id}] rho_level_center_re = ",
+          "rho_s2z_{id}[j]';\n"
+        )
+      } else {
+        ""
+      }
+      str_add(out$tpar_comp) <- glue(
+        "  {{\n",
+        "{rho_def}",
+        "    log_jacobian_re_{id} = 0.0;\n",
+        "    for (j in 1:N_{id}) {{\n",
+        "      matrix[M_{id}, M_{id}] L_group_center_re = ",
+        "L_center_re_{id};\n",
+        "{rho_level_def}",
+        str_if(
+          is_student,
+          glue("      L_group_center_re *= dfm{g}[j];\n")
+        ),
+        "      matrix[M_{id}, M_{id}] L_partial_center_re = ",
+        "diag_pre_multiply({rho_j}, L_group_center_re);\n",
+        "      vector[M_{id}] white_center_re;\n",
+        "      for (k in 1:M_{id}) {{\n",
+        "        L_partial_center_re[k, k] += 1.0 - {rho_j}[k];\n",
+        "      }}\n",
+        "      white_center_re = mdivide_left_tri_low(",
+        "L_partial_center_re, z_{id}[, j]);\n",
+        "      r_{id}[j] = (L_group_center_re * white_center_re)';\n",
+        "      log_jacobian_re_{id} += ",
+        "sum(log(diagonal(L_group_center_re))) - ",
+        "sum(log(diagonal(L_partial_center_re)));\n",
+        "    }}\n",
+        "  }}\n"
+      )
+    }
+    str_add(out$model_prior) <- glue(
+      "  for (j in 1:N_{id}) {{\n",
+      "    matrix[M_{id}, M_{id}] L_group_center_re = ",
+      "L_center_re_{id};\n",
+      str_if(
+        is_student,
+        glue("    L_group_center_re *= dfm{g}[j];\n")
+      ),
+      "    target += multi_normal_cholesky_{lpdf}(r_{id}[j]' | ",
+      "zeros_vector(M_{id}), L_group_center_re);\n",
+      "  }}\n",
+      "  target += log_jacobian_re_{id};\n"
+    )
+    str_add(out$gen_def) <- glue(
+      "  // compute group-level correlations\n",
+      "  corr_matrix[M_{id}] Cor_{id}",
+      " = multiply_lower_tri_self_transpose(L_{id});\n",
+      "  vector<lower=-1,upper=1>[NC_{id}] cor_{id};\n"
+    )
+    str_add(out$gen_comp) <- stan_cor_gen_comp(
+      cor = glue("cor_{id}"), ncol = glue("M_{id}")
+    )
+    str_add(out$tpar_def) <-
+      "  // using vectors speeds up indexing in loops\n"
+    str_add(out$tpar_def) <- cglue(
+      "  vector[N_{id}] r_{idp}_{r$cn};\n"
+    )
+    str_add(out$tpar_comp) <- cglue(
+      "  r_{idp}_{r$cn} = r_{id}[, {J}];\n"
+    )
+  } else {
+    str_add(out$par) <- glue(
+      "  array[M_{id}] vector[N_{id}] z_{id};",
+      "  // {chart_comment}\n"
+    )
+    str_add(out$tpar_def) <- glue(
+      "  real log_jacobian_re_{id};",
+      "  // unrestricted centering log-Jacobian\n"
+    )
+    str_add(out$tpar_def) <- cglue(
+      "  vector[N_{id}] r_{idp}_{r$cn};",
+      "  // actual group-level effects\n"
+    )
+    if (!is.null(fisher_info)) {
+      str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+        id, r = r, fisher_info = fisher_info,
+        scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
+        diag_scale = if (M > 1L) glue("sd_{id}") else NULL
+      )
+    }
+    if (identical(mode, "centered")) {
+      str_add(out$tpar_comp) <- cglue(
+        "  r_{idp}_{r$cn} = z_{id}[{J}];\n"
+      )
+      str_add(out$tpar_comp) <- glue(
+        "  log_jacobian_re_{id} = 0.0;\n"
+      )
+    } else {
+      str_add(out$tpar_comp) <- glue(
+        "  log_jacobian_re_{id} = 0.0;\n"
+      )
+      for (k in seq_len(M)) {
+        rho_k <- if (identical(mode, "auto")) {
+          glue("rho_s2z_{id}[, {k}]")
+        } else {
+          stan_s2z_number(rho[k])
+        }
+        scale_k <- if (is_student) {
+          glue("sd_{id}[{k}] * dfm{g}")
+        } else {
+          glue("rep_vector(sd_{id}[{k}], N_{id})")
+        }
+        str_add(out$tpar_comp) <- glue(
+          "  {{\n",
+          "    vector[N_{id}] scale_group_center_re = {scale_k};\n",
+          "    vector[N_{id}] denominator_center_re = 1.0 - ({rho_k}) + ",
+          "({rho_k}) .* scale_group_center_re;\n",
+          "    r_{idp[k]}_{r$cn[k]} = scale_group_center_re .* ",
+          "z_{id}[{k}] ./ denominator_center_re;\n",
+          "    log_jacobian_re_{id} += sum(log(scale_group_center_re)) - ",
+          "sum(log(denominator_center_re));\n",
+          "  }}\n"
+        )
+      }
+    }
+    for (k in seq_len(M)) {
+      scale_k <- if (is_student) {
+        glue("sd_{id}[{k}] * dfm{g}")
+      } else {
+        glue("sd_{id}[{k}]")
+      }
+      str_add(out$model_prior) <- glue(
+        "  target += normal_{lpdf}(r_{idp[k]}_{r$cn[k]} | 0, ",
+        "{scale_k});\n"
+      )
+    }
+    str_add(out$model_prior) <- glue(
+      "  target += log_jacobian_re_{id};\n"
+    )
+  }
+  str_add(out$pll_args) <- cglue(
+    ", vector r_{idp}_{r$cn}"
+  )
+  out
+}
+
 # Construct a link-scale reference predictor that is independent of every S2Z
 # contrast in its linear predictor. Fisher fractions may depend on this global
 # finite-population coordinate without changing the restricted Jacobian: with
@@ -1099,7 +1346,7 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
 stan_re_s2z_fisher_reference_eta <- function(bfl, n = "n") {
   stopifnot(is.bframel(bfl))
   unsupported <- function(detail) {
-    stop2("Fisher centering for S2Z group-level effects ", detail, ".")
+    stop2("Fisher centering for group-level effects ", detail, ".")
   }
   special <- c("cs", "sm", "sp", "gp")
   if (any(vapply(special, function(x) has_rows(bfl$frame[[x]]), logical(1)))) {
@@ -2482,9 +2729,14 @@ stan_re_s2z_fisher_closed_form <- function(
 # population-only references in Stan. Unsupported likelihood coordinates fail
 # during code generation instead of estimating a chart from observed outcomes.
 stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
-  stopifnot(is.reframe(r), has_rows(r), all(r$s2z))
+  stopifnot(is.reframe(r), has_rows(r))
+  effect_label <- if (all(r$s2z)) {
+    "S2Z group-level effects"
+  } else {
+    "ordinary group-level effects"
+  }
   unsupported <- function(detail) {
-    stop2("Fisher centering for S2Z group-level effects ", detail, ".")
+    stop2("Fisher centering for ", effect_label, " ", detail, ".")
   }
   if (any(nzchar(r$nlpar))) {
     unsupported(paste0(
@@ -2500,11 +2752,25 @@ stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
       "multi-membership, or special-effect structure"
     ))
   }
-  if (!is.brmsframe(bframe)) {
-    unsupported("is not yet supported for multivariate response models")
+  model_frame <- bframe
+  if (is.mvbrmsframe(bframe)) {
+    if (isTRUE(bframe$rescor)) {
+      unsupported(paste0(
+        "for predictor-local IDs in multivariate models currently requires ",
+        "set_rescor(FALSE)"
+      ))
+    }
+    responses <- unique(r$resp)
+    if (length(responses) != 1L || !responses %in% names(bframe$terms)) {
+      unsupported("requires one predictor-local response block")
+    }
+    model_frame <- bframe$terms[[responses]]
   }
-  bfl <- re_s2z_bframel(bframe, r)
-  response_family <- bframe$family$family
+  if (!is.brmsframe(model_frame)) {
+    unsupported("could not identify one response model")
+  }
+  bfl <- re_s2z_bframel(model_frame, r)
+  response_family <- model_frame$family$family
   dpar <- bfl$dpar
   if (has_rows(bfl$frame$ac)) {
     unsupported("does not yet support residual autocorrelation structures")
@@ -2536,7 +2802,7 @@ stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
   fast_location_candidate <- response_family %in% c("gaussian", "student") &&
     identical(bfl$family$link, "identity") && identical(dpar, "mu")
   if (fast_location_candidate) {
-    sigma <- stan_sigma_transform(bframe, threads = threads)
+    sigma <- stan_sigma_transform(model_frame, threads = threads)
     expected_sigma <- glue("sigma{resp}")
     fast_location <-
       identical(as.character(sigma), as.character(expected_sigma)) &&
@@ -2560,7 +2826,7 @@ stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
     ))
   }
 
-  closed <- stan_re_s2z_fisher_closed_form(bframe, dpar = dpar)
+  closed <- stan_re_s2z_fisher_closed_form(model_frame, dpar = dpar)
   if (is.null(closed)) {
     unsupported(paste0(
       "has no response-free expected-information rule for family '",
@@ -3777,7 +4043,7 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
 # v = sqrt(N) L^-1 m, so m = L v / sqrt(N). With orthonormal S2Z contrasts,
 # the Jacobian back to conventional group effects is |L|.
 .stan_re_s2z_explicit_block <- function(id, set, prior, normalize,
-                                        out = list()) {
+                                        out = list(), fisher_info = NULL) {
   if (is.null(out[["tpar_prior"]])) {
     out[["tpar_prior"]] <- ""
   }
@@ -3794,6 +4060,24 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
   r_s2z <- glue("r_s2z_{idp}_{r$cn}")
   is_cor <- M > 1L && isTRUE(r$cor[1])
   is_student <- identical(r$dist[1], "student")
+  s2z_mode <- re_s2z_center_mode(r)
+  s2z_center <- identical(s2z_mode, "centered")
+  s2z_fisher <- !is.null(fisher_info)
+  s2z_partial <- s2z_mode %in% c("partial", "auto")
+  stopifnot(!s2z_fisher || identical(s2z_mode, "auto"))
+
+  if (s2z_fisher) {
+    out <- stan_re_s2z_fisher_def(out, id)
+    if (isTRUE(fisher_info$fixed_design)) {
+      out <- stan_re_s2z_fisher_tdata(out, id, r, fisher_info)
+    }
+  } else if (s2z_partial) {
+    str_add(out$data) <- glue(
+      "  matrix<lower=0,upper=1>[N_{id}, M_{id}] rho_s2z_{id};",
+      "  // fixed numeric centering fractions\n"
+    )
+    out <- stan_re_s2z_partial_tdata(out, id)
+  }
 
   if (is_cor) {
     str_add(out$data) <- glue(
@@ -3812,7 +4096,13 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
 
   str_add(out$par) <- glue(
     "  vector[M_{id} * (N_{id} - 1)] z_s2z_{id};",
-    "  // physical orthonormal S2Z coordinates\n",
+    if (s2z_partial) {
+      "  // partially centered orthonormal S2Z coordinates\n"
+    } else if (s2z_center) {
+      "  // physical orthonormal S2Z coordinates\n"
+    } else {
+      "  // standardized orthonormal S2Z coordinates\n"
+    },
     "  vector[M_{id}] z_mean_s2z_{id};",
     "  // standardized omitted group mean\n"
   )
@@ -3829,6 +4119,10 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
         "  vector<lower=0>[N_{id}] group_prec_s2z_{id};\n"
       )
     ),
+    str_if(
+      s2z_partial,
+      glue("  real log_det_partial_s2z_{id};\n")
+    ),
     cglue("  vector[N_{id}] {r_s2z};\n")
   )
 
@@ -3844,12 +4138,50 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
       "  L_Sigma_s2z_{id} = diag_matrix(sd_{id});\n"
     )
   }
+  if (s2z_fisher) {
+    str_add(out$tpar_comp) <- stan_re_s2z_fisher_comp(
+      id, r = r, fisher_info = fisher_info,
+      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
+      scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
+      diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
+    )
+  }
+  if (is_cor || !s2z_partial) {
+    str_add(out$tpar_comp) <- glue(
+      "  for (k in 1:M_{id}) {{\n",
+      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+      "N_{id} - 1));\n",
+      "  }}\n"
+    )
+  }
+  if (s2z_partial) {
+    if (is_cor) {
+      str_add(out$tpar_comp) <- stan_re_s2z_partial_cor_transform(id)
+    } else {
+      str_add(out$tpar_comp) <- glue(
+        "  log_det_partial_s2z_{id} = 0.0;\n"
+      )
+      for (k in seq_len(M)) {
+        str_add(out$tpar_comp) <- stan_re_s2z_partial_independent_transform(
+          id, k, glue("r_s2z_{id}[, {k}]"), glue("sd_{id}[{k}]")
+        )
+      }
+    }
+  } else if (!s2z_center) {
+    if (is_cor) {
+      str_add(out$tpar_comp) <- glue(
+        "  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n"
+      )
+    } else {
+      for (k in seq_len(M)) {
+        str_add(out$tpar_comp) <- glue(
+          "  r_s2z_{id}[, {k}] *= sd_{id}[{k}];\n"
+        )
+      }
+    }
+  }
   str_add(out$tpar_comp) <- glue(
-    "  for (k in 1:M_{id}) {{\n",
-    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
-    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
-    "N_{id} - 1));\n",
-    "  }}\n",
     "  mean_r_s2z_{id} = L_Sigma_s2z_{id} * z_mean_s2z_{id} / ",
     "sqrt(1.0 * N_{id});\n"
   )
@@ -3891,8 +4223,17 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
 
   str_add(out$tpar_prior) <- glue(
     "  lprior += -0.5 * group_quad_s2z_{id}\n",
-    "    - (N_{id} - 1) * ",
-    "sum(log(diagonal(L_Sigma_s2z_{id})))\n",
+    str_if(
+      s2z_center,
+      glue(
+        "    - (N_{id} - 1) * ",
+        "sum(log(diagonal(L_Sigma_s2z_{id})))\n"
+      )
+    ),
+    str_if(
+      s2z_partial,
+      glue("    + log_det_partial_s2z_{id}\n")
+    ),
     str_if(
       is_student,
       glue("    - M_{id} * sum(log(group_scale_s2z_{id}))\n")
@@ -4019,7 +4360,8 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
 }
 
 .stan_re_s2z_explicit <- function(id, bframe, prior, normalize,
-                                   out = list(), stanvars = NULL) {
+                                  out = list(), fisher_info = NULL,
+                                  stanvars = NULL) {
   r <- subset2(bframe$frame$re, id = id)
   bfl <- re_s2z_bframel(bframe, r)
   infos <- re_s2z_infos(
@@ -4028,7 +4370,8 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
   stopifnot(length(infos) == 1L)
   set <- nlist(set_id = id, ids = id, bfl, infos)
   out <- .stan_re_s2z_explicit_block(
-    id, set = set, prior = prior, normalize = normalize, out = out
+    id, set = set, prior = prior, normalize = normalize, out = out,
+    fisher_info = fisher_info
   )
   .stan_re_s2z_explicit_system(set, normalize = normalize, out = out)
 }
@@ -4092,7 +4435,8 @@ stan_re_s2z_H_code <- function(info) {
   }
   if (.stan_re_s2z_uses_explicit_mean(set)) {
     return(.stan_re_s2z_explicit_block(
-      id, set = set, prior = prior, normalize = normalize, out = out
+      id, set = set, prior = prior, normalize = normalize, out = out,
+      fisher_info = fisher_info
     ))
   }
   r <- subset2(bframe$frame$re, id = id)
@@ -6078,7 +6422,8 @@ stan_re_s2z_H_code <- function(info) {
   if (.stan_re_s2z_uses_explicit_mean(single_set)) {
     return(.stan_re_s2z_explicit(
       id, bframe = bframe, prior = prior,
-      normalize = normalize, out = out, stanvars = stanvars
+      normalize = normalize, out = out, fisher_info = fisher_info,
+      stanvars = stanvars
     ))
   }
 

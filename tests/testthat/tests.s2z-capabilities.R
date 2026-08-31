@@ -354,6 +354,87 @@ test_that("exact logistic means cover every physical S2Z kernel shape", {
   )
 })
 
+test_that("exact logistic means compose with every S2Z centering chart", {
+  skip_if_not_installed("rstan")
+
+  population_prior <- prior(logistic(-1, 2), class = Intercept) +
+    prior(normal(0, 1), class = b, coef = x)
+  cases <- list(
+    noncentered = list(
+      formula = y ~ x +
+        (1 + x | gr(g, s2z = TRUE, center = FALSE)),
+      family = gaussian(), prior = population_prior
+    ),
+    partial = list(
+      formula = y ~ x +
+        (1 + x | gr(g, s2z = TRUE, center = 0.35)),
+      family = gaussian(), prior = population_prior
+    ),
+    fisher = list(
+      formula = y ~ x +
+        (1 + x | gr(g, s2z = TRUE, center = "fisher")),
+      family = gaussian(), prior = population_prior
+    ),
+    independent = list(
+      formula = y ~ x +
+        (1 + x || gr(g, s2z = TRUE, center = 0.35)),
+      family = gaussian(), prior = population_prior
+    ),
+    Student = list(
+      formula = y ~ x + (1 + x | gr(
+        g, s2z = TRUE, dist = "student", center = "fisher"
+      )),
+      family = gaussian(), prior = population_prior
+    ),
+    multiblock = list(
+      formula = y ~ x +
+        (1 + x | gr(g, id = "first", s2z = TRUE, center = 0.3)) +
+        (1 | gr(h, id = "second", s2z = TRUE, center = "fisher")),
+      family = gaussian(), prior = population_prior
+    )
+  )
+
+  code <- lapply(cases, s2z_cap_code)
+  for (name in names(code)) {
+    expect_s3_class(code[[name]], "brmsmodel")
+    expect_match2(code[[name]], "q_explicit_s2z_", info = name)
+    expect_match2(
+      code[[name]], "lprior += logistic_lpdf(q_explicit_s2z_", info = name
+    )
+  }
+  expect_match2(
+    code$noncentered, "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';"
+  )
+  expect_false(grepl(
+    "log_det_partial_s2z_1", code$noncentered, fixed = TRUE
+  ))
+  expect_false(grepl(
+    "- (N_1 - 1) * sum(log(diagonal(L_Sigma_s2z_1)))",
+    code$noncentered, fixed = TRUE
+  ))
+  expect_match2(code$partial, "log_det_partial_s2z_1")
+  expect_match2(
+    code$partial,
+    "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;"
+  )
+  expect_match2(code$fisher, "rho_s2z_1[j, k]")
+  expect_match2(code$independent, "scale_partial_s2z")
+  expect_match2(code$Student, "group_scale_s2z_1 = dfm_1;")
+  expect_match2(code$Student, "rho_s2z_1[j, k]")
+  expect_match2(code$multiblock, "log_det_partial_s2z_1")
+  expect_match2(code$multiblock, "rho_s2z_2[j, 1]")
+
+  default_code <- stancode(
+    y ~ x + (1 + x | gr(g, s2z = TRUE)),
+    data = s2z_cap_dat, prior = population_prior
+  )
+  centered_code <- stancode(
+    y ~ x + (1 + x | gr(g, s2z = TRUE, center = TRUE)),
+    data = s2z_cap_dat, prior = population_prior
+  )
+  expect_identical(default_code, centered_code)
+})
+
 test_that("fixed-only coordinates keep arbitrary ordinary brms priors", {
   skip_if_not_installed("rstan")
 

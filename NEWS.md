@@ -2,6 +2,20 @@
 
 ### New Features
 
+* Extend `gr(..., center = ...)` to ordinary Gaussian and Student-t
+group-level effects. The historical default (`NULL`, `FALSE`, or `0`) remains
+non-centered, while `TRUE` or `1` selects centered coordinates and intermediate
+numeric values provide exact partial centering. Student-t effects use the exact
+conditional scale-mixture chart. `center = "fisher"` (and its `"auto"` alias)
+chooses response-free, level- and coefficient-specific fractions from the
+current group covariance and the existing expected-information catalog. Fixed
+fractions also support ordinal, distributional, multivariate, and nonlinear
+predictor-local blocks. Fisher fractions currently exclude ordinal and
+nonlinear predictors, and positive ordinary centering currently excludes
+cross-predictor IDs, `by`, `cov`, `pw`, multi-membership, and special group
+coefficients. Predictor-local ordinary Fisher blocks in multivariate models
+currently require `set_rescor(FALSE)`.
+
 * Add experimental sum-to-zero parameterizations via
 `gr(..., s2z = TRUE)` for hierarchical models with varying intercepts, slopes,
 and interactions. It analytically integrates out the omitted common
@@ -33,9 +47,9 @@ information, while boundary separation and bias use exact Fisher information
 after coarsening to the recorded upper/lower decision. Supported auxiliary
 probability coordinates---atom probabilities, asymmetric-Laplace quantile, and
 Wiener bias---use an exact explicit omitted-mean fallback for their default
-logistic population `Intercept` prior in physically centered, predictor-local,
-shared-scale blocks without `cov`. Other charts require an explicit compatible
-population prior. Strict latent scores support
+logistic population `Intercept` prior in predictor-local, shared-scale blocks
+without `cov`, at every supported centering value. Other structural charts
+require an explicit compatible population prior. Strict latent scores support
 symbolically analyzable scalar nonlinear location predictors for supported
 scalar response families, including sampled population-level loadings and
 wide models with conditionally independent responses.

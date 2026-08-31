@@ -103,11 +103,11 @@
 #'   one-dimensional arguments in global priors are mapped by population
 #'   coefficient. Data values may change without recompilation when their
 #'   declaration and shape remain unchanged. Scales and degrees of freedom must
-#'   be positive. Physically centered,
-#'   predictor-local blocks with shared scales and no fixed \code{cov} also
-#'   support exact logistic active-coordinate priors through an explicit
-#'   omitted-mean fallback. That fallback is not available for ordinal
-#'   locations or other centering, scale, covariance, or cross-predictor charts.
+#'   be positive. Predictor-local blocks with shared scales and no fixed
+#'   \code{cov} also support exact logistic active-coordinate priors through an
+#'   explicit omitted-mean fallback at every supported centering value. That
+#'   fallback is not available for ordinal locations, varying scales,
+#'   covariance, or cross-predictor charts.
 #'   Bounds, tags, special priors, prior-only sampling, sparse and QR designs,
 #'   and non-positive fixed group-level standard deviations are not supported.
 #'   Custom Stan code must not use the conventional population- or group-level
@@ -155,10 +155,25 @@
 #'   at their respective levels.
 #'   This is a new statistical model rather than only a change of coordinates.
 #' @param center Logical, a single number in \code{[0, 1]}, \code{"fisher"},
-#'   \code{"auto"}, or \code{NULL}. With \code{s2z = TRUE}, \code{NULL},
-#'   \code{TRUE}, and \code{1} use centered physical coordinates;
-#'   \code{FALSE} and \code{0} use non-centered coordinates. Intermediate
-#'   numbers partially center the effects.
+#'   \code{"auto"}, or \code{NULL}. For ordinary group effects,
+#'   \code{NULL}, \code{FALSE}, and \code{0} retain the existing non-centered
+#'   parameterization, while \code{TRUE} and \code{1} use centered
+#'   coordinates. For S2Z effects, \code{NULL}, \code{TRUE}, and \code{1}
+#'   use centered physical coordinates, while \code{FALSE} and \code{0} use
+#'   non-centered coordinates. Intermediate numbers partially center either
+#'   kind of group effect without changing its statistical model.
+#'
+#'   Ordinary Gaussian effects use the exact per-level map
+#'   \eqn{u_j=L_j A_j^{-1}q_j}, where
+#'   \eqn{A_j=\mathop{diag}(\rho_j)L_j+\mathop{diag}(1-\rho_j)} and
+#'   \eqn{L_j} is the conditional group-covariance Cholesky factor. The
+#'   log-Jacobian is \eqn{\log|L_j|-\log|A_j|}. Student-t effects use the same
+#'   map conditional on their existing scale-mixture variable, so numeric
+#'   partial centering is also exact and \code{center = 0} retains the
+#'   existing conditionally non-centered chart. Correlated and independent
+#'   Gaussian and Student-t \code{gr} blocks are eligible. Positive centering
+#'   is not currently available with \code{by}, \code{cov}, \code{pw},
+#'   multi-membership, or special group coefficients.
 #'
 #'   \code{center = "fisher"} chooses level- and coefficient-specific fractions
 #'   by combining the current Gaussian group-effect covariance with
@@ -207,9 +222,13 @@
 #'   All coefficients sharing an \code{id} must use Fisher centering together.
 #'   For correlated blocks, the chart can depend on coefficient order, although
 #'   the posterior remains unchanged.
-#'   With \code{s2z = FALSE}, only \code{NULL}, \code{FALSE}, and \code{0}
-#'   are allowed. This argument does not center the population-level design
-#'   matrix.
+#'   For ordinary effects, Fisher centering is currently limited to one
+#'   predictor-local ordinary \code{gr} covariance block and the same
+#'   response-likelihood information catalog described above. In particular,
+#'   ordinal locations, nonlinear predictors, and IDs spanning predictors use
+#'   fixed centering values instead. Predictor-local ordinary Fisher blocks in
+#'   multivariate models currently require \code{set_rescor(FALSE)}. This
+#'   argument does not center the population-level design matrix.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
@@ -306,11 +325,6 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
       stop2("Argument 'center' must be NULL, logical, a number in [0, 1], ",
             "\"fisher\", or \"auto\".")
     }
-    if (!s2z) {
-      stop2("Argument 'center = \"", center,
-            "\"' is not supported for ordinary ",
-            "group-level effects and requires 's2z = TRUE'.")
-    }
     # The numeric value is an internal placeholder. The mode flag ensures it
     # is never used as the actual group- and coefficient-specific fraction.
     s2z_center <- 0.5
@@ -325,10 +339,6 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   } else {
     stop2("Argument 'center' must be NULL, logical, a number in [0, 1], ",
           "\"fisher\", or \"auto\".")
-  }
-  if (!s2z && s2z_center != 0) {
-    stop2("Nonzero values of argument 'center' are not yet supported for ",
-          "ordinary group-level effects. Use 's2z = TRUE' or 'center = 0'.")
   }
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)

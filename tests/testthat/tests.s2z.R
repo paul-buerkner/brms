@@ -352,6 +352,90 @@ context("Tests for physical sum-to-zero group-level effects")
   )
 }
 
+# Full explicit-mean reference for an S2Z chart with a non-Gaussian
+# population prior. Besides the restricted contrast map, this includes the
+# standardized omitted mean, the unit-determinant population-coordinate
+# shear, and optional conditional Student-t group scales.
+.s2z_explicit_logistic_change_case <- function(L, rho, mixers = NULL) {
+  n <- nrow(rho)
+  k <- ncol(rho)
+  stopifnot(
+    n >= 2L, nrow(L) == k, ncol(L) == k,
+    all(rho >= 0), all(rho <= 1)
+  )
+  if (is.null(mixers)) {
+    mixers <- rep(1, n)
+  }
+  stopifnot(length(mixers) == n, all(is.finite(mixers)), all(mixers > 0))
+  basis <- .s2z_basis(n)
+  contrast_dim <- (n - 1L) * k
+
+  transform <- function(x) {
+    z <- matrix(x[seq_len(contrast_dim)], nrow = n - 1L, ncol = k)
+    v <- x[contrast_dim + seq_len(k)]
+    theta <- x[contrast_dim + k + seq_len(k)]
+    raw <- basis %*% z
+    delta <- matrix(NA_real_, nrow = n, ncol = k)
+    for (j in seq_len(n)) {
+      D_j <- diag(rho[j, ], nrow = k) %*% L +
+        diag(1 - rho[j, ], nrow = k)
+      delta[j, ] <- drop(
+        L %*% forwardsolve(D_j, raw[j, ], upper.tri = FALSE)
+      )
+    }
+    delta <- sweep(delta, 2L, colMeans(delta), "-")
+    mean_effect <- drop(L %*% v / sqrt(n))
+    group_effect <- sweep(delta, 2L, mean_effect, "+")
+    population <- theta - mean_effect
+    c(as.vector(group_effect), population)
+  }
+
+  input_dim <- contrast_dim + 2L * k
+  x <- c(
+    sin(seq_len(contrast_dim) * 0.37) / 1.9,
+    seq(-0.45, 0.35, length.out = k),
+    seq(0.8, -0.25, length.out = k)
+  )
+  jacobian <- vapply(seq_len(input_dim), function(i) {
+    unit <- numeric(input_dim)
+    unit[i] <- 1
+    transform(unit)
+  }, numeric(input_dim))
+  numeric_log_jacobian <- .s2z_balanced_logabsdet(jacobian)$qr
+
+  D <- lapply(seq_len(n), function(j) {
+    diag(rho[j, ], nrow = k) %*% L +
+      diag(1 - rho[j, ], nrow = k)
+  })
+  D_bar <- Reduce("+", D) / n
+  determinant_correction <-
+    -sum(vapply(D, function(x) sum(log(diag(x))), numeric(1))) +
+    sum(log(diag(D_bar)))
+  formula_log_jacobian <- n * sum(log(diag(L))) +
+    determinant_correction
+
+  transformed <- transform(x)
+  group_effect <- matrix(
+    transformed[seq_len(n * k)], nrow = n, ncol = k
+  )
+  population <- tail(transformed, k)
+  whitened <- t(forwardsolve(L, t(group_effect))) / mixers
+  physical_log_density <- sum(dnorm(whitened, log = TRUE)) -
+    n * sum(log(diag(L))) - k * sum(log(mixers)) +
+    sum(dlogis(population, location = -0.4, scale = 1.3, log = TRUE))
+  chart_log_density <- sum(dnorm(whitened, log = TRUE)) -
+    k * sum(log(mixers)) + determinant_correction +
+    sum(dlogis(population, location = -0.4, scale = 1.3, log = TRUE))
+
+  list(
+    numeric_log_jacobian = numeric_log_jacobian,
+    formula_log_jacobian = formula_log_jacobian,
+    determinant_correction = determinant_correction,
+    physical_plus_jacobian = physical_log_density + numeric_log_jacobian,
+    chart_log_density = chart_log_density
+  )
+}
+
 # Check the complete moving chart when the scalar Fisher fraction depends on
 # the sampled group scale.  The output retains log(tau), so the full Jacobian
 # is block triangular even though every latent coordinate depends on tau.
@@ -932,6 +1016,65 @@ test_that("scalar partial S2Z uses the exact restricted Jacobian", {
   expect_equal(
     noncentered$effects, 2.3 * noncentered$basis %*% noncentered$z,
     tolerance = 3e-14
+  )
+})
+
+test_that("exact logistic S2Z means compose with every centering chart", {
+  n <- 5L
+  L_cor <- matrix(c(1.7, -0.45, 0, 0.65), 2L, 2L)
+  cases <- list(
+    correlated_noncentered = list(
+      L = L_cor, rho = matrix(0, n, 2L), mixers = rep(1, n)
+    ),
+    correlated_partial = list(
+      L = L_cor,
+      rho = matrix(c(
+        0, 0.15, 0.4, 0.75, 1,
+        0.9, 0.65, 0.35, 0.1, 0
+      ), n, 2L),
+      mixers = rep(1, n)
+    ),
+    correlated_centered = list(
+      L = L_cor, rho = matrix(1, n, 2L), mixers = rep(1, n)
+    ),
+    independent_partial = list(
+      L = diag(c(0.35, 2.4)),
+      rho = matrix(seq(0.05, 0.95, length.out = 2L * n), n, 2L),
+      mixers = rep(1, n)
+    ),
+    scalar_student_partial = list(
+      L = matrix(1.25, 1L, 1L),
+      rho = matrix(c(0, 0.2, 0.55, 0.85, 1), n, 1L),
+      mixers = c(0.45, 0.8, 1.1, 1.7, 2.3)
+    )
+  )
+
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    ans <- .s2z_explicit_logistic_change_case(
+      case$L, case$rho, mixers = case$mixers
+    )
+    expect_equal(
+      ans$numeric_log_jacobian, ans$formula_log_jacobian,
+      tolerance = 2e-10, scale = 1, info = name
+    )
+    expect_equal(
+      ans$physical_plus_jacobian, ans$chart_log_density,
+      tolerance = 2e-10, scale = 1, info = name
+    )
+  }
+
+  expect_equal(
+    .s2z_explicit_logistic_change_case(
+      L_cor, matrix(0, n, 2L)
+    )$determinant_correction,
+    0, tolerance = 2e-14
+  )
+  expect_equal(
+    .s2z_explicit_logistic_change_case(
+      L_cor, matrix(1, n, 2L)
+    )$determinant_correction,
+    -(n - 1L) * sum(log(diag(L_cor))), tolerance = 2e-14
   )
 })
 
