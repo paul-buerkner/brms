@@ -297,10 +297,22 @@ coef.brmsfit <- function(object, summary = TRUE, robust = FALSE,
 #'  \code{\link[nlme:VarCorr]{VarCorr}}).
 #' @param ... Currently ignored.
 #'
-#' @return A list of lists (one per grouping factor), each with
-#' three elements: a matrix containing the standard deviations,
-#' an array containing the correlation matrix, and an array
-#' containing the covariance matrix with variances on the diagonal.
+#' @return A list of lists (one per grouping factor), with a matrix containing
+#' the standard deviations and, when correlations are present, arrays
+#' containing the correlation and covariance matrices. For
+#' group-varying scale models, these three elements describe the baseline
+#' covariance obtained when the log-scale deviation is zero. Such models also
+#' return \code{sdlog}, containing the log-scale standard deviations,
+#' \code{sd_level}, containing the realized scales by grouping level, and
+#' \code{cov_level}, a named list of covariance matrices by grouping level.
+#' With \code{summary = FALSE}, their respective shapes are draws by
+#' coefficients, draws by levels by coefficients, and (for each level) draws
+#' by coefficients by coefficients. With \code{summary = TRUE}, their shapes
+#' are coefficients by statistics, levels by statistics by coefficients, and
+#' (for each level) coefficients by statistics by coefficients.
+#' For Student-t group effects, \code{sd}, \code{cov}, \code{sd_level}, and
+#' \code{cov_level} retain the existing Student-t scale-matrix semantics; they
+#' are not marginal standard deviations or covariance matrices.
 #'
 #' @examples
 #' \dontrun{
@@ -324,8 +336,13 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
   }
   .VarCorr <- function(y) {
     # extract draws for sd, cor and cov
-    out <- list(sd = as.matrix(x, variable = y$sd_pars))
+    sd_draws <- as.matrix(x, variable = y$sd_pars)
+    out <- list(sd = sd_draws)
     colnames(out$sd) <- y$rnames
+    cor_for_cov <- matrix(
+      0, nrow(sd_draws), length(y$cor_pars),
+      dimnames = list(NULL, y$cor_pars)
+    )
     # compute correlation and covariance matrices
     found_cor_pars <- intersect(y$cor_pars, variables(x))
     if (length(found_cor_pars)) {
@@ -342,6 +359,7 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
         }
         cor <- cor_all
       }
+      cor_for_cov <- cor
       out$cor <- get_cor_matrix(cor = cor)
       out$cov <- get_cov_matrix(sd = out$sd, cor = cor)
       dimnames(out$cor)[2:3] <- list(y$rnames, y$rnames)
@@ -349,6 +367,50 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
       if (summary) {
         out$cor <- posterior_summary(out$cor, probs, robust)
         out$cov <- posterior_summary(out$cov, probs, robust)
+      }
+    }
+    if (isTRUE(y$varying_scale)) {
+      found_sdlog <- intersect(y$sdlog_pars, variables(x))
+      if (length(found_sdlog)) {
+        out$sdlog <- as.matrix(x, variable = found_sdlog)
+        colnames(out$sdlog) <- y$varying_rnames
+      }
+      found_sd_level <- intersect(y$sd_level_pars, variables(x))
+      if (length(found_sd_level) == length(y$sd_level_pars)) {
+        ndraws <- nrow(sd_draws)
+        nlevels <- length(y$levels)
+        nranef <- length(y$rnames)
+        sd_level <- array(
+          NA_real_, dim = c(ndraws, nlevels, nranef),
+          dimnames = list(NULL, y$levels, y$rnames)
+        )
+        # Shared-scale coefficients, if any, are constant across levels.
+        for (k in seq_len(nranef)) {
+          sd_level[, , k] <- sd_draws[, k]
+        }
+        varying_draws <- as.matrix(x, variable = found_sd_level)
+        varying_array <- array(
+          varying_draws,
+          dim = c(ndraws, nlevels, length(y$varying_rnames))
+        )
+        varying_match <- match(y$varying_rnames, y$rnames)
+        sd_level[, , varying_match] <- varying_array
+        out$sd_level <- sd_level
+        out$cov_level <- lapply(seq_len(nlevels), function(j) {
+          ans <- get_cov_matrix(sd_level[, j, ], cor_for_cov)
+          dimnames(ans)[2:3] <- list(y$rnames, y$rnames)
+          ans
+        })
+        names(out$cov_level) <- y$levels
+        if (summary) {
+          out$sd_level <- posterior_summary(out$sd_level, probs, robust)
+          out$cov_level <- lapply(
+            out$cov_level, posterior_summary, probs = probs, robust = robust
+          )
+        }
+      }
+      if (summary && length(out$sdlog)) {
+        out$sdlog <- posterior_summary(out$sdlog, probs, robust)
       }
     }
     if (summary) {
@@ -362,11 +424,35 @@ VarCorr.brmsfit <- function(x, sigma = 1, summary = TRUE, robust = FALSE,
     get_names <- function(group) {
       # get names of group-level parameters
       r <- subset2(reframe, group = group)
-      rnames <- as.vector(get_rnames(r))
+      # Response-local strict latent-score occurrences may alias one fitted
+      # covariance coordinate. Public group effects retain every occurrence,
+      # but VarCorr must request only covariance parameters that actually
+      # exist in the posterior draws.
+      r_cov <- re_s2z_covariance_dimensions(r)
+      rnames <- as.vector(get_rnames(r_cov))
       cor_type <- paste0("cor_", group)
       sd_pars <- paste0("sd_", group, "__", rnames)
       cor_pars <- get_cornames(rnames, cor_type, brackets = FALSE)
-      nlist(rnames, sd_pars, cor_pars)
+      varying <- r_cov$scale == "varying"
+      varying_rnames <- character()
+      if (any(varying)) {
+        varying_rnames <- as.vector(get_rnames(
+          r_cov[varying, , drop = FALSE]
+        ))
+      }
+      sdlog_pars <- paste0("sdlog_", group, "__", varying_rnames)
+      levels <- gsub(
+        "[ \t\r\n]", ".", get_levels(reframe)[[group]]
+      )
+      sd_level_pars <- paste0(
+        "sd_level_", group,
+        make_index_names(levels, varying_rnames, dim = 2)
+      )
+      varying_scale <- any(varying)
+      nlist(
+        rnames, sd_pars, cor_pars, varying_scale, varying_rnames,
+        sdlog_pars, sd_level_pars, levels
+      )
     }
     group <- unique(reframe$group)
     tmp <- lapply(group, get_names)

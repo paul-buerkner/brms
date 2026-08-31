@@ -91,11 +91,11 @@ stancode.default <- function(object, data, family = gaussian(),
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
+  stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   prior <- .validate_prior(
     prior, bframe = bframe,
-    sample_prior = sample_prior
+    sample_prior = sample_prior, stanvars = stanvars
   )
-  stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
   threads <- validate_threads(threads)
 
  .stancode(
@@ -118,12 +118,14 @@ stancode.default <- function(object, data, family = gaussian(),
   parse <- as_one_logical(parse)
   backend <- match.arg(backend, backend_choices())
   silent <- as_one_logical(silent)
+  validate_re_s2z(bterms, prior = prior, stanvars = stanvars)
   scode_predictor <- stan_predictor(
     bterms, prior = prior, normalize = normalize,
     stanvars = stanvars, threads = threads
   )
   scode_re <- stan_re(
-    bterms, prior = prior, threads = threads, normalize = normalize
+    bterms, prior = prior, threads = threads, normalize = normalize,
+    stanvars = stanvars
   )
   scode_Xme <- stan_Xme(
     bterms, prior = prior, threads = threads, normalize = normalize
@@ -248,8 +250,10 @@ stancode.default <- function(object, data, family = gaussian(),
   scode_transformed_data <- paste0(
     "transformed data {\n",
        scode_predictor[["tdata_def"]],
+       scode_re[["tdata_def"]],
        collapse_stanvars(stanvars, "tdata", "start"),
        scode_predictor[["tdata_comp"]],
+       scode_re[["tdata_comp"]],
        collapse_stanvars(stanvars, "tdata", "end"),
     "}\n"
   )
@@ -344,6 +348,9 @@ stancode.default <- function(object, data, family = gaussian(),
       collapse_stanvars(stanvars, "genquant", "start"),
       scode_predictor[["gen_comp"]],
       scode_re[["gen_comp"]],
+      # Ordinal S2Z public thresholds depend on the conventional coefficients
+      # and omitted group means recovered immediately above.
+      scode_predictor[["gen_after_recovery"]],
       scode_rngprior[["gen_comp"]],
       scode_Xme[["gen_comp"]],
       collapse_stanvars(stanvars, "genquant", "end"),

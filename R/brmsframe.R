@@ -15,6 +15,7 @@ brmsframe <- function(x, ...) {
 #' @export
 brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
   x$frame <- initialize_frame(x, data = data, basis = basis, ...)
+  x$frame$re_latent_center <- basis[["re_s2z_latent_center"]]
   for (r in names(x$terms)) {
     x$terms[[r]] <- brmsframe(
       x$terms[[r]], data = data, frame = x$frame,
@@ -39,9 +40,24 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
   if (!is.null(basis)) {
     x$frame$basis <- basis[c("resp_levels")]
   }
+  x$frame$re_latent_center <- basis[["re_s2z_latent_center"]]
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
   x$frame$ac <- frame_ac(x, data = data)
+  # Keep top-level response and family labels available to local predictor
+  # validation. Category and mixture predictors otherwise carry only their
+  # dpar prefix, even though the enclosing model context is known here.
+  s2z_response <- x$resp %||% ""
+  if (!length(s2z_response) || !nzchar(s2z_response)) {
+    response_vars <- all.vars(x$respform)
+    if (length(response_vars)) {
+      s2z_response <- response_vars[1L]
+    }
+  }
+  x$frame$s2z_context <- list(
+    response = s2z_response,
+    family = x$family$family %||% ""
+  )
   for (dp in names(x$dpars)) {
     x$dpars[[dp]] <- brmsframe(
       x$dpars[[dp]], data, frame = x$frame,
@@ -85,6 +101,29 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # only store the ranefs of this specific linear formula
   x$frame$re <- subset2(frame$re, ls = check_prefix(x))
   class(x) <- c("bframel", class(x))
+  validate_re_s2z_structure(x, data = data)
+  x$frame$re_center_mean <- frame_re_center_mean(
+    x, data = data, cached = basis[["re_center_mean"]]
+  )
+  if (has_re_s2z_conventional(x) &&
+      is.list(basis[["re_s2z"]]) && length(basis[["re_s2z"]])) {
+    # The affine map is part of the fitted coordinate system. In prediction
+    # frames, reuse the map validated against the fitting design rather than
+    # recentering it on newdata.
+    x$frame$re_s2z <- basis[["re_s2z"]]
+  } else {
+    re_s2z <- validate_re_s2z_design(x, data = data)
+    if (has_re_s2z_conventional(x) && length(re_s2z)) {
+      x$frame$re_s2z <- re_s2z
+    }
+  }
+  if (!is.null(basis[["re_s2z_center"]])) {
+    # Partial-centering fractions are part of the fitted coordinate map. Reuse
+    # them for new data rather than deriving a different map at prediction time.
+    x$sdata$re_s2z_center <- basis[["re_s2z_center"]]
+  } else {
+    x$sdata$re_s2z_center <- data_re_s2z_center(x, data = data)
+  }
   # these data_ functions may require the outputs of the corresponding
   # frame_ functions (but not vice versa) and are thus evaluated last
   x$sdata$gp <- data_gp(x, data, internal = TRUE)
@@ -300,6 +339,14 @@ frame_basis.default <- function(x, data, ...) {
 #' @export
 frame_basis.mvbrmsterms <- function(x, data, ...) {
   out <- list()
+  re_s2z_latent_center <- if (is.anybrmsframe(x)) {
+    data_re_s2z_latent_center(x)
+  } else {
+    list()
+  }
+  if (length(re_s2z_latent_center)) {
+    out$re_s2z_latent_center <- re_s2z_latent_center
+  }
   # old levels are required to select the right indices for new levels
   levels <- get_levels(x, data = data)
   for (r in names(x$terms)) {
@@ -314,6 +361,14 @@ frame_basis.mvbrmsterms <- function(x, data, ...) {
 #' @export
 frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
   out <- list()
+  re_s2z_latent_center <- if (is.anybrmsframe(x)) {
+    data_re_s2z_latent_center(x)
+  } else {
+    list()
+  }
+  if (length(re_s2z_latent_center)) {
+    out$re_s2z_latent_center <- re_s2z_latent_center
+  }
   data <- subset_data(data, x)
   for (dp in names(x$dpars)) {
     out$dpars[[dp]] <- frame_basis(x$dpars[[dp]], data, ...)
@@ -348,6 +403,24 @@ frame_basis.btl <- function(x, data, ...) {
   out$sp <- frame_basis_sp(x, data, ...)
   out$ac <- frame_basis_ac(x, data, ...)
   out$bhaz <- frame_basis_bhaz(x, data, ...)
+  has_center_data <- is.bframel(x) && has_rows(x$frame$re) &&
+    re_center_has_data(x$frame$re)
+  if (is.bframel(x) && (has_re_s2z(x) || has_center_data)) {
+    re_s2z_center <- x$sdata[["re_s2z_center"]]
+    if (is.null(re_s2z_center)) {
+      re_s2z_center <- data_re_s2z_center(x, data = data)
+    }
+    if (length(re_s2z_center)) {
+      out$re_s2z_center <- re_s2z_center
+    }
+    if (has_re_s2z_conventional(x) &&
+        is.list(x$frame$re_s2z) && length(x$frame$re_s2z)) {
+      out$re_s2z <- x$frame$re_s2z
+    }
+  }
+  if (is.bframel(x) && length(x$frame$re_center_mean)) {
+    out$re_center_mean <- x$frame$re_center_mean
+  }
   out
 }
 

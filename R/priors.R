@@ -10,6 +10,10 @@
 #'   See 'Details' for other valid parameter classes.
 #' @param coef Name of the coefficient within the parameter class.
 #' @param group Grouping factor for group-level parameters.
+#' @param level Grouping-factor level for level-specific parameters. Currently
+#'   only supported for additional priors of class \code{"sd_level"} on
+#'   realized scales in sum-to-zero group-level terms with
+#'   \code{scale = "varying"}.
 #' @param resp Name of the response variable.
 #'   Only used in multivariate models.
 #' @param dpar Name of a distributional parameter.
@@ -164,6 +168,34 @@
 #'   To define a prior distribution only for a specific standard deviation
 #'   of a specific grouping factor, you may write \cr
 #'   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+#'   Physical sum-to-zero terms specified with
+#'   \code{gr(..., s2z = TRUE, scale = "varying")} additionally have a
+#'   non-negative log-scale standard deviation for every group-level
+#'   coefficient. These parameters have class \code{sdlog} and may be assigned
+#'   coefficient-specific priors in the same way, for example
+#'   \code{set_prior("normal(0, 0.2)", class = "sdlog", group = "g",
+#'   coef = "x1")}. The ordinary class \code{sd} remains the baseline
+#'   (conditional median) scale. Class \code{sdlog} has a half-normal
+#'   \code{normal(0, 0.25)} default; fixing it to zero with
+#'   \code{constant(0)} gives the shared-scale model. Realized per-level scales
+#'   are deterministic hierarchy draws named \code{sd_level}. Additional prior
+#'   information can be supplied for selected scales using class
+#'   \code{sd_level} together with \code{group}, \code{coef}, and \code{level},
+#'   for example \code{set_prior("lognormal(log(0.5), 0.2)",
+#'   class = "sd_level", group = "g", coef = "Intercept", level = "A")}.
+#'   This multiplies the existing hierarchical prior by the specified density
+#'   evaluated at the selected realized scale; it does not replace the
+#'   \code{sd}/\code{sdlog} hierarchy and requires no Jacobian. These additional
+#'   factors must be nonempty continuous distribution priors. Constant and
+#'   special shrinkage priors, tags, and explicit \code{lb}/\code{ub} bounds
+#'   are not supported. Custom distributions are allowed when they provide the
+#'   continuous density and any truncation-normalization functions required by
+#'   the generated Stan code (typically an \code{_lccdf} function when
+#'   normalization is enabled). The user is responsible for ensuring that the
+#'   density is proper and has appropriate support for a positive scale. For
+#'   scalability,
+#'   \code{default_prior} reports one \code{sd_level} availability row per
+#'   group-level coefficient; specify the desired fitted-data level explicitly.
 #'
 #'   If there is more than one group-level effect per grouping factor,
 #'   the correlations between those effects have to be estimated.
@@ -370,8 +402,11 @@
 #' @export
 set_prior <- function(prior, class = "b", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "",
-                      lb = NA, ub = NA, tag = "", check = TRUE) {
-  input <- nlist(prior, class, coef, group, resp, dpar, nlpar, lb, ub, tag, check)
+                      lb = NA, ub = NA, tag = "", check = TRUE,
+                      level = "") {
+  input <- nlist(
+    prior, class, coef, group, resp, dpar, nlpar, lb, ub, tag, check, level
+  )
   input <- try(as.data.frame(input), silent = TRUE)
   if (is_try_error(input)) {
     stop2("Processing arguments of 'set_prior' has failed:\n", input)
@@ -385,7 +420,7 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
 
 # validate arguments passed to 'set_prior'
 .set_prior <- function(prior, class, coef, group, resp,
-                       dpar, nlpar, lb, ub, tag, check) {
+                       dpar, nlpar, lb, ub, tag, check, level) {
   prior <- as_one_character(prior)
   class <- as_one_character(class)
   group <- as_one_character(group)
@@ -393,20 +428,27 @@ set_prior <- function(prior, class = "b", coef = "", group = "",
   resp <- as_one_character(resp)
   dpar <- as_one_character(dpar)
   nlpar <- as_one_character(nlpar)
+  level <- as_one_character(level)
   check <- as_one_logical(check)
   lb <- as_one_character(lb, allow_na = TRUE)
   ub <- as_one_character(ub, allow_na = TRUE)
   tag <- as_one_character(tag)
+  if (check && nzchar(level) && class != "sd_level") {
+    stop2("Argument 'level' is only supported for class 'sd_level'.")
+  }
   if (dpar == "mu") {
     # distributional parameter 'mu' is currently implicit #1368
     dpar <- ""
   }
   if (!check) {
     # prior will be added to the log-posterior as is
-    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- tag <- ""
+    class <- coef <- group <- resp <- dpar <- nlpar <- lb <- ub <- tag <-
+      level <- ""
   }
   source <- "user"
-  out <- nlist(prior, source, class, coef, group, resp, dpar, nlpar, lb, ub, tag)
+  out <- nlist(
+    prior, source, class, coef, group, level, resp, dpar, nlpar, lb, ub, tag
+  )
   do_call(brmsprior, out)
 }
 
@@ -507,10 +549,12 @@ get_prior <- function(formula, ...) {
 #' @param ... Other arguments for internal usage only.
 #'
 #' @return A \code{brmsprior} object. That is, a data.frame with specific
-#'   columns including \code{prior}, \code{class}, \code{coef}, and \code{group}
-#'   and several rows, each providing information on a parameter (or parameter
-#'   class) on which priors can be specified. The prior column is empty except
-#'   for internal default priors.
+#'   columns including \code{prior}, \code{class}, \code{coef}, \code{group},
+#'   and \code{level}, and several rows, each providing information on a
+#'   parameter (or parameter class) on which priors can be specified. The
+#'   \code{level} column selects grouping-factor levels for parameter classes
+#'   that support level-specific priors and is otherwise empty. The prior column
+#'   is empty except for internal default priors.
 #'
 #' @seealso \code{\link{default_prior}}, \code{\link{set_prior}}
 #'
@@ -577,7 +621,9 @@ default_prior.brmsfit <- function(object, ...) {
   # explicitly label default priors as such
   prior$source <- "default"
   # apply 'unique' as the same prior may have been included multiple times
-  to_order <- with(prior, order(resp, dpar, nlpar, class, group, coef, tag))
+  to_order <- with(
+    prior, order(resp, dpar, nlpar, class, group, coef, level, tag)
+  )
   prior <- unique(prior[to_order, , drop = FALSE])
   rownames(prior) <- NULL
   class(prior) <- c("brmsprior", "data.frame")
@@ -946,26 +992,79 @@ prior_re <- function(bframe, internal = FALSE, ...) {
   if (length(def_scale_prior) > 1L) {
     def_scale_prior <- def_scale_prior[px$resp]
   }
+  strict_latent <- reframe$s2z & re_s2z_latent(reframe)
+  if (any(strict_latent)) {
+    # A strict score covariance is shared across response units. Response-
+    # scaled automatic priors would give aliases different priors merely
+    # because their observed outcomes have different scales, so use one
+    # scale-free default for every strict latent covariance occurrence.
+    if (length(def_scale_prior) == 1L) {
+      def_scale_prior <- rep(def_scale_prior, nrow(reframe))
+    }
+    prefix_key <- combine_prefix(px)
+    strict_prefix <- unique(prefix_key[strict_latent])
+    def_scale_prior[prefix_key %in% strict_prefix] <-
+      "student_t(3, 0, 2.5)"
+  }
   global_sd_prior <- brmsprior(
     class = "sd", prior = def_scale_prior,
     lb = "0", ls = px
   )
   prior <- prior + global_sd_prior
+  varying_re <- reframe[reframe$scale == "varying", , drop = FALSE]
+  if (has_rows(varying_re)) {
+    varying_px <- unique(check_prefix(varying_re))
+    prior <- prior + brmsprior(
+      class = "sdlog", prior = "normal(0, 0.25)",
+      lb = "0", ls = varying_px
+    )
+  }
   for (id in unique(reframe$id)) {
-    r <- subset2(reframe, id = id)
+    r_occurrence <- subset2(reframe, id = id)
+    is_strict_latent <- all(r_occurrence$s2z) &&
+      all(re_s2z_latent(r_occurrence))
+    r <- if (is_strict_latent) {
+      re_s2z_latent_dimensions(r_occurrence)
+    } else {
+      r_occurrence
+    }
     group <- r$group[1]
     rpx <- check_prefix(r)
-    urpx <- unique(rpx)
+    r_coef <- if (is_strict_latent) r_occurrence else r
+    rpx_coef <- check_prefix(r_coef)
+    # Keep response-local base and coefficient prior scopes available for
+    # shared aliases. Covariance generation and correlation metadata still use
+    # only the representative rows in r.
+    urpx <- unique(check_prefix(r_occurrence))
     # include group-level standard deviations
     prior <- prior +
       # don't specify lb as we already have it above
       brmsprior(class = "sd", group = group, ls = urpx) +
-      brmsprior(class = "sd", coef = r$coef, group = group, ls = rpx)
+      brmsprior(
+        class = "sd", coef = r_coef$coef, group = group, ls = rpx_coef
+      )
+    if (identical(r$scale[1], "varying")) {
+      prior <- prior +
+        brmsprior(class = "sdlog", group = group, ls = urpx) +
+        brmsprior(class = "sdlog", coef = r$coef, group = group, ls = rpx) +
+        # Compact availability rows. Exact fitted-data levels requested by the
+        # user are validated and injected in .validate_prior(). Enumerating all
+        # level-by-coefficient combinations here could make get_prior() huge.
+        brmsprior(
+          class = "sd_level", coef = r$coef, group = group,
+          level = "", ls = rpx
+        )
+    }
     # detect duplicated group-level effects
     J <- with(prior, class == "sd" & nzchar(coef))
     dupli <- duplicated(prior[J, ])
     if (any(dupli)) {
       stop2("Duplicated group-level effects detected for group ", group)
+    }
+    J <- with(prior, class == "sdlog" & nzchar(coef))
+    dupli <- duplicated(prior[J, ])
+    if (any(dupli)) {
+      stop2("Duplicated group-level log-scale effects detected for group ", group)
     }
     # include correlation parameters
     if (isTRUE(r$cor[1]) && nrow(r) > 1L) {
@@ -1230,7 +1329,7 @@ def_scale_prior.brmsterms <- function(x, center = TRUE, df = 3,
 #' @export
 validate_prior <- function(prior, formula, data, family = gaussian(),
                            sample_prior = "no", data2 = NULL, knots = NULL,
-                           drop_unused_levels = TRUE, ...) {
+                           drop_unused_levels = TRUE, ..., stanvars = NULL) {
   formula <- validate_formula(formula, data = data, family = family)
   bterms <- brmsterms(formula)
   data2 <- validate_data2(data2, bterms = bterms)
@@ -1240,22 +1339,176 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
+  stanvars <- validate_stanvars(stanvars)
   .validate_prior(
     prior, bframe = bframe,
-    sample_prior = sample_prior, ...
+    sample_prior = sample_prior, stanvars = stanvars, ...
   )
 }
 
+# Validate additive priors on deterministic, realized S2Z scales and add the
+# exact requested selector rows to the compact default-prior table. R cannot
+# prove propriety for arbitrary user-defined Stan densities, so we reject known
+# discrete distributions and leave custom-density propriety to the user.
+validate_sd_level_prior <- function(prior, all_priors, bframe,
+                                    allow_invalid_prior = FALSE) {
+  stopifnot(
+    is.brmsprior(prior), is.brmsprior(all_priors), is.anybrmsframe(bframe)
+  )
+  take <- which(
+    prior$class == "sd_level" &
+      (prior$source == "user" | nzchar(prior$prior) | nzchar(prior$level))
+  )
+  if (!length(take)) {
+    return(all_priors)
+  }
+  p <- prior[take, , drop = FALSE]
+  keep <- rep(TRUE, nrow(p))
+  reject <- function(invalid, ...) {
+    invalid <- keep & invalid
+    if (!any(invalid)) {
+      return(invisible(NULL))
+    }
+    if (!allow_invalid_prior) {
+      stop2(...)
+    }
+    keep[invalid] <<- FALSE
+    invisible(NULL)
+  }
+  required <- c("group", "coef", "level")
+  missing_selector <- !apply(
+    p[, required, drop = FALSE], 1L, function(x) all(nzchar(x))
+  )
+  reject(
+    missing_selector,
+    "Priors of class 'sd_level' require nonempty 'group', 'coef', ",
+    "and 'level' arguments."
+  )
+  reject(
+    !nzchar(p$prior),
+    "Priors of class 'sd_level' must specify a nonempty distribution."
+  )
+  reject(
+    nzchar(p$tag),
+    "Prior argument 'tag' is not supported for class 'sd_level'."
+  )
+  has_bound <- function(x) !is.na(x) & nzchar(x)
+  reject(
+    has_bound(p$lb) | has_bound(p$ub),
+    "Prior bounds are not supported for class 'sd_level'."
+  )
+
+  value <- trimws(p$prior)
+  calls <- lapply(value, function(x) try(str2lang(x), silent = TRUE))
+  is_distribution_call <- vapply(
+    calls,
+    function(x) !inherits(x, "try-error") && is.call(x),
+    logical(1)
+  )
+  reject(
+    !is_distribution_call,
+    "Priors of class 'sd_level' must be continuous distribution calls."
+  )
+  dist <- rep("", length(calls))
+  dist[is_distribution_call] <- vapply(
+    calls[is_distribution_call],
+    function(x) as.character(x[[1L]])[1L], character(1)
+  )
+  reject(
+    dist == "constant" | stan_is_constant_prior(value),
+    "Constant priors are not supported for class 'sd_level'."
+  )
+  reject(
+    dist %in% c("horseshoe", "R2D2", "lasso") | is_special_prior(value),
+    "Special shrinkage priors are not supported for class 'sd_level'."
+  )
+  discrete <- c(
+    "bernoulli", "bernoulli_logit", "bernoulli_logit_glm",
+    "binomial", "binomial_logit", "binomial_logit_glm", "beta_binomial",
+    "beta_neg_binomial", "dirichlet_multinomial",
+    "hypergeometric", "categorical", "categorical_logit",
+    "categorical_logit_glm", "ordered_logistic", "ordered_logistic_glm",
+    "ordered_probit",
+    "multinomial", "multinomial_logit", "poisson", "poisson_log",
+    "poisson_log_glm", "neg_binomial", "neg_binomial_2",
+    "neg_binomial_2_log", "neg_binomial_2_log_glm", "poisson_binomial",
+    "yule_simon", "laplace_marginal_bernoulli_logit",
+    "laplace_marginal_neg_binomial_2_log", "laplace_marginal_poisson_log",
+    "discrete_range"
+  )
+  reject(
+    dist %in% discrete | grepl("_lpmf$", dist),
+    "Discrete distributions are not supported for class 'sd_level'."
+  )
+  p <- p[keep, , drop = FALSE]
+  if (!nrow(p)) {
+    return(all_priors)
+  }
+
+  available <- subset2(all_priors, class = "sd_level", level = "")
+  local_frames <- all_bframel(bframe)
+  for (i in seq_rows(p)) {
+    px <- as.list(p[i, vars_prefix(), drop = FALSE])
+    row <- subset2(
+      available, group = p$group[i], coef = p$coef[i], ls = px
+    )
+    if (nrow(row) != 1L) {
+      if (allow_invalid_prior) {
+        next
+      }
+      stop2(
+        "The requested 'sd_level' prior does not correspond to a ",
+        "coefficient in a sum-to-zero group-level term with ",
+        "scale = \"varying\"."
+      )
+    }
+    frame_match <- vapply(
+      local_frames,
+      function(frame) {
+        r <- frame$frame$re
+        if (!is.reframe(r) || !has_rows(r)) {
+          return(FALSE)
+        }
+        r <- subset2(r, group = p$group[i], coef = p$coef[i], ls = px)
+        nrow(r) == 1L && isTRUE(r$s2z) && identical(r$scale, "varying")
+      },
+      logical(1)
+    )
+    if (sum(frame_match) != 1L) {
+      if (allow_invalid_prior) {
+        next
+      }
+      stop2("Internal error while matching an 'sd_level' prior.")
+    }
+    reframe <- local_frames[[which(frame_match)]]$frame$re
+    levels <- get_levels(reframe)[[p$group[i]]]
+    if (is.null(levels) || p$level[i] %notin% as.character(levels)) {
+      if (allow_invalid_prior) {
+        next
+      }
+      stop2(
+        "Level '", p$level[i], "' was not found in grouping factor '",
+        p$group[i], "' for the requested 'sd_level' prior."
+      )
+    }
+    row$level <- p$level[i]
+    all_priors <- all_priors + row
+  }
+  all_priors
+}
+
 # internal work function of 'validate_prior'
-.validate_prior <- function(prior, bframe, sample_prior, ...) {
+.validate_prior <- function(prior, bframe, sample_prior, ...,
+                            stanvars = NULL) {
   stopifnot(is.anybrmsframe(bframe))
   sample_prior <- validate_sample_prior(sample_prior)
-  all_priors <- .default_prior(bframe, internal = TRUE)
+  all_priors <- normalize_brmsprior(.default_prior(bframe, internal = TRUE))
   if (is.null(prior)) {
     prior <- all_priors
   } else if (!is.brmsprior(prior)) {
     stop2("Argument 'prior' must be a 'brmsprior' object.")
   }
+  prior <- normalize_brmsprior(prior)
   if (!"tag" %in% names(prior)) {
     # the tag column was added in version 2.22.11 (#1724)
     # manually adding it retains compatibility with old brmsprior objects
@@ -1276,6 +1529,20 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   )
   if (any(duplicated(prior))) {
     stop2("Duplicated prior specifications are not allowed.")
+  }
+  all_priors <- validate_sd_level_prior(
+    prior, all_priors, bframe,
+    allow_invalid_prior = allow_invalid_prior
+  )
+  if (allow_invalid_prior) {
+    # A malformed user row without a level would otherwise match the compact
+    # sd_level availability row and survive as an unused prior during update.
+    invalid_sd_level <- with(
+      prior,
+      class == "sd_level" & !nzchar(level) &
+        (source %in% "user" | nzchar(prior))
+    )
+    prior <- prior[!invalid_sd_level, , drop = FALSE]
   }
   # check for invalid priors
   # it is good to let the user know beforehand that some of their priors
@@ -1338,7 +1605,9 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   check_prior_content(prior)
 
   prior <- validate_special_prior(prior, bframe = bframe, ...)
-  prior <- prior[with(prior, order(class, group, resp, dpar, nlpar, coef)), ]
+  prior <- prior[
+    with(prior, order(class, group, resp, dpar, nlpar, coef, level)),
+  ]
   # check and warn valid but unused priors
   for (i in which(nzchar(prior$prior) & !nzchar(prior$coef))) {
     ls <- prior[i, c("class", "group", "resp", "dpar", "nlpar")]
@@ -1358,6 +1627,12 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
+  # S2Z prior and cross-predictor constraints depend on the complete effective
+  # prior table, so validate them only after ordinary and special priors have
+  # been resolved. This also makes public validate_prior() authoritative.
+  validate_re_s2z_prior_global(
+    bframe, prior = prior, stanvars = stanvars
+  )
   if (is_verbose()) {
     # show remaining default priors added to the model
     def_prior <- prepare_print_prior(prior)
@@ -1403,10 +1678,13 @@ check_prior_content <- function(prior) {
     base_bounds <- stan_base_prior(prior, c("lb", "ub"), sel_prior = prior[i, ])
     has_lb <- nzchar(base_bounds[, "lb"])
     has_ub <- nzchar(base_bounds[, "ub"])
-    if ((has_lb_prior || has_ulb_prior) && !has_lb) {
+    # sd_level is a deterministic positive scale. Its optional density factor
+    # does not require (and currently does not permit) declaration bounds.
+    skip_bound_warning <- prior$class[i] == "sd_level"
+    if (!skip_bound_warning && (has_lb_prior || has_ulb_prior) && !has_lb) {
       lb_warning <- paste0(lb_warning, msg_prior, "\n")
     }
-    if (has_ulb_prior && !has_ub) {
+    if (!skip_bound_warning && has_ulb_prior && !has_ub) {
       ub_warning <- paste0(ub_warning, msg_prior, "\n")
     }
     if (prior$class[i] %in% cormat_pars &&
@@ -1591,7 +1869,7 @@ get_sample_prior <- function(prior) {
 # create data.frames containing prior information
 brmsprior <- function(prior = "", class = "", coef = "", group = "",
                       resp = "", dpar = "", nlpar = "", lb = "", ub = "",
-                      tag = "", source = "", ls = list()) {
+                      tag = "", source = "", ls = list(), level = "") {
   if (length(ls)) {
     if (is.null(names(ls))) {
       stop("Argument 'ls' must be named.")
@@ -1605,7 +1883,7 @@ brmsprior <- function(prior = "", class = "", coef = "", group = "",
     }
   }
   out <- data.frame(
-    prior, class, coef, group,
+    prior, class, coef, group, level,
     resp, dpar, nlpar, lb, ub, tag, source,
     stringsAsFactors = FALSE
   )
@@ -1619,7 +1897,7 @@ empty_prior <- function() {
   char0 <- character(0)
   brmsprior(
     prior = char0, source = char0, class = char0,
-    coef = char0, group = char0, resp = char0,
+    coef = char0, group = char0, level = char0, resp = char0,
     dpar = char0, nlpar = char0, lb = char0, ub = char0, tag = char0
   )
 }
@@ -1648,13 +1926,36 @@ prior_bounds <- function(prior) {
 
 # all columns of brmsprior objects
 all_cols_prior <- function() {
-  c("prior", "class", "coef", "group", "resp",
+  c("prior", "class", "coef", "group", "level", "resp",
     "dpar", "nlpar", "lb", "ub", "tag", "source")
+}
+
+# Add columns introduced after a brmsprior object may have been serialized.
+# Keep this deliberately narrow: other historical columns are already handled
+# at their respective public entry points.
+normalize_brmsprior <- function(x) {
+  if (!is.brmsprior(x)) {
+    return(x)
+  }
+  extra_attributes <- attributes(x)[
+    setdiff(names(attributes(x)), c("names", "row.names", "class"))
+  ]
+  if (!"level" %in% names(x)) {
+    x$level <- rep("", nrow(x))
+  } else {
+    x$level <- as.character(x$level)
+    x$level[is.na(x$level)] <- ""
+  }
+  known <- intersect(all_cols_prior(), names(x))
+  x <- x[, c(known, setdiff(names(x), known)), drop = FALSE]
+  class(x) <- c("brmsprior", "data.frame")
+  attributes(x)[names(extra_attributes)] <- extra_attributes
+  x
 }
 
 # relevant columns for duplication checks in brmsprior objects
 rcols_prior <- function() {
-  c("class", "coef", "group", "resp", "dpar", "nlpar")
+  c("class", "coef", "group", "level", "resp", "dpar", "nlpar")
 }
 
 # default Stan definitions for distributional parameters
@@ -1801,7 +2102,7 @@ convert_stan2bounds <- function(bound, default = c(-Inf, Inf)) {
 #' @export
 prior_summary.brmsfit <- function(object, all = TRUE, ...) {
   object <- restructure(object)
-  prior <- object$prior
+  prior <- normalize_brmsprior(object$prior)
   if (!all) {
     prior <- prior[nzchar(prior$prior), ]
   }
@@ -1843,6 +2144,7 @@ print.brmsprior <- function(x, show_df = NULL, ...) {
 # prepare pretty printing of brmsprior objects
 prepare_print_prior <- function(x) {
   stopifnot(is.brmsprior(x))
+  x <- normalize_brmsprior(x)
   if (is.null(x$source)) {
     x$source <- ""
   }
@@ -1874,19 +2176,25 @@ prepare_print_prior <- function(x) {
 
 # prepare text for print.brmsprior
 .print_prior <- function(x) {
+  x <- normalize_brmsprior(x)
   group <-  usc(x$group)
+  level <- usc(x$level)
   resp <- usc(x$resp)
   dpar <- usc(x$dpar)
   nlpar <- usc(x$nlpar)
   coef <- usc(x$coef)
-  if (any(nzchar(c(resp, dpar, nlpar, coef)))) {
+  if (any(nzchar(c(level, resp, dpar, nlpar, coef)))) {
     group <- usc(group, "suffix")
   }
   bound <- convert_bounds2stan(x[c("lb", "ub")])
   bound <- ifelse(nzchar(bound), paste0(bound, " "), "")
-  tilde <- ifelse(nzchar(x$class) | nzchar(group) | nzchar(coef), " ~ ", "")
+  tilde <- ifelse(
+    nzchar(x$class) | nzchar(group) | nzchar(level) | nzchar(coef), " ~ ", ""
+  )
   prior <- ifelse(nzchar(x$prior), x$prior, "(flat)")
-  paste0(bound, x$class, group, resp, dpar, nlpar, coef, tilde, prior)
+  paste0(
+    bound, x$class, group, level, resp, dpar, nlpar, coef, tilde, prior
+  )
 }
 
 # combine multiple brmsprior objects into one brmsprior
@@ -1895,8 +2203,10 @@ c.brmsprior <- function(x, ..., replace = FALSE) {
   dots <- list(...)
   if (all(sapply(dots, is.brmsprior))) {
     replace <- as_one_logical(replace)
+    x <- normalize_brmsprior(x)
+    dots <- lapply(dots, normalize_brmsprior)
     # don't use 'c()' here to avoid creating a recursion
-    out <- do_call(rbind, list(x, ...))
+    out <- do_call(rbind, c(list(x), dots))
     if (replace) {
       # update duplicated priors
       out <- unique(out, fromLast = TRUE)
@@ -1931,7 +2241,7 @@ c.brmsprior <- function(x, ..., replace = FALSE) {
 #' @export
 as.brmsprior <- function(x) {
   if (is.brmsprior(x)) {
-    return(x)
+    return(normalize_brmsprior(x))
   }
   x <- as.data.frame(x)
   if (!"prior" %in% names(x)) {
@@ -1940,7 +2250,7 @@ as.brmsprior <- function(x) {
   x$prior <- as.character(x$prior)
 
   defaults <- c(
-    class = "b", coef = "", group = "", resp = "",
+    class = "b", coef = "", group = "", level = "", resp = "",
     dpar = "", nlpar = "", lb = NA, ub = NA, tag = ""
   )
   for (v in names(defaults)) {
@@ -1953,12 +2263,13 @@ as.brmsprior <- function(x) {
   all_vars <- c("prior", names(defaults), "source")
   x <- x[, all_vars, drop = FALSE]
   class(x) <- c("brmsprior", "data.frame")
-  x
+  normalize_brmsprior(x)
 }
 
 #' @export
 duplicated.brmsprior <- function(x, incomparables = FALSE, ...) {
   # compare only specific columns of the brmsprior object
+  x <- normalize_brmsprior(x)
   duplicated.data.frame(x[, rcols_prior()], incomparables, ...)
 }
 

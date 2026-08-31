@@ -185,6 +185,12 @@
 #'   The most important control parameters are discussed in the 'Details'
 #'   section below. For a comprehensive overview see
 #'   \code{\link[rstan:stan]{stan}}.
+#' @param center_control Optional controls created by
+#'   \code{\link{autocenter_control}}. When the formula contains
+#'   \code{gr(..., center = "auto")}, a fully non-centered precursor is fit
+#'   first, its generated-quantities centering proposals are frozen, and the
+#'   requested final fit starts from a fresh warmup with those values as data.
+#'   If \code{NULL}, default controls are used whenever such a term is present.
 #' @param future Logical; If \code{TRUE}, the \pkg{\link[future:future]{future}}
 #'   package is used for parallel execution of the chains and argument
 #'   \code{cores} will be ignored. Can be set globally for the current \R
@@ -467,7 +473,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),
-                empty = FALSE, rename = TRUE, ...) {
+                empty = FALSE, rename = TRUE, center_control = NULL, ...) {
 
   # optionally load brmsfit from file
   # Loading here only when we should directly load the file.
@@ -497,12 +503,58 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
   seed <- as_one_numeric(seed, allow_na = TRUE)
   empty <- as_one_logical(empty)
   rename <- as_one_logical(rename)
+  center_summary <- NULL
+  center_specs <- list()
+  center_request_formula <- NULL
+  center_fixed <- list()
 
   # initialize brmsfit object
   if (is.brmsfit(fit)) {
     # re-use existing model
     x <- fit
     x$criteria <- list()
+    formula <- x$formula
+    data <- x$data
+    data2 <- x$data2
+    prior <- x$prior
+    stanvars <- x$stanvars
+    backend <- x$backend
+    bterms <- brmsterms(formula)
+    bframe <- brmsframe(bterms, data)
+    center_specs <- re_autocenter_specs(bframe, unresolved = TRUE)
+    center_fixed <- resolved_re_autocenter_weights(bframe)
+    if (!length(center_specs)) {
+      if (length(center_fixed)) {
+        autocenter <- x$autocenter %||% list()
+        autocenter$request_formula <- autocenter$request_formula %||%
+          restore_re_autocenter_request(formula)
+        autocenter$weights <- center_fixed
+        autocenter$diagnostics <- autocenter$diagnostics %||% NULL
+        autocenter$control <- autocenter$control %||% NULL
+        x$autocenter <- autocenter
+      } else {
+        x$autocenter <- NULL
+      }
+    }
+    if (length(center_specs)) {
+      center_control <- center_control %||% x$autocenter$control
+      center_control <- validate_re_autocenter_control(center_control)
+      if (!identical(backend, "cmdstanr")) {
+        stop2("gr(center = \"auto\") requires backend = \"cmdstanr\".")
+      }
+      if (!identical(algorithm, "sampling")) {
+        stop2("gr(center = \"auto\") requires algorithm = \"sampling\" ",
+              "for the final fit.")
+      }
+      if (identical(file_refit, "on_change")) {
+        stop2("gr(center = \"auto\") is not yet compatible with ",
+              "file_refit = \"on_change\".")
+      }
+      center_request_formula <- formula
+    } else if (!is.null(center_control)) {
+      stop2("'center_control' was supplied but the formula has no unresolved ",
+            "gr(center = \"auto\") term.")
+    }
     sdata <- standata(x)
     if (!is.null(file) && file_refit == "on_change") {
       x_from_file <- read_brmsfit(file)
@@ -516,7 +568,6 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
         }
       }
     }
-    backend <- x$backend
     model <- compiled_model(x)
     exclude <- exclude_pars(x)
   } else {
@@ -526,6 +577,9 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       autocor = autocor, sparse = sparse,
       cov_ranef = cov_ranef
     )
+    # Keep group-centering weights inside the fitted formula rather than in a
+    # potentially ephemeral object from the caller's environment.
+    formula <- materialize_re_center(formula)
     family <- get_element(formula, "family")
     bterms <- brmsterms(formula)
     data2 <- validate_data2(
@@ -540,11 +594,36 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       data_name = substitute_name(data)
     )
     bframe <- brmsframe(bterms, data)
+    center_specs <- re_autocenter_specs(bframe, unresolved = TRUE)
+    center_fixed <- resolved_re_autocenter_weights(bframe)
+    if (length(center_specs)) {
+      center_control <- validate_re_autocenter_control(center_control)
+      if (!identical(backend, "cmdstanr")) {
+        stop2("gr(center = \"auto\") requires backend = \"cmdstanr\".")
+      }
+      if (!identical(algorithm, "sampling")) {
+        stop2("gr(center = \"auto\") requires algorithm = \"sampling\" ",
+              "for the final fit.")
+      }
+      if (empty) {
+        stop2("gr(center = \"auto\") requires running its precursor and ",
+              "cannot be combined with empty = TRUE. Use a fixed numeric ",
+              "'center' value to build an empty model.")
+      }
+      if (identical(file_refit, "on_change")) {
+        stop2("gr(center = \"auto\") is not yet compatible with ",
+              "file_refit = \"on_change\".")
+      }
+      center_request_formula <- formula
+    } else if (!is.null(center_control)) {
+      stop2("'center_control' was supplied but the formula has no unresolved ",
+            "gr(center = \"auto\") term.")
+    }
+    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     prior <- .validate_prior(
       prior, bframe = bframe,
-      sample_prior = sample_prior
+      sample_prior = sample_prior, stanvars = stanvars
     )
-    stanvars <- validate_stanvars(stanvars, stan_funs = stan_funs)
     save_pars <- validate_save_pars(
       save_pars, save_ranef = save_ranef,
       save_mevars = save_mevars,
@@ -566,6 +645,14 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
       basis = frame_basis(bframe, data = data),
       stan_args = nlist(init, silent, control, stan_model_args, ...)
     )
+    if (length(center_fixed)) {
+      x$autocenter <- list(
+        request_formula = restore_re_autocenter_request(formula),
+        weights = center_fixed,
+        diagnostics = NULL,
+        control = NULL
+      )
+    }
     exclude <- exclude_pars(x, bframe = bframe)
     # generate Stan data before compiling the model to avoid
     # unnecessary compilations in case of invalid data
@@ -600,6 +687,54 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
     compile_args$opencl <- opencl
     compile_args$silent <- silent
     model <- do_call(compile_model, compile_args)
+  }
+
+  if (length(center_specs) && chains < 1L) {
+    x$autocenter <- list(
+      request_formula = center_request_formula,
+      weights = NULL,
+      diagnostics = NULL,
+      control = center_control
+    )
+  }
+
+  if (length(center_specs) && chains > 0L) {
+    if (silent < 2) {
+      message("Estimate fixed group-centering weights")
+    }
+    center_summary <- run_re_autocenter_pilot(
+      model = model, sdata = sdata, specs = center_specs,
+      control = center_control, backend = backend,
+      chains = chains, cores = cores, threads = threads, opencl = opencl,
+      init = init, seed = seed, silent = silent
+    )
+    occurrence <- re_autocenter_occurrence_weights(
+      bframe, weights = center_summary$rho, formula = formula,
+      aggregate = center_summary$control$aggregate
+    )
+    formula <- replace_re_autocenter(
+      formula, center = occurrence$center, id = occurrence$id,
+      occurrence = occurrence$occurrence
+    )
+    # Reframe the exact same Stan program with resolved matrices. Their private
+    # class retains the precursor marker for code generation, while standata()
+    # now supplies the frozen values and disables proposal computation.
+    bterms <- brmsterms(formula)
+    bframe <- brmsframe(bterms, data)
+    sdata <- .standata(
+      bframe, data = data, prior = prior, data2 = data2,
+      stanvars = stanvars, threads = threads
+    )
+    x$formula <- formula
+    x$ranef <- bframe$frame$re
+    x$basis <- frame_basis(bframe, data = data)
+    x$autocenter <- list(
+      request_formula = center_request_formula,
+      weights = resolved_re_autocenter_weights(bframe),
+      diagnostics = center_summary$diagnostics,
+      control = center_summary$control
+    )
+    exclude <- exclude_pars(x, bframe = bframe)
   }
 
   # fit the Stan model

@@ -11,6 +11,20 @@ test_that("restructure can be run without error", {
     "Models fitted with brms < 1.0 are no longer offically supported"
   )
   expect_is(fit2_up, "brmsfit")
+
+  current <- brms:::brmsfit_example2
+  current$prior$level <- NULL
+  current$version$restructure <- utils::packageVersion("brms")
+  current_up <- restructure(current)
+  expect_true("level" %in% names(current_up$prior))
+  expect_true(all(!nzchar(current_up$prior$level)))
+
+  legacy <- brms:::brmsfit_example2
+  legacy$prior$level <- NULL
+  legacy$version$restructure <- package_version("2.15.0")
+  legacy_up <- restructure(legacy)
+  expect_true("level" %in% names(legacy_up$prior))
+  expect_true(all(!nzchar(legacy_up$prior$level)))
 })
 
 test_that("restructure_formula_v1 works correctly", {
@@ -188,4 +202,3 @@ test_that("rename_old_categorical works correctly", {
   )
   expect_equivalent(res, target)
 })
-

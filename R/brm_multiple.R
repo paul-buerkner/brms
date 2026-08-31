@@ -163,7 +163,12 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
   )
 
   if (combine) {
+    autocenter_by_fit <- lapply(fits, function(fit) fit$autocenter %||% NULL)
     fits <- combine_models(mlist = fits, check_data = FALSE)
+    if (any(!vapply(autocenter_by_fit, is.null, logical(1)))) {
+      fits$autocenter <- fits$autocenter %||% list()
+      fits$autocenter$by_fit <- autocenter_by_fit
+    }
     attr(fits$data, "data_name") <- data_name
     # attribute to remember how many imputed datasets where used
     attr(fits, "nimp") <- length(data)

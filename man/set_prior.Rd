@@ -21,7 +21,8 @@ set_prior(
   lb = NA,
   ub = NA,
   tag = "",
-  check = TRUE
+  check = TRUE,
+  level = ""
 )
 
 prior(prior, ...)
@@ -42,6 +43,11 @@ See 'Details' for other valid parameter classes.}
 \item{coef}{Name of the coefficient within the parameter class.}
 
 \item{group}{Grouping factor for group-level parameters.}
+
+\item{level}{Grouping-factor level for level-specific parameters. Currently
+only supported for additional priors of class \code{"sd_level"} on
+realized scales in sum-to-zero group-level terms with
+\code{scale = "varying"}.}
 
 \item{resp}{Name of the response variable.
 Only used in multivariate models.}
@@ -207,6 +213,34 @@ Define priors for specific parameters or classes of parameters.
   To define a prior distribution only for a specific standard deviation
   of a specific grouping factor, you may write \cr
   \code{set_prior("<prior>", class = "sd", group = "<group>", coef = "<coef>")}.
+  Physical sum-to-zero terms specified with
+  \code{gr(..., s2z = TRUE, scale = "varying")} additionally have a
+  non-negative log-scale standard deviation for every group-level
+  coefficient. These parameters have class \code{sdlog} and may be assigned
+  coefficient-specific priors in the same way, for example
+  \code{set_prior("normal(0, 0.2)", class = "sdlog", group = "g",
+  coef = "x1")}. The ordinary class \code{sd} remains the baseline
+(conditional median) scale. Class \code{sdlog} has a half-normal
+\code{normal(0, 0.25)} default; fixing it to zero with
+\code{constant(0)} gives the shared-scale model. Realized per-level scales
+are deterministic hierarchy draws named \code{sd_level}. Additional prior
+information can be supplied for selected scales using class
+\code{sd_level} together with \code{group}, \code{coef}, and \code{level},
+for example \code{set_prior("lognormal(log(0.5), 0.2)",
+class = "sd_level", group = "g", coef = "Intercept", level = "A")}.
+This multiplies the existing hierarchical prior by the specified density
+evaluated at the selected realized scale; it does not replace the
+\code{sd}/\code{sdlog} hierarchy and requires no Jacobian. These additional
+factors must be nonempty continuous distribution priors. Constant and
+special shrinkage priors, tags, and explicit \code{lb}/\code{ub} bounds
+are not supported. Custom distributions are allowed when they provide the
+continuous density and any truncation-normalization functions required by
+the generated Stan code (typically an \code{_lccdf} function when
+normalization is enabled). The user is responsible for ensuring that the
+density is proper and has appropriate support for a positive scale. For
+scalability,
+\code{default_prior} reports one \code{sd_level} availability row per
+group-level coefficient; specify the desired fitted-data level explicitly.
 
   If there is more than one group-level effect per grouping factor,
   the correlations between those effects have to be estimated.

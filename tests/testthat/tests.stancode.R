@@ -269,6 +269,14 @@ test_that("priors can be fixed to constants", {
   expect_match2(scode, "lprior += normal_lpdf(sd_1[4] | 0, 5)")
   expect_match2(scode, "sigma = 0.3;")
 
+  scode_kernel <- stancode(
+    y ~ x1*x2 + (x1*x2 | g), dat, prior = prior, normalize = FALSE
+  )
+  kernel_lines <- strsplit(scode_kernel, "\n", fixed = TRUE)[[1]]
+  expect_equal(sum(grepl("sd_1[3] = 1;", kernel_lines, fixed = TRUE)), 1)
+  expect_equal(sum(grepl("sd_1[2] = 2;", kernel_lines, fixed = TRUE)), 1)
+  expect_match2(scode_kernel, "normal_lupdf(sd_1[4] | 0, 5)")
+
   prior <- prior(constant(3))
   scode <- stancode(y ~ x2 + x1 + cs(g), dat, family = sratio(),
                          prior = prior)
@@ -830,6 +838,44 @@ test_that("Stan code for ARMA models is correct", {
       prior(horseshoe(), class = sderr)
   )
   expect_match2(scode, "sderr = scales[(1+Kc):(Kc+1)][1];")
+})
+
+test_that("covariance chunks avoid unnecessary diagonal matrices", {
+  for (chunk in c(
+    "fun_cholesky_cor_ar1.stan", "fun_cholesky_cor_cosy.stan"
+  )) {
+    code <- readLines(system.file("chunks", chunk, package = "brms"))
+    expect_false(any(grepl("diag_matrix", code, fixed = TRUE)), info = chunk)
+    expect_true(
+      any(grepl("mat = identity_matrix(nrows)", code, fixed = TRUE)),
+      info = chunk
+    )
+    expect_false(any(grepl("mat[i, i] = 1", code, fixed = TRUE)), info = chunk)
+  }
+
+  # ARMA(1) has a parameter-dependent, non-unit diagonal.
+  arma1 <- readLines(system.file(
+    "chunks", "fun_cholesky_cor_arma1.stan", package = "brms"
+  ))
+  expect_false(any(grepl("diag_matrix", arma1, fixed = TRUE)))
+  expect_true(any(grepl("mat[i, i] =", arma1, fixed = TRUE)))
+
+  # MA(1) leaves off-band entries at zero, so this initializer is required.
+  ma1 <- readLines(system.file(
+    "chunks", "fun_cholesky_cor_ma1.stan", package = "brms"
+  ))
+  expect_true(any(grepl("diag_matrix", ma1, fixed = TRUE)))
+
+  for (chunk in c(
+    "fun_normal_time_se.stan", "fun_student_t_time_se.stan"
+  )) {
+    code <- readLines(system.file("chunks", chunk, package = "brms"))
+    expect_equal(sum(grepl("Cov_i = add_diag(", code, fixed = TRUE)), 4L)
+    expect_false(any(grepl("Cov_i = quad_form_diag(", code, fixed = TRUE)))
+    expect_true(any(grepl("quad_form_diag(Cor[iobs, iobs]", code,
+                           fixed = TRUE)))
+    expect_false(any(grepl("diag_matrix(se2", code, fixed = TRUE)))
+  }
 })
 
 test_that("Stan code for compound symmetry models is correct", {

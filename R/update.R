@@ -90,6 +90,7 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   silent <- dots$silent
   object <- restructure(object)
+  previous_autocenter <- object$autocenter %||% NULL
   if (isTRUE(object$version$brms < "2.0.0")) {
     warning2("Updating models fitted with older versions of brms may fail.")
   }
@@ -108,7 +109,19 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
 
   if (missing(formula.) || is.null(formula.)) {
-    dots$formula <- object$formula
+    rerun_autocenter <- !is.null(dots$center_control)
+    if (rerun_autocenter) {
+      request_formula <- object$autocenter$request_formula %||% NULL
+      if (is.null(request_formula)) {
+        stop2(
+          "This fit has no stored automatic-centering request formula. ",
+          "Supply 'formula.' with center = \"auto\" to run a new precursor."
+        )
+      }
+      dots$formula <- request_formula
+    } else {
+      dots$formula <- object$formula
+    }
     if (!is.null(dots[["family"]])) {
       dots$formula <- bf(dots$formula, family = dots$family)
     }
@@ -141,7 +154,10 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       }
     } else {
       mvars <- all.vars(dots$formula$formula)
-      mvars <- setdiff(mvars, c(names(object$data), "."))
+      mvars <- setdiff(
+        mvars,
+        c(names(object$data), ".", re_center_formula_vars(dots$formula))
+      )
       if (length(mvars) && is.null(newdata)) {
         stop2("New variables found: ", collapse_comma(mvars),
               "\nPlease supply your data again via argument 'newdata'.")
@@ -151,16 +167,25 @@ update.brmsfit <- function(object, formula., newdata = NULL,
   }
   # update response categories and ordinal thresholds
   dots$formula <- validate_formula(dots$formula, data = dots$data)
+  dots$formula <- materialize_re_center(dots$formula)
+  if (has_unresolved_re_autocenter_formula(dots$formula) &&
+      is.null(dots$center_control) &&
+      !is.null(object$autocenter$control)) {
+    dots$center_control <- object$autocenter$control
+  }
 
   if (is.null(dots$prior)) {
-    dots$prior <- object$prior
+    dots$prior <- normalize_brmsprior(object$prior)
   } else {
     if (!is.brmsprior(dots$prior)) {
       stop2("Argument 'prior' needs to be a 'brmsprior' object.")
     }
     # update existing priors manually and keep only user-specified ones
     # default priors are recomputed base on newdata if provided
-    old_user_prior <- subset2(object$prior, source = "user")
+    dots$prior <- normalize_brmsprior(dots$prior)
+    old_user_prior <- subset2(
+      normalize_brmsprior(object$prior), source = "user"
+    )
     dots$prior <- rbind(dots$prior, old_user_prior)
     dupl_priors <- duplicated(dots$prior[, rcols_prior()])
     dots$prior <- dots$prior[!dupl_priors, ]
@@ -246,6 +271,17 @@ update.brmsfit <- function(object, formula., newdata = NULL,
     dots$fit <- NA
     if (!testmode) {
       object <- do_call(brm, dots)
+      if (!is.null(object$autocenter) &&
+          !is.null(previous_autocenter)) {
+        object$autocenter$request_formula <-
+          object$autocenter$request_formula %||%
+          previous_autocenter$request_formula
+        object$autocenter$diagnostics <-
+          object$autocenter$diagnostics %||%
+          previous_autocenter$diagnostics
+        object$autocenter$control <-
+          object$autocenter$control %||% previous_autocenter$control
+      }
     }
   } else {
     # refit the model without compiling it again
@@ -260,14 +296,14 @@ update.brmsfit <- function(object, formula., newdata = NULL,
       knots = dots$knots, drop_unused_levels = dots$drop_unused_levels
     )
     bframe <- brmsframe(bterms, data = object$data)
+    object$stanvars <- validate_stanvars(dots$stanvars)
     object$prior <- .validate_prior(
       dots$prior, bframe = bframe,
-      sample_prior = dots$sample_prior
+      sample_prior = dots$sample_prior, stanvars = object$stanvars
     )
     object$family <- get_element(object$formula, "family")
     object$autocor <- get_element(object$formula, "autocor")
     object$ranef <- frame_re(bterms, data = object$data)
-    object$stanvars <- validate_stanvars(dots$stanvars)
     object$threads <- validate_threads(dots$threads)
     if ("sample_prior" %in% names(dots)) {
       dots$sample_prior <- validate_sample_prior(dots$sample_prior)

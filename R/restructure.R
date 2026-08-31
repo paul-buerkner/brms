@@ -48,6 +48,15 @@ restructure <- function(x, ...) {
 #'
 #' @export
 restructure.brmsfit <- function(x, ...) {
+  # Keep serialized prior tables compatible with selectors introduced after
+  # the fit was created. This must happen before the early return and before
+  # legacy migrations that combine stored and freshly generated priors.
+  if (is.data.frame(x$prior) && !"level" %in% names(x$prior)) {
+    x$prior$level <- rep("", nrow(x$prior))
+  }
+  if (is.brmsprior(x$prior)) {
+    x$prior <- normalize_brmsprior(x$prior)
+  }
   if (is.null(x$version)) {
     # this is the latest version without saving the version number
     x$version <- list(brms = package_version("0.9.1"))
@@ -71,6 +80,9 @@ restructure.brmsfit <- function(x, ...) {
   x$version$restructure <- current_version
   # remove unused attribute
   attr(x, "restructured") <- NULL
+  if (is.brmsprior(x$prior)) {
+    x$prior <- normalize_brmsprior(x$prior)
+  }
   x
 }
 

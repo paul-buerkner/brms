@@ -11,7 +11,11 @@ gr(
   id = NA,
   pw = NULL,
   cov = NULL,
-  dist = "gaussian"
+  dist = "gaussian",
+  s2z = FALSE,
+  scale = "shared",
+  center = NULL,
+  latent = FALSE
 )
 }
 \arguments{
@@ -39,10 +43,265 @@ covariance matrix of the group-level effects. All levels of the grouping
 factor should appear as rownames of the corresponding matrix. This argument
 can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
-of the same grouping factor are modeled as independent of each other.}
+of the same grouping factor are modeled as independent of each other.
+Fixed \code{cov} matrices compose with the supported \code{center} and
+\code{scale} settings of conventional S2Z blocks, but are not supported
+for strict latent scores.}
 
-\item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"gaussian"} is the only option.}
+\item{dist}{Name of the distribution of the group-level effects. Supported
+options are \code{"gaussian"} and \code{"student"}.}
+
+\item{s2z}{Logical. If \code{TRUE}, use a sum-to-zero parameterization and
+analytically integrate out the omitted common group-effect mean vector of
+each S2Z block, jointly when multiple blocks share a linear predictor.
+This experimental option preserves the usual
+population- and group-level parameter semantics by reconstructing them in
+generated quantities. The sampled finite-population coefficient is the
+arithmetic mean of the observed groups' coefficient vectors, whose
+likelihood-scale values are unchanged by the reconstruction. It is exact
+for \code{dist = "gaussian"} and for
+\code{dist = "student"} through a Gaussian scale mixture. Every varying
+design column must have an identical population-level design column for
+nonordinal predictors. Supported ordinal location predictors use the more
+general checked identity \eqn{Z = 1 a^T + X C}: an omitted
+varying-intercept mean translates every threshold, while omitted slope
+means translate the matching population slopes and any constant threshold
+direction induced by design centering.
+Nonordinal blocks with one varying coefficient use a dedicated scalar
+implementation. Blocks with any number of coefficients and a diagonal
+scale matrix (\code{cor = FALSE} or \code{||} syntax) use a component-wise
+scalar implementation that also accounts exactly for the shared centered
+intercept prior. With Student-t effects, those coefficients share the
+existing group-specific mixing scale and can therefore remain dependent
+in their tails despite the diagonal scale matrix.
+Usual priors on group-level scale parameters, correlations, and
+Student-t degrees of freedom remain available, including separate
+\code{sd} priors for varying intercepts, slopes, and interactions. For
+\code{dist = "student"}, \code{sd} retains its existing \pkg{brms}
+Student-t scale semantics and is not rescaled to a marginal standard
+deviation.
+The centered physical parameterization (\code{center = TRUE}) is intended
+for well-informed group coefficients. The non-centered sum-to-zero
+parameterization (\code{center = FALSE}) may be preferable when those
+coefficients are weakly informed.
+Multiple S2Z covariance blocks may be used in the same linear predictor.
+Their omitted group means are integrated and recovered jointly, while each
+block retains its own grouping factor, scales, and correlation structure.
+A correlated group-effect block may also use one ID across multivariate
+response-location predictors or across nonlinear parameters of one
+response. Shared or varying scales, Gaussian or Student-t effects, and a
+fixed \code{cov} matrix compose on both paths. The multivariate-response
+path accepts fixed or automatic precursor centering; the conventional
+nonlinear path currently accepts only \code{center = TRUE} or
+\code{FALSE}. The ordinary Bayesian
+\code{| id |} group model is sampled through zero-sum deviations and
+finite-population coefficients, then conventional population coefficients
+and group effects are recovered in generated quantities. Non-centered,
+correlated Gaussian nonlinear varying-intercept blocks with shared scales,
+no fixed \code{cov}, and proper normal population priors use an exact
+standardized finite-population mean with covariance
+\eqn{S_\beta + \Sigma / G}, where \eqn{S_\beta} is the population-prior
+covariance, \eqn{\Sigma} is the group-effect covariance, and \eqn{G} is the
+number of observed grouping levels. Expected-information proposals are
+combined across conditionally independent responses. With residual
+response correlation, automatic centering currently requires Gaussian
+identity-link responses with one observation-invariant residual scale per
+response and uses the full current residual precision. For an eligible
+shared-scale intercept block with fixed \code{cov}, the proposal is
+computed in the covariance eigenmodes restricted to the S2Z space.
+When all such blocks are Gaussian with shared scales, \pkg{brms} uses an
+induced population-coordinate covariance and joint Matheron recovery if
+that system is smaller than the stacked omitted-mean system. Crossed
+varying-intercept models then require only a scalar update, regardless of
+the number of grouping factors. Flat population-level prior coordinates
+are handled exactly rather than approximated by a large finite variance.
+Conventional S2Z blocks may use a fixed \code{cov} matrix together with
+any otherwise supported \code{center} setting and either shared or varying
+scales. Supported local ordinal location blocks use the dense joint system
+for fixed centering fractions, shared or varying scales, and fixed
+\code{cov}; automatic centering and IDs spanning ordinal and other predictors
+remain unsupported. The \code{by} and \code{pw} arguments remain
+unsupported, and
+\code{cov} is not supported for strict latent scores.
+Built-in ordinal location predictors for \code{cumulative},
+\code{cratio}, \code{sratio}, \code{acat}, and
+\code{hurdle_cumulative} support flexible, equidistant, and grouped
+thresholds. Conventional temporary and public raw-design thresholds,
+population slopes, and group effects are reconstructed in generated
+quantities. Sum-to-zero thresholds, fixed or shared ordinal-mixture
+thresholds, custom ordinal families, and category-specific S2Z group
+effects remain unsupported.
+Population-level priors must currently be flat, normal, Student-t, or
+Cauchy. Their arguments may be numeric constants or deterministic Stan
+expressions whose variables are declared via \code{stanvar()} in data,
+transformed data, parameters, or transformed parameters at
+\code{position = "start"}. Arguments must be scalar; compatible
+one-dimensional arguments in global priors are mapped by population
+coefficient. Data values may change without recompilation when their
+declaration and shape remain unchanged. Scales and degrees of freedom must
+be positive. Predictor-local blocks with shared scales and no fixed
+\code{cov} also support exact logistic active-coordinate priors through an
+explicit omitted-mean fallback at every supported centering value. That
+fallback is not available for ordinal locations, varying scales,
+covariance, or cross-predictor charts.
+Bounds, tags, special priors, prior-only sampling, sparse and QR designs,
+and non-positive fixed group-level standard deviations are not supported.
+Custom Stan code must not use the conventional population- or group-level
+coefficients before they are reconstructed in generated quantities.}
+
+\item{scale}{Character. The default \code{"shared"} uses one scale per
+coefficient for all grouping levels. With \code{"varying"}, each
+coefficient instead has log-normal scale variation across grouping levels,
+\code{sd_level = sd * exp(sdlog * z)}, where \code{z} is standard normal.
+This option requires \code{s2z = TRUE}. The ordinary \code{sd} parameter
+and its prior are retained as the baseline (conditional median) scale, and
+class \code{sdlog} controls the standard deviation of the log-scale
+variation. Thus, coefficient-specific priors of both classes are available
+for varying intercepts, slopes, and interactions. Realized scales are
+returned as \code{sd_level}. Proper continuous prior factors may be added
+to selected realized scales with class \code{sd_level} and the
+\code{group}, \code{coef}, and \code{level} selectors. These factors retain
+and multiply the exchangeable log-scale hierarchy; they do not replace a
+selected level's hierarchical prior. The baseline \code{sd} is a conditional
+median, not the root-mean-square group scale: conditionally on the
+hyperparameters, the mean squared scale is
+\code{sd^2 * exp(2 * sdlog^2)}. A common conditional correlation matrix is
+still shared
+across grouping levels. Coefficient-specific
+log-scale variation is conditionally elliptical given the scales but is
+generally not marginally elliptical after those scales are integrated out.
+With \code{cov = Omega}, let \eqn{s_g} collect the realized coefficient
+scales at level \eqn{g}, let \eqn{L} be the Cholesky factor of the common
+coefficient correlation, and set \eqn{A_g=\operatorname{diag}(s_g)L}.
+Conditional on these scales,
+\eqn{\operatorname{Cov}(u_g,u_h)=Omega_{gh}A_gA_h^T}; thus \code{cov}
+controls dependence across grouping levels while the realized scales act
+at their respective levels.
+This is a new statistical model rather than only a change of coordinates.}
+
+\item{center}{Logical, a number, numeric vector or matrix with values in
+  \code{[0, 1]}, \code{"auto"}, or \code{NULL}. For
+  ordinary group effects,
+  \code{NULL}, \code{FALSE}, and \code{0} retain the existing non-centered
+  parameterization, while \code{TRUE} and \code{1} use centered
+  coordinates. For S2Z effects, \code{NULL}, \code{TRUE}, and \code{1}
+  use centered physical coordinates, while \code{FALSE} and \code{0} use
+  non-centered coordinates. Intermediate numbers partially center either
+  kind of group effect without changing its statistical model. A numeric
+  vector supplies one fraction per grouping level and is shared across the
+  term's group-level coefficients. A numeric matrix supplies grouping
+  levels by group-level coefficients; a one-column matrix is also shared
+  across coefficients (and its single column name is not used). Named rows
+  are recommended; otherwise values follow the fitted grouping-factor level
+  order. Row names and coefficient column names, when applicable, must match
+  exactly and are reordered to the fitted design. These
+  level-specific inputs use the \code{center} orientation: they are
+  \eqn{\rho=1-w}, where \eqn{w} is the non-centering weight used in the
+  partial-centering tutorial.
+
+  Ordinary Gaussian effects use the exact per-level map
+  \eqn{u_j=L_j A_j^{-1}(q_j-R_j\mu)}, where
+  \eqn{A_j=\mathop{diag}(\rho_j)L_j+\mathop{diag}(1-\rho_j)} and
+  \eqn{R_j=\mathop{diag}(\rho_j)}, and \eqn{L_j} is the conditional
+  group-covariance Cholesky factor. The fitted design-basis map constructs
+  \eqn{\mu} from every population column exactly representable by the
+  varying-coefficient design (and uses zero for other columns), so equivalent
+  contrast codings such as treatment and cell-mean bases are handled. Thus
+  \code{center = 1} samples the total group coefficient \eqn{q_j=\mu+u_j},
+  while \code{center = 0} samples a standardized residual coordinate. The
+  log-Jacobian is \eqn{\log|L_j|-\log|A_j|}. Student-t effects use the same
+  map conditional on their existing scale-mixture variable, so numeric
+  partial centering is also exact and \code{center = 0} retains the
+  existing conditionally non-centered chart. Correlated and independent
+  Gaussian and Student-t \code{gr} blocks are eligible. Positive centering
+  is not currently available with \code{by}, \code{cov}, \code{pw},
+  multi-membership, special group coefficients, or a conventional S2Z
+  block in the same linear predictor.
+
+  \code{center = "auto"} chooses fixed level- and coefficient-specific
+  fractions through a separate precursor fit. The precursor always uses the
+  fully non-centered parameterization. It runs with CmdStanR Pathfinder by
+  default; \code{autocenter_control(method = "hmc")} instead requests a
+  separate short HMC precursor. At each precursor draw, candidate fractions
+  are evaluated only in generated quantities. They do not enter the
+  precursor target density. brms aggregates the candidates across draws and
+  supplies the resulting numeric matrix as fixed data to a new final HMC
+  fit, which starts with a fresh warmup. The centering weights are therefore
+  not parameters, do not change during the final fit, and are never updated
+  inside an active HMC run. See \code{\link{autocenter_control}} to choose
+  the precursor and aggregation method, and
+  \code{\link{centering_weights}} to inspect the fixed result.
+
+  Candidate fractions combine the precursor draw of the Gaussian
+  group-effect covariance with likelihood information. If \eqn{J_j} is the
+  group likelihood information, \eqn{\Sigma} the group covariance, and
+  \eqn{V_j=(\Sigma^{-1}+J_j)^{-1}}, the fraction for coefficient \eqn{k} is
+  \eqn{1-(V_j)_{kk}/\Sigma_{kk}}. Thus \eqn{\Sigma} supplies the prior
+  metric. The information calculation uses design and missingness together
+  with precursor draws of scale, covariance, likelihood, and supported
+  loading parameters, but does not inspect observed response values
+  directly. Because those parameter draws come from the precursor posterior,
+  the aggregated fractions may nevertheless be data-informed. With a fixed
+  \code{cov} matrix, its covariance on the arithmetic S2Z space is included
+  in this prior metric. The former dynamic spelling
+  \code{center = "fisher"} is not supported.
+
+  Closed-form expected Fisher information is used when available. Other
+  supported native likelihood coordinates use documented positive analytic,
+  coarsened-outcome, or moment approximations. Most observation-local native
+  families are supported. COM-Poisson uses asymptotic count variance for
+  location and a second-order delta variance of \code{log(Y!)} for shape; its
+  location rule is exactly Poisson at shape one. Ordinal,
+  generalized-extreme-value, custom-family, finite-mixture, and Wiener
+  non-decision-time coordinates remain excluded, as do response addition
+  terms other than those explicitly supported. The shifted-lognormal
+  non-decision-time coordinate uses a nonregular working outer-product-of-score
+  metric. Cox uses a unit log-rate working clock target. Wiener drift uses exact
+  first-passage information; boundary separation and bias use exact
+  upper/lower-decision coarsening. Supported auxiliary probability
+  coordinates---atom probabilities, asymmetric-Laplace quantile, and Wiener
+  bias---require
+  an explicit compatible population \code{Intercept} prior when they contain
+  an ordinary S2Z intercept, because their default logistic prior is not
+  supported. The ordinary automatic path excludes nonlinear parameters. For a
+  conventional correlated ID spanning multivariate response-location
+  predictors, response-local information is combined when responses are
+  conditionally independent. With residual response correlation, all
+  responses must be Gaussian with identity links and one observation-invariant
+  residual scale each; other ordinary multivariate frames remain excluded.
+  Strict latent scores support symbolically analyzable scalar nonlinear
+  location predictors for supported scalar response families. Their
+  likelihood information is evaluated at a population-only nonlinear
+  reference, so sampled population-level loadings and conditionally
+  independent wide responses contribute draw-specific proposals without
+  using score contrasts.
+  Varying-scale and Student-t group-effect models use the Gaussian reference
+  covariance for proposal reliability; their exact physical targets still use
+  every realized scale and Student-t mixing variable.
+  All coefficients sharing an \code{id} must use automatic centering together.
+  For correlated blocks, the chart can depend on coefficient order, although
+  the posterior remains unchanged.
+  For ordinary effects, automatic centering is currently limited to one
+  predictor-local ordinary \code{gr} covariance block and the same
+  response-likelihood information catalog described above. In particular,
+  ordinal locations, nonlinear predictors, and IDs spanning predictors use
+  fixed centering values instead. Predictor-local ordinary automatic blocks in
+  multivariate models currently require \code{set_rescor(FALSE)}. This
+  argument does not center the population-level design matrix.}
+
+\item{latent}{Logical. If \code{TRUE}, interpret an S2Z block as a strict
+latent-score block rather than as a reparameterization of conventional
+group effects. Strict latent scores have no omitted group mean and do not
+require matching population-level coefficients. When a strict ID spans
+response predictors, occurrences with the same nonlinear-parameter and
+group-level coefficient names share one score vector; distinct nonlinear
+parameter names define correlated latent-score dimensions. Thus sampled
+response-specific loadings contribute information about the same scores
+in a wide multivariate factor model. Shared occurrences must imply the
+same \code{sd} prior. Their automatic \code{sd} prior is the common,
+response-scale-independent \code{student_t(3, 0, 2.5)} prior. This option
+requires \code{s2z = TRUE}. The \code{cov} argument is not supported for
+strict latent scores.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.
@@ -70,6 +329,37 @@ epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
 fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
             data = epilepsy)
 summary(fit4)
+
+# physical sum-to-zero varying intercepts, slopes, and interactions
+s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
+                   coef = "Intercept") +
+  prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +
+  prior(lkj(2), class = "cor", group = "patient")
+fit5 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+            data = epilepsy, family = poisson(), prior = s2z_prior)
+
+# use standardized sum-to-zero coordinates for weakly informed effects
+form5_nc <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = FALSE))
+
+# use a fixed intermediate fraction for partial centering
+form5_partial <- count ~ zAge * Trt +
+  (1 + zAge * Trt | gr(patient, s2z = TRUE, center = 0.5))
+
+# choose fixed fractions with a fully non-centered Pathfinder precursor
+form_auto <- y ~ x +
+  (1 + x | gr(g, s2z = TRUE, center = "auto"))
+# pass center_control = autocenter_control(method = "hmc") to brm() to use
+# a separate short HMC precursor instead
+
+# allow the intercept, slope, and interaction scales to vary by patient
+scale_prior <- s2z_prior +
+  prior(normal(0, 0.25), class = "sdlog", group = "patient")
+fit6 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt |
+                gr(patient, s2z = TRUE, scale = "varying")),
+            data = epilepsy, family = poisson(), prior = scale_prior)
 }
 
 }

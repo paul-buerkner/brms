@@ -86,11 +86,11 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     drop_unused_levels = drop_unused_levels
   )
   bframe <- brmsframe(bterms, data)
+  stanvars <- validate_stanvars(stanvars)
   prior <- .validate_prior(
     prior, bframe = bframe,
-    sample_prior = sample_prior
+    sample_prior = sample_prior, stanvars = stanvars
   )
-  stanvars <- validate_stanvars(stanvars)
   threads <- validate_threads(threads)
   .standata(
     bframe, data = data, prior = prior,
@@ -111,6 +111,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
                       only_response = FALSE, internal = FALSE, ...) {
 
   stopifnot(is.anybrmsframe(bframe))
+  validate_re_s2z(bframe, prior = prior, stanvars = stanvars)
   check_response <- as_one_logical(check_response)
   only_response <- as_one_logical(only_response)
   internal <- as_one_logical(internal)

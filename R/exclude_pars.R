@@ -77,9 +77,48 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
     # to reduce the number of models that need refitting for moment matching
     par_classes <- c(
       "bQ", "zb", "zbsp", "zbs", "zar", "zma", "hs_local", "R2D2_phi",
-      "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
+      "scales", "merged_Intercept", "finite_Intercept", "zcar", "nszcar",
+      "zerr"
     )
     c(out) <- paste0(par_classes, p)
+    if (has_re_s2z_conventional(x)) {
+      c(out) <- paste0(
+        c(
+          "theta_s2z", "z_theta_s2z", "theta_s2z_active", "fixed_s2z",
+          "zfixed_s2z", "sdfixed_s2z"
+        ),
+        p
+      )
+      infos_s2z <- re_s2z_infos(x)
+      if (length(infos_s2z)) {
+        info_s2z <- infos_s2z[[1L]]
+        inactive_q_s2z <- info_s2z$inactive_q
+        if (isTRUE(info_s2z$ordinal)) {
+          inactive_q_s2z <- intersect(inactive_q_s2z, info_s2z$slope_q)
+          threshold <- info_s2z$threshold
+          for (i in unique(threshold$group_index)) {
+            row <- threshold[match(i, threshold$group_index), , drop = FALSE]
+            threshold_class <- if (identical(row$kind, "first")) {
+              "first_theta_Intercept"
+            } else {
+              "theta_Intercept"
+            }
+            threshold_group <- str_if(has_thres_groups(x), usc(i))
+            c(out) <- paste0(threshold_class, p, threshold_group)
+          }
+        }
+        n_inactive_s2z <- length(inactive_q_s2z)
+        if (n_inactive_s2z) {
+          c(out) <- paste0(
+            "par_fixed_s2z", p, "_", seq_len(n_inactive_s2z)
+          )
+        }
+        q <- length(info_s2z$qnames)
+      } else {
+        q <- length(x$frame$fe$vars)
+      }
+      c(out) <- paste0("udf_b_s2z", p, "_", seq_len(q))
+    }
     smframe <- x$frame$sm
     for (i in seq_rows(smframe)) {
       nb <- seq_len(smframe$nbases[i])
@@ -100,15 +139,70 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
   rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
   for (id in unique(reframe$id)) {
     c(out) <- paste0(rm_re_pars, "_", id)
+    r <- subset2(reframe, id = id)
+    if (!save_pars$all && !isTRUE(r$s2z[1]) &&
+        !identical(re_s2z_center_mode(r), "noncentered")) {
+      c(out) <- paste0(c(
+        "L_center_re_", "mean_center_re_", "b_center_re_",
+        "log_jacobian_re_"
+      ), id)
+      if (identical(re_s2z_center_mode(r), "auto")) {
+        c(out) <- paste0(c(
+          "rho_center_candidate_", "mean_rho_center_candidate_"
+        ), id)
+      }
+    }
+    if (!save_pars$all && isTRUE(r$s2z[1])) {
+      s2z_classes <- c(
+        "z_s2z", "z_mean_s2z", "r_s2z", "H_s2z",
+        "q_explicit_s2z", "prior_mean_s2z",
+        "prior_prec_s2z", "prior_scale_s2z",
+        "W_matheron_s2z", "sqrt_W_matheron_s2z",
+        "L_W_matheron_s2z", "theta_white_matheron_s2z",
+        "group_scale_s2z", "group_prec_s2z",
+        "L_Sigma_s2z", "L_mean_s2z", "Q_Sigma_s2z",
+        "P_group_s2z", "group_info_s2z", "h_group_s2z",
+        "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
+        "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
+        "rank1_info_s2z", "group_quad_s2z", "joint_quad_s2z",
+        "log_det_partial_s2z",
+        "mhat_s2z", "qhat_s2z", "white_s2z", "mean_r_s2z",
+        "q_recovered_s2z", "z_sd_s2z", "z_sd_mean_s2z",
+        "relative_sd_s2z", "reference_sd_s2z", "sd_level_s2z"
+      )
+      c(out) <- paste0(s2z_classes, "_", id)
+      rp <- usc(combine_prefix(r))
+      c(out) <- paste0("r_s2z_", r$id, rp, "_", r$cn)
+      if (identical(re_s2z_center_mode(r), "auto")) {
+        c(out) <- paste0(c(
+          "rho_center_candidate_", "mean_rho_center_candidate_"
+        ), id)
+        if (all(re_s2z_latent(r))) {
+          fisher_info <- stan_re_s2z_latent_fisher_info(
+            id, r = r, bframe = bframe, threads = NULL
+          )
+          dependency_names <- vapply(
+            fisher_info$dependency_info,
+            function(x) x$vector_name,
+            character(1)
+          )
+          c(out) <- dependency_names
+        }
+      }
+    }
   }
   if (isFALSE(save_pars$group)) {
     p <- usc(combine_prefix(reframe))
     c(out) <- paste0("r_", reframe$id, p, "_", reframe$cn)
+    varying_ids <- unique(reframe$id[reframe$scale == "varying"])
+    c(out) <- paste0("sd_level_", varying_ids)
   } else if (is.character(save_pars$group)) {
     sub_reframe <- reframe[!reframe$group %in% save_pars$group, ]
     if (has_rows(sub_reframe)) {
       sub_p <- usc(combine_prefix(sub_reframe))
       c(out) <- paste0("r_", sub_reframe$id, sub_p, "_", sub_reframe$cn)
+      varying_ids <- unique(sub_reframe$id[sub_reframe$scale == "varying"])
+      c(out) <- paste0("sd_level_", varying_ids)
     }
   }
   reframe_t <- subset_reframe_dist(reframe, "student")
