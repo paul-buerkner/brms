@@ -173,8 +173,8 @@ fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
+#> Chain 1: Gradient evaluation took 3.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.38 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -191,15 +191,15 @@ fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.551 seconds (Warm-up)
-#> Chain 1:                0.605 seconds (Sampling)
-#> Chain 1:                2.156 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.654 seconds (Warm-up)
+#> Chain 1:                0.645 seconds (Sampling)
+#> Chain 1:                2.299 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 2: Gradient evaluation took 2.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -216,15 +216,15 @@ fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.526 seconds (Warm-up)
-#> Chain 2:                0.594 seconds (Sampling)
-#> Chain 2:                2.12 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.622 seconds (Warm-up)
+#> Chain 2:                0.632 seconds (Sampling)
+#> Chain 2:                2.254 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 3: Gradient evaluation took 5.4e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.54 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -241,15 +241,15 @@ fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.372 seconds (Warm-up)
-#> Chain 3:                0.609 seconds (Sampling)
-#> Chain 3:                1.981 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.462 seconds (Warm-up)
+#> Chain 3:                0.648 seconds (Sampling)
+#> Chain 3:                2.11 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.8e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 4: Gradient evaluation took 2.7e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -266,9 +266,9 @@ fit <- brm(time ~ age + sex + disease + (1 + age|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.347 seconds (Warm-up)
-#> Chain 4:                0.742 seconds (Sampling)
-#> Chain 4:                2.089 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.431 seconds (Warm-up)
+#> Chain 4:                0.791 seconds (Sampling)
+#> Chain 4:                2.222 seconds (Total)
 #> Chain 4: 
 #> Warning: There were 29 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup

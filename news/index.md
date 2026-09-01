@@ -38,6 +38,10 @@
 
 #### Bug Fixes
 
+- Include the lower bound when computing `posterior_epred` for truncated
+  discrete models, matching the generated Stan code and `log_lik`.
+  Thanks to Ahmed Eldeeb.
+  ([\#1923](https://github.com/paul-buerkner/brms/issues/1923))
 - Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
   responses, matching the generated Stan code, so that `loo` and `waic`
   agree with the model that was fitted. Thanks to Ahmed Eldeeb.

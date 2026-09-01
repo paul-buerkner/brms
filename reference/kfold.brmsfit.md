@@ -223,8 +223,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.9e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
+#> Chain 1: Gradient evaluation took 5e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.5 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -241,15 +241,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 3.873 seconds (Warm-up)
-#> Chain 1:                2.339 seconds (Sampling)
-#> Chain 1:                6.212 seconds (Total)
+#> Chain 1:  Elapsed Time: 4.139 seconds (Warm-up)
+#> Chain 1:                2.503 seconds (Sampling)
+#> Chain 1:                6.642 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.38 seconds.
+#> Chain 2: Gradient evaluation took 4e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -266,9 +266,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 4.247 seconds (Warm-up)
-#> Chain 2:                2.284 seconds (Sampling)
-#> Chain 2:                6.531 seconds (Total)
+#> Chain 2:  Elapsed Time: 4.536 seconds (Warm-up)
+#> Chain 2:                2.446 seconds (Sampling)
+#> Chain 2:                6.982 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -291,15 +291,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 4.215 seconds (Warm-up)
-#> Chain 3:                3.99 seconds (Sampling)
-#> Chain 3:                8.205 seconds (Total)
+#> Chain 3:  Elapsed Time: 4.506 seconds (Warm-up)
+#> Chain 3:                4.243 seconds (Sampling)
+#> Chain 3:                8.749 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 4.1e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.41 seconds.
+#> Chain 4: Gradient evaluation took 4e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -316,9 +316,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 4.213 seconds (Warm-up)
-#> Chain 4:                2.284 seconds (Sampling)
-#> Chain 4:                6.497 seconds (Total)
+#> Chain 4:  Elapsed Time: 4.477 seconds (Warm-up)
+#> Chain 4:                2.443 seconds (Sampling)
+#> Chain 4:                6.92 seconds (Total)
 #> Chain 4: 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
@@ -570,7 +570,7 @@ fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 0.8 seconds.
+#> Total execution time: 0.9 seconds.
 #> 
 
 # now restart the R session and run the following (after attaching 'brms')
@@ -590,7 +590,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 0.7 seconds.
+#> Total execution time: 0.8 seconds.
 #> 
 #> Running MCMC with 4 sequential chains...
 #> 
@@ -601,7 +601,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 0.7 seconds.
+#> Total execution time: 0.8 seconds.
 #> 
 #> Fitting model 1 out of 2
 #> Start sampling
