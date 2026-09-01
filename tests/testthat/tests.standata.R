@@ -1128,6 +1128,28 @@ test_that("cox baseline hazard basis is fixed after model fitting", {
   }
 })
 
+test_that("cox baseline hazard basis stored by brms 2.23.0 is still used", {
+  skip_if_not_installed("splines2")
+  set.seed(1234)
+  data <- data.frame(
+    y = c(rexp(80), rep(1000, 20)),
+    cens = c(rep(0, 80), rep(1, 20)),
+    x = rnorm(100)
+  )
+  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
+  fit <- brm(bform, data = data, empty = TRUE)
+  sdata <- standata(fit)
+
+  # brms 2.23.0 stored the basis with the predictor terms
+  fit$basis$dpars$mu$bhaz <- fit$basis$bhaz
+  fit$basis$bhaz <- NULL
+  newdata <- data[1:10, ]
+  newdata$cens <- 0
+  sdata_new <- standata(fit, newdata = newdata)
+  expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
+  expect_equal(nrow(sdata_new$Zbhaz), 10)
+})
+
 test_that("standata handles addition term 'rate' is correctly", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   sdata <- standata(y | rate(time) ~ x, data, poisson())

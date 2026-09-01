@@ -469,7 +469,11 @@ data_bhaz <- function(bframe, data, data2, prior) {
   }
   y <- bframe$frame$resp$values
   bhaz <- family_info(bframe, "bhaz")
-  bs <- bframe$basis$bhaz$basis_matrix
+  bs <- bframe$frame$basis$bhaz$basis_matrix
+  if (is.null(bs)) {
+    # models fitted with brms 2.23.0 stored the basis with the predictor terms
+    bs <- bframe$basis$bhaz$basis_matrix
+  }
   if (is.null(bs)) {
     # no basis was passed in, that is, we are on the original data and thus
     # define the basis (and its knots) here; on the newdata path, the stored
