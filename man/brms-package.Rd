@@ -7,7 +7,7 @@
 \title{Bayesian Regression Models using 'Stan'}
 \description{
 \if{html}{
-   \figure{stanlogo.png}{options: width="50" alt="https://mc-stan.org/about/logo/"}
+   \figure{stanlogo.svg}{options: width="50" alt="https://mc-stan.org/about/logo/"}
    \emph{Stan Development Team}
 }
 
@@ -84,6 +84,11 @@ version 2.21.2. \url{https://mc-stan.org/}
 }
 \author{
 \strong{Maintainer}: Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
+
+Authors:
+\itemize{
+  \item Paul-Christian Bürkner \email{paul.buerkner@gmail.com}
+}
 
 Other contributors:
 \itemize{

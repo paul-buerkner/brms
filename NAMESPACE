@@ -426,6 +426,7 @@ export(dzero_inflated_beta_binomial)
 export(dzero_inflated_binomial)
 export(dzero_inflated_negbinomial)
 export(dzero_inflated_poisson)
+export(dzero_one_inflated_beta)
 export(empty_prior)
 export(exgaussian)
 export(exponential)
@@ -558,12 +559,27 @@ export(pzero_inflated_beta_binomial)
 export(pzero_inflated_binomial)
 export(pzero_inflated_negbinomial)
 export(pzero_inflated_poisson)
+export(pzero_one_inflated_beta)
 export(qasym_laplace)
+export(qbeta_binomial)
+export(qexgaussian)
 export(qfrechet)
 export(qgen_extreme_value)
+export(qhurdle_gamma)
+export(qhurdle_lognormal)
+export(qhurdle_negbinomial)
+export(qhurdle_poisson)
+export(qinv_gaussian)
 export(qshifted_lnorm)
 export(qskew_normal)
 export(qstudent_t)
+export(qvon_mises)
+export(qzero_inflated_beta)
+export(qzero_inflated_beta_binomial)
+export(qzero_inflated_binomial)
+export(qzero_inflated_negbinomial)
+export(qzero_inflated_poisson)
+export(qzero_one_inflated_beta)
 export(ranef)
 export(rasym_laplace)
 export(rbeta_binomial)
@@ -592,6 +608,10 @@ export(rexgaussian)
 export(rfrechet)
 export(rgen_extreme_value)
 export(rhat)
+export(rhurdle_gamma)
+export(rhurdle_lognormal)
+export(rhurdle_negbinomial)
+export(rhurdle_poisson)
 export(rinv_gaussian)
 export(rlogistic_normal)
 export(rmulti_normal)
@@ -643,58 +663,70 @@ import(ggplot2)
 import(methods)
 import(parallel)
 import(stats)
-importFrom(bayesplot,log_posterior)
-importFrom(bayesplot,neff_ratio)
-importFrom(bayesplot,nuts_params)
-importFrom(bayesplot,pp_check)
-importFrom(bayesplot,theme_default)
-importFrom(bridgesampling,bayes_factor)
-importFrom(bridgesampling,bridge_sampler)
-importFrom(bridgesampling,post_prob)
+importFrom(bayesplot,
+  log_posterior,
+  neff_ratio,
+  nuts_params,
+  pp_check,
+  theme_default
+)
+importFrom(bridgesampling,
+  bayes_factor,
+  bridge_sampler,
+  post_prob
+)
 importFrom(coda,as.mcmc)
 importFrom(grDevices,devAskNewPage)
 importFrom(graphics,plot)
-importFrom(loo,.compute_point_estimate)
-importFrom(loo,.ndraws)
-importFrom(loo,.thin_draws)
-importFrom(loo,is.loo)
-importFrom(loo,kfold)
-importFrom(loo,loo)
-importFrom(loo,loo_compare)
-importFrom(loo,loo_model_weights)
-importFrom(loo,loo_moment_match)
-importFrom(loo,loo_subsample)
-importFrom(loo,psis)
-importFrom(loo,waic)
-importFrom(nlme,VarCorr)
-importFrom(nlme,fixef)
-importFrom(nlme,ranef)
-importFrom(posterior,as_draws)
-importFrom(posterior,as_draws_array)
-importFrom(posterior,as_draws_df)
-importFrom(posterior,as_draws_list)
-importFrom(posterior,as_draws_matrix)
-importFrom(posterior,as_draws_rvars)
-importFrom(posterior,nchains)
-importFrom(posterior,ndraws)
-importFrom(posterior,niterations)
-importFrom(posterior,nvariables)
-importFrom(posterior,rhat)
-importFrom(posterior,subset_draws)
-importFrom(posterior,summarize_draws)
-importFrom(posterior,variables)
+importFrom(loo,
+  .compute_point_estimate,
+  .ndraws,
+  .thin_draws,
+  is.loo,
+  kfold,
+  loo,
+  loo_compare,
+  loo_model_weights,
+  loo_moment_match,
+  loo_subsample,
+  psis,
+  waic
+)
+importFrom(nlme,
+  VarCorr,
+  fixef,
+  ranef
+)
+importFrom(posterior,
+  as_draws,
+  as_draws_array,
+  as_draws_df,
+  as_draws_list,
+  as_draws_matrix,
+  as_draws_rvars,
+  nchains,
+  ndraws,
+  niterations,
+  nvariables,
+  rhat,
+  subset_draws,
+  summarize_draws,
+  variables
+)
 importFrom(rlang,.data)
-importFrom(rstantools,bayes_R2)
-importFrom(rstantools,log_lik)
-importFrom(rstantools,loo_R2)
-importFrom(rstantools,loo_linpred)
-importFrom(rstantools,loo_predict)
-importFrom(rstantools,loo_predictive_interval)
-importFrom(rstantools,nsamples)
-importFrom(rstantools,posterior_epred)
-importFrom(rstantools,posterior_interval)
-importFrom(rstantools,posterior_linpred)
-importFrom(rstantools,posterior_predict)
-importFrom(rstantools,predictive_error)
-importFrom(rstantools,predictive_interval)
-importFrom(rstantools,prior_summary)
+importFrom(rstantools,
+  bayes_R2,
+  log_lik,
+  loo_R2,
+  loo_linpred,
+  loo_predict,
+  loo_predictive_interval,
+  nsamples,
+  posterior_epred,
+  posterior_interval,
+  posterior_linpred,
+  posterior_predict,
+  predictive_error,
+  predictive_interval,
+  prior_summary
+)

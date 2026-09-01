@@ -901,22 +901,29 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
   }
+  # integer responses admit ceiling(lb):floor(ub), and log_lik_truncate()
+  # rounds the same way; without this a single non-integer bound turns the
+  # whole kernel grid fractional and zeroes every observation
+  lb <- ceiling(lb)
+  ub <- floor(ub)
   # simplify lb and ub back to vector format
   vec_lb <- lb[1, ]
   vec_ub <- ub[1, ]
   min_lb <- min(vec_lb)
-  # array of dimension S x N x length((lb+1):ub)
-  mk <- lapply((min_lb + 1):max(vec_ub), mean_kernel, args = args)
+  # the bounds are inclusive for integer responses, as in the Stan code and
+  # in log_lik; see #1923
+  # array of dimension S x N x length(lb:ub)
+  mk <- lapply(min_lb:max(vec_ub), mean_kernel, args = args)
   mk <- do_call(abind, c(mk, along = 3))
   m1 <- vector("list", ncol(mk))
   for (n in seq_along(m1)) {
     # summarize only over non-truncated values for this observation
-    J <- (vec_lb[n] - min_lb + 1):(vec_ub[n] - min_lb)
+    J <- (vec_lb[n] - min_lb + 1):(vec_ub[n] - min_lb + 1)
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
   m1 <- do.call(cbind, m1)
-  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
+  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb - 1), args)))
 }
 
 #' @export

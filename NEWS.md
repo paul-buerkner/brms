@@ -16,16 +16,40 @@ function thanks to Daniel Sabanes Bove. (#1734)
 * Add a new global option `brms.cache_folder`, which allows users to define a 
 default directory for saving and loading cached brmsfit objects.
 Thanks to Sermet Pekin. (#1790)
+* Extend `posterior_predict` beyond random draws via argument `output`,
+which can be `"random"` (the default), `"probability"`, `"pit"`,
+`"density"`, or `"quantile"`, with supporting arguments `q`, `p`,
+`lower.tail`, `log.p`, and `log` thanks to Aki Vehtari and
+Florence Bockting. (#1857)
+* Predict all mixing proportions of a `mixture` family without a reference
+category via `refcat = NA`, analogous to `refcat = NA` in categorical models.
+Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Include the lower bound when computing `posterior_epred` for truncated
+discrete models, matching the generated Stan code and `log_lik`.
+Thanks to Ahmed Eldeeb. (#1923)
+* Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
+responses, matching the generated Stan code, so that `loo` and `waic`
+agree with the model that was fitted. Thanks to Ahmed Eldeeb. (#1903)
+* Improve the numerical stability of `log_lik` for truncated and 
+interval-censored models, which previously returned `Inf` or `NaN` whenever 
+both bounds fell far into the same tail. Families whose CDF is not itself 
+accurate on the log scale are not yet covered. 
+Thanks to Ahmed Eldeeb. (#1899)
+* Warn when `log_lik` returns infinite values, which the existing check for 
+`NA` values did not catch. (#1899)
+* Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
+definitions in Stan. (#1899)
 * Cox models now place the knots of the baseline hazard based on the event
 times only instead of both event and censoring times. Models fitted with
 earlier versions of brms keep using their original knots in post-processing.
+(#1898)
 * The basis of the baseline hazard of Cox models is now stored with the
 response instead of with the predictor terms. As a result, `log_lik`, `loo`
 and `kfold` applied to new data reuse the knots chosen at fitting time also
-for non-linear formulas.
+for non-linear formulas. (#1898)
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 

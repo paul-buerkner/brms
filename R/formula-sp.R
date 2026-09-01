@@ -453,7 +453,7 @@ frame_sp <- function(x, data) {
 
   # extract information on covariates
   # only non-zero covariates are relevant to consider
-  has_covars <- attr(mm, "covars")
+  has_covars <- colSums(mm != 1) > 0
   cumsum_covars <- cumsum(has_covars)
   out$Ic <- ifelse(has_covars, cumsum_covars, 0)
   class(out) <- spframe_class()

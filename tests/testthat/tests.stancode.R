@@ -1834,6 +1834,29 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
   expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
 
+  # predict all mixing proportions without a reference category
+  fam_na <- mixture(gaussian, student, exgaussian, refcat = NA)
+  scode <- stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+                         data = data, family = fam_na)
+  expect_match2(scode, "log_sum_exp_theta = log(exp(theta1[n]) + exp(theta2[n]) + exp(theta3[n]));")
+  expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
+  expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  # all components are predicted; none is fixed as a reference category
+  # (the default 'theta2 = rep_vector(0.0, N);' followed by no linear predictor)
+  expect_match2(scode, "theta2 += Intercept_theta2 + Xc_theta2 * b_theta2;")
+
+  # errors when the number of predicted proportions is inconsistent
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+             data = data, family = fam),
+    "Can only predict all but one mixing proportion"
+  )
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x),
+             data = data, family = fam_na),
+    "all mixing proportions must be predicted"
+  )
+  
   fam <- mixture(cumulative, sratio)
   scode <- stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], Intercept_mu1);")
@@ -2194,7 +2217,7 @@ test_that("Stan code for missing value terms works correctly", {
 
 test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
-  dat$x[c(1, 3, 9)] <- NA
+  dat$x_x[c(1, 3, 9)] <- NA
   bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
   scode <- stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
