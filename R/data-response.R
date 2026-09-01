@@ -469,10 +469,13 @@ data_bhaz <- function(bframe, data, data2, prior) {
   }
   y <- bframe$frame$resp$values
   bhaz <- family_info(bframe, "bhaz")
-  # the basis (and thus the knots) is defined exactly once in 'frame_basis_bhaz'
-  # and only evaluated here; it must never be redefined based on the times seen
-  # in 'data_bhaz' (e.g. for newdata predictions)
   bs <- bframe$basis$bhaz$basis_matrix
+  if (is.null(bs)) {
+    # no basis was passed in, that is, we are on the original data and thus
+    # define the basis (and its knots) here; on the newdata path, the stored
+    # basis is passed in via 'brmsframe' and only evaluated below
+    bs <- bhaz_basis(bframe, data, args = bhaz$args)
+  }
   out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
@@ -500,6 +503,46 @@ data_bhaz <- function(bframe, data, data2, prior) {
     out$con_sbhaz <- as.array(con_sbhaz)
   }
   out
+}
+
+# Construct the basis matrix of the baseline hazard of the Cox model
+# This function is the single place where the knots of the baseline hazard are
+# defined. It is called by 'data_bhaz' on the original data (that is, when no
+# basis was passed into 'brmsframe') and by 'frame_basis_bhaz' when storing the
+# basis in the fitted model object. Both calls use the same data and arguments
+# and hence yield the same basis.
+# @param bframe a btl or btnl object containing the response formula
+# @param data data.frame containing the response and censoring variables
+# @param args arguments passed to the spline generating functions
+# @param warn emit a warning if no exact events are available?
+# @return the M-spline basis matrix of the baseline hazard function
+bhaz_basis <- function(bframe, data, args = list(), warn = TRUE) {
+  y <- model.response(model.frame(bframe$respform, data, na.action = na.pass))
+  # by default, only the event times are used to define the knots; older
+  # models used both event and censoring times, which is generally not sensible
+  y_knots <- y
+  if (!require_old_default("2.23.1")) {
+    cens <- get_cens(bframe, data)
+    if (!is.null(cens)) {
+      y_events <- y[cens == 0]
+      # fall back to all times if there are no exact events, since the knots
+      # cannot be defined from an empty set of event times (e.g. fully
+      # interval- or left-censored data)
+      if (length(y_events)) {
+        y_knots <- y_events
+      } else if (warn) {
+        warning2(
+          "No exact events were found to define the baseline hazard knots. ",
+          "Placing the knots at quantiles of all (censored) times instead. ",
+          "Consider setting a smaller 'df' in 'bhaz()' if the baseline ",
+          "hazard is poorly identified."
+        )
+      }
+    }
+  }
+  # boundary knots still span all times so the basis can be evaluated at
+  # censoring times beyond the last event (#1143)
+  bhaz_basis_matrix(y_knots, args = args, y_boundary = y)
 }
 
 # Basis matrices for baseline hazard functions of the Cox model

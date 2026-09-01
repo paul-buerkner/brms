@@ -20,8 +20,8 @@ Thanks to Sermet Pekin. (#1790)
 ### Bug Fixes
 
 * Cox models now place the knots of the baseline hazard based on the event
-times only instead of both event and censoring times. The old behavior can
-be recovered by setting `options(brms.cox_bhaz_all_times = TRUE)`.
+times only instead of both event and censoring times. Models fitted with
+earlier versions of brms keep using their original knots in post-processing.
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 

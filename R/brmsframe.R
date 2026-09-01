@@ -70,12 +70,6 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   # frame_ functions (but not vice versa) and are thus evaluated first
   x$frame <- frame
   x$basis <- basis
-  if (is.null(basis)) {
-    # compute the baseline hazard basis (and thus its knots) exactly once from
-    # the original data so that 'data_bhaz' only ever evaluates but never
-    # redefines the knots (for newdata, 'basis' is passed in and reused)
-    x$basis$bhaz <- frame_basis_bhaz(x, data)
-  }
   x$sdata <- list(
     fe = data_fe(x, data),
     cs = data_cs(x, data),
@@ -429,35 +423,11 @@ frame_basis_ac <- function(x, data, ...) {
 frame_basis_bhaz <- function(x, data, ...) {
   out <- list()
   if (is_cox(x$family)) {
-    # compute basis matrix of the baseline hazard for the Cox model
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    # the basis (and thus the knots of the baseline hazard) is constructed in
+    # the same way as on the original data in 'data_bhaz'; no warning is
+    # emitted here as it would already have been emitted there
     args <- family_info(x, "bhaz")$args
-    # by default, only the event times are used to define the knots of the
-    # baseline hazard; the option below allows recovering the old (buggy)
-    # behavior of using both event and censoring times
-    y_knots <- y
-    if (!getOption("brms.cox_bhaz_all_times", FALSE)) {
-      cens <- get_cens(x, data)
-      if (!is.null(cens)) {
-        y_events <- y[cens == 0]
-        # fall back to all times if there are no exact events, since the knots
-        # cannot be defined from an empty set of event times (e.g. fully
-        # interval- or left-censored data)
-        if (length(y_events)) {
-          y_knots <- y_events
-        } else {
-          warning2(
-            "No exact events were found to define the baseline hazard knots. ",
-            "Placing the knots at quantiles of all (censored) times instead. ",
-            "Consider setting a smaller 'df' in 'bhaz()' if the baseline ",
-            "hazard is poorly identified."
-          )
-        }
-      }
-    }
-    # boundary knots still span all times so the basis can be evaluated at
-    # censoring times beyond the last event (#1143)
-    out$basis_matrix <- bhaz_basis_matrix(y_knots, args = args, y_boundary = y)
+    out$basis_matrix <- bhaz_basis(x, data, args = args, warn = FALSE)
   }
   out
 }
