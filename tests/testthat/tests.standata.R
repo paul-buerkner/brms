@@ -1103,22 +1103,29 @@ test_that("cox baseline hazard basis is fixed after model fitting", {
     x = rnorm(100)
   )
   bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
-  fit <- brm(bform, data = data, empty = TRUE)
-  sdata <- standata(fit)
-
-  # with newdata, the basis stored at fitting time is reused, never redefined
-  newdata <- data[1:10, ]
-  newdata$cens <- 0
-  sdata_new <- standata(fit, newdata = newdata)
-  expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
-  expect_equal(
-    attr(sdata_new$Zbhaz, "Boundary.knots"),
-    attr(sdata$Zbhaz, "Boundary.knots")
+  bform_nl <- bf(
+    y | bhaz(df = 8) + cens(cens) ~ exp(a), a ~ x, nl = TRUE,
+    family = brmsfamily("cox")
   )
-  expect_equal(nrow(sdata_new$Zbhaz), 10)
+  # the basis must be fixed for linear and non-linear formulas alike
+  for (bf_i in list(bform, bform_nl)) {
+    fit <- brm(bf_i, data = data, empty = TRUE)
+    sdata <- standata(fit)
 
-  # a single new observation is not enough to define a basis on its own
-  expect_equal(nrow(standata(fit, newdata = data[1, ])$Zbhaz), 1)
+    # with newdata, the basis stored at fitting time is reused, never redefined
+    newdata <- data[1:10, ]
+    newdata$cens <- 0
+    sdata_new <- standata(fit, newdata = newdata)
+    expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
+    expect_equal(
+      attr(sdata_new$Zbhaz, "Boundary.knots"),
+      attr(sdata$Zbhaz, "Boundary.knots")
+    )
+    expect_equal(nrow(sdata_new$Zbhaz), 10)
+
+    # a single new observation is not enough to define a basis on its own
+    expect_equal(nrow(standata(fit, newdata = data[1, ])$Zbhaz), 1)
+  }
 })
 
 test_that("standata handles addition term 'rate' is correctly", {
