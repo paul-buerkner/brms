@@ -27,6 +27,12 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Stop rounding `posterior_predict` output to integers for discrete models
+unless `output` is `"random"`, which collapsed probabilities and densities
+to 0 or 1. Thanks to Ahmed Eldeeb. (#1923)
+* Include the lower bound in `posterior_predict` outputs `"probability"`,
+`"pit"`, `"density"` and `"quantile"` for truncated discrete models,
+matching the other post-processing methods. Thanks to Ahmed Eldeeb. (#1923)
 * Include the lower bound when computing `posterior_epred` for truncated
 discrete models, matching the generated Stan code and `log_lik`.
 Thanks to Ahmed Eldeeb. (#1923)

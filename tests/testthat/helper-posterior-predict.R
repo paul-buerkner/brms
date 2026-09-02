@@ -254,6 +254,8 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
   }
   prep <- entry$prep_builder(ns = 12, nobs = max(3, i), seed = seed)
   prep <- set_trunc_bounds(prep, lb = lb, ub = ub, i = i)
+  # integer responses treat the lower bound as inclusive; see #1923
+  int_response <- isTRUE(entry$flags$discrete_support)
   q <- entry$q_ref
   # clamp q into [lb, ub] for density/prob checks
   q_in <- min(max(q, lb), ub)
@@ -262,7 +264,7 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
   exp_p <- do.call(
     brms:::pp_cdf,
     c(list(q = q_in, distribution = entry$backend, lb = lb, ub = ub,
-           randomized = FALSE), entry$params)
+           randomized = FALSE, int_response = int_response), entry$params)
   )
   testthat::expect_equal(got_p, rep(as.numeric(exp_p), prep$ndraws),
                          tolerance = tol,
@@ -272,8 +274,8 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
     got_d <- entry$pp_fun(i, prep = prep, output = "density", q = q_in)
     exp_d <- do.call(
       brms:::pp_density,
-      c(list(q = q_in, distribution = entry$backend, lb = lb, ub = ub),
-        entry$params)
+      c(list(q = q_in, distribution = entry$backend, lb = lb, ub = ub,
+             int_response = int_response), entry$params)
     )
     testthat::expect_equal(got_d, rep(as.numeric(exp_d), prep$ndraws),
                            tolerance = tol,
@@ -284,8 +286,8 @@ expect_pp_truncation <- function(entry, i = 1L, lb = NULL, ub = NULL,
     got_q <- entry$pp_fun(i, prep = prep, output = "quantile", p = 0.4)
     exp_q <- do.call(
       brms:::pp_quantile,
-      c(list(p = 0.4, distribution = entry$backend, lb = lb, ub = ub),
-        entry$params)
+      c(list(p = 0.4, distribution = entry$backend, lb = lb, ub = ub,
+             int_response = int_response), entry$params)
     )
     testthat::expect_equal(got_q, rep(as.numeric(exp_q), prep$ndraws),
                            tolerance = 1e-5,
