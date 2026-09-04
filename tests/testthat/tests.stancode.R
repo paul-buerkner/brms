@@ -1856,7 +1856,7 @@ test_that("Stan code of mixture model is correct", {
              data = data, family = fam_na),
     "all mixing proportions must be predicted"
   )
-  
+
   fam <- mixture(cumulative, sratio)
   scode <- stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], Intercept_mu1);")
@@ -1923,7 +1923,7 @@ test_that("sparse matrix multiplication is applied correctly", {
     data, prior = prior(normal(0, 1), nlpar = a)
   )
   expect_match2(scode,
-    "vX_a[size(csr_extract_v(X_a))] = csr_extract_v(X_a);"
+    "array[size(csr_extract_v(X_a))] int vX_a = csr_extract_v(X_a);"
   )
   expect_match2(scode,
     "nlp_a += csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
