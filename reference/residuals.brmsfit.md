@@ -127,6 +127,19 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
            data = inhaler, cores = 2)
 #> Compiling Stan program...
 #> Start sampling
+#> ime: 1.339 seconds (Warm-up)
+#> Chain 2:                0.679 seconds (Sampling)
+#> Chain 2:                2.018 seconds (Total)
+#> Chain 2: 
+#> Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 1: 
+#> Chain 1:  Elapsed Time: 1.564 seconds (Warm-up)
+#> Chain 1:                1.313 seconds (Sampling)
+#> Chain 1:                2.877 seconds (Total)
+#> Chain 1: 
 
 ## extract residuals/predictive errors
 res <- residuals(fit)

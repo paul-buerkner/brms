@@ -15,7 +15,7 @@
       brms
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -167,8 +167,8 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000187 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.87 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.00016 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.6 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -185,15 +185,15 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.43 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.056 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.486 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.327 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.004 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.331 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000137 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.37 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000134 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.34 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -210,11 +210,24 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.457 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.031 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.488 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 29.211 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                42.859 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                72.07 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>There were 241 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Examine the pairs() plot to diagnose sampling problems</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The largest R-hat is 2.98, indicating chains have not mixed.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Running the chains for more iterations may help. See</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#r-hat</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Running the chains for more iterations may help. See</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#bulk-ess</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> Running the chains for more iterations may help. See</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#tail-ess</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit1</span><span class="op">)</span></span></span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Inference for the model posterior has not converged (some Rhats are &gt; 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: mixture(gaussian, gaussian) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Links: mu1 = identity; mu2 = identity </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: y ~ x + z </span>
@@ -223,20 +236,27 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          total post-warmup draws = 2000</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regression Coefficients:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept     0.06      0.11    -0.16     0.28 1.00     3291     1654</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept     6.21      0.13     5.96     6.47 1.00     2480     1674</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x             0.05      0.06    -0.07     0.18 1.00     3795     1580</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_z            -0.17      0.15    -0.46     0.11 1.00     3703     1395</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_x            -0.08      0.11    -0.29     0.12 1.00     4200     1339</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z            -0.09      0.19    -0.45     0.27 1.00     2648     1445</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                            Estimate            Est.Error               l-95% CI</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept                  1.27                 1.23                  -0.14</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept  35465969799385544.00 41709491594432400.00                   6.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x                         -0.03                 0.17                  -0.43</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_z                         -0.53                 0.45                  -1.47</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_x          -1029595764310982.50  2668856112243263.50   -7786776878225666.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z         -64981471364136320.00 76404249972577952.00 -210153805226743360.00</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>                            u-95% CI Rhat Bulk_ESS Tail_ESS</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept                  2.94 1.83        3      101</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept 114609037117292896.00 2.45        3       27</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x                          0.21 1.18        8       84</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_z                          0.08 1.66        3       71</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_x           3923343878003977.00 1.85       25       48</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z                          0.20 2.98        3       27</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Further Distributional Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     1.04      0.05     0.94     1.15 1.00     3501     1646</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     0.93      0.07     0.80     1.09 1.00     2748     1616</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta1     0.67      0.03     0.62     0.72 1.00     3187     1530</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta2     0.33      0.03     0.28     0.38 1.00     3187     1530</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     2.06      1.03     0.96     3.29 1.83        3       73</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     1.82      2.15     0.19     7.93 1.60       23       61</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta1     0.83      0.17     0.62     1.00 1.83        3       62</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta2     0.17      0.17     0.00     0.38 1.83        3       62</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
@@ -253,8 +273,8 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000151 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.51 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000149 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.49 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -271,15 +291,15 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.273 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.039 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.312 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.268 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.015 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.283 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000133 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.33 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.00013 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.3 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -296,10 +316,14 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.451 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.098 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.549 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.411 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.031 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.442 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>There were 1 divergent transitions after warmup. See</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> to find out why this is a problem and how to eliminate them.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Examine the pairs() plot to diagnose sampling problems</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>The largest R-hat is 1.83, indicating chains have not mixed.</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> Running the chains for more iterations may help. See</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#r-hat</span>
@@ -311,6 +335,7 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#tail-ess</span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit2</span><span class="op">)</span></span></span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>Inference for the model posterior has not converged (some Rhats are &gt; 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.</span>
+<span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>There were 1 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: mixture(gaussian, gaussian) </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   Links: mu1 = identity; mu2 = identity </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Formula: y ~ 1 </span>
@@ -322,17 +347,17 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regression Coefficients:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept    -0.04      0.09    -0.21     0.13 1.01     1795     1299</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept     3.19      3.04    -0.07     6.45 1.83        3       61</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x            -0.09      0.33    -0.91     0.41 1.39       13       80</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z            -0.17      0.20    -0.55     0.22 1.10       13      141</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept    -0.04      0.09    -0.21     0.13 1.02     2001     1158</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept     3.19      3.04    -0.06     6.44 1.83        3       69</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x            -0.11      0.33    -0.95     0.34 1.36       10       78</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z            -0.17      0.19    -0.55     0.22 1.12       11      276</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Further Distributional Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     3.03      2.01     0.95     5.57 1.83        3       85</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     0.85      0.11     0.66     1.06 1.53        4       77</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta1     0.60      0.08     0.47     0.71 1.80        3       79</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta2     0.40      0.08     0.29     0.53 1.80        3       79</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     3.03      2.01     0.96     5.60 1.83        3       54</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     0.85      0.11     0.65     1.05 1.54        4       76</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta1     0.60      0.07     0.47     0.71 1.80        3       69</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta2     0.40      0.07     0.29     0.53 1.80        3       69</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
@@ -347,8 +372,8 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000132 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.32 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000126 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.26 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -365,15 +390,15 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.088 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                0.974 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.062 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.009 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                0.905 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.914 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.00016 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.6 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000121 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.21 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -390,9 +415,9 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.07 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                0.906 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.976 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 0.993 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                0.843 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.836 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit3</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: mixture(gaussian, gaussian) </span>
@@ -434,8 +459,8 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000206 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.06 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000205 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.05 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -452,15 +477,15 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 2.214 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.639 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                3.853 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.986 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.477 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                3.463 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000194 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.94 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000202 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.02 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -477,9 +502,9 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 2.299 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.69 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                3.989 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 2.056 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.512 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                3.568 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit4</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: mixture(gaussian, gaussian) </span>
@@ -492,19 +517,19 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Regression Coefficients:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept        0.05      0.11    -0.17     0.28 1.00     2218     1569</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept        6.21      0.13     5.95     6.48 1.00     3161     1593</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta2_Intercept    -0.71      0.13    -0.98    -0.46 1.00     2999     1448</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x                0.06      0.07    -0.08     0.19 1.00     3345     1701</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_z               -0.17      0.14    -0.45     0.11 1.00     2720     1473</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_x               -0.08      0.10    -0.28     0.12 1.00     3747     1365</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z               -0.09      0.19    -0.48     0.28 1.00     2677     1131</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> theta2_x            -0.11      0.12    -0.34     0.12 1.00     3585     1564</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_Intercept        0.05      0.12    -0.18     0.27 1.00     2524     1687</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_Intercept        6.22      0.13     5.96     6.47 1.00     3067     1692</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta2_Intercept    -0.72      0.12    -0.97    -0.48 1.00     3371     1547</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_x                0.06      0.07    -0.08     0.19 1.00     3774     1369</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu1_z               -0.17      0.16    -0.47     0.14 1.00     3222     1349</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_x               -0.08      0.11    -0.29     0.13 1.00     3453     1256</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> mu2_z               -0.10      0.19    -0.48     0.28 1.00     3733     1413</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> theta2_x            -0.11      0.12    -0.34     0.12 1.00     4154     1470</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Further Distributional Parameters:</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>        Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     1.04      0.05     0.94     1.15 1.00     3183     1443</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     0.93      0.07     0.80     1.08 1.00     3608     1640</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma1     1.04      0.05     0.95     1.15 1.00     3340     1561</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> sigma2     0.93      0.08     0.79     1.11 1.00     3589     1244</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> and Tail_ESS are effective sample size measures, and Rhat is the potential</span>
@@ -527,8 +552,8 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.00022 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.2 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000213 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.13 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -545,15 +570,15 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 169.986 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                200.598 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                370.584 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 161.515 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                190.507 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                352.022 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000208 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.08 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000199 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.99 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -570,9 +595,9 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 167.658 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                205.565 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                373.223 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 159.534 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                195.205 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                354.739 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> <span class="warning">Warning: </span>There were 222 divergent transitions after warmup. See</span>
 <span class="r-wrn co"><span class="r-pr">#&gt;</span> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup</span>
@@ -629,12 +654,12 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Computed from 2000 by 300 log-likelihood matrix.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          Estimate   SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -619.8 13.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> p_loo         9.3  1.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1239.7 27.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -721.1 10.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> p_loo        61.6  3.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1442.1 19.9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ------</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE of elpd_loo is 0.1.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [1.1, 2.0]).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE of elpd_loo is 5.0.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [0.0, 1.7]).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> All Pareto k estimates are good (k &lt; 0.7).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> See help('pareto-k-diagnostic') for details.</span>
@@ -644,12 +669,12 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Computed from 2000 by 300 log-likelihood matrix.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          Estimate   SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -721.2 17.0</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -721.1 17.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> p_loo        71.6  5.8</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1442.3 34.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1442.1 33.9</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ------</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> MCSE of elpd_loo is 4.7.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [0.0, 1.4]).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [0.0, 1.5]).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> All Pareto k estimates are good (k &lt; 0.7).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> See help('pareto-k-diagnostic') for details.</span>
@@ -674,26 +699,22 @@ models, see <code><a href="brmsformula.html">brmsformula</a></code>.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Computed from 2000 by 300 log-likelihood matrix.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>          Estimate   SE</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -620.6 13.9</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> p_loo        10.4  1.0</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1241.1 27.7</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> elpd_loo   -620.7 13.9</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> p_loo        10.5  1.1</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> looic      1241.4 27.7</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> ------</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> MCSE of elpd_loo is 0.1.</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [1.1, 1.9]).</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> MCSE and ESS estimates assume MCMC draws (r_eff in [0.9, 2.5]).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> All Pareto k estimates are good (k &lt; 0.7).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> See help('pareto-k-diagnostic') for details.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Model comparisons:</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  model elpd_diff se_diff p_worse       diag_diff diag_elpd</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   fit1       0.0     0.0      NA                          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   fit4      -0.7     0.9    0.80 |elpd_diff| &lt; 4          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   fit3     -63.8     9.9    1.00                          </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>   fit2    -101.3    10.2    1.00                          </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> Diagnostic flags present.</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> See ?`loo-glossary` (sections `diag_diff` and `diag_elpd`)</span>
-<span class="r-msg co"><span class="r-pr">#&gt;</span> or https://mc-stan.org/loo/reference/loo-glossary.html.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  model elpd_diff se_diff p_worse diag_diff diag_elpd</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   fit4       0.0     0.0      NA                    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   fit3     -62.9     9.9    1.00                    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   fit1    -100.4     5.9    1.00                    </span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>   fit2    -100.4    10.1    1.00                    </span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>
 </code></pre></div>

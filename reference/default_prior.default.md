@@ -151,7 +151,7 @@ prior$prior[5] <- "student_t(10, 0, 5)"
 stancode(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
          data = epilepsy, family = poisson(),
          prior = prior)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {

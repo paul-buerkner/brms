@@ -41,7 +41,7 @@ formulas passed to the brms package. They do not evaluate its arguments
 # specify autocor terms within the formula
 y ~ x + arma(p = 1, q = 1) + car(M)
 #> y ~ x + arma(p = 1, q = 1) + car(M)
-#> <environment: 0x563fc91b2778>
+#> <environment: 0x55a58df7fa20>
 
 # specify autocor terms in the 'autocor' argument
 bf(y ~ x, autocor = ~ arma(p = 1, q = 1) + car(M))

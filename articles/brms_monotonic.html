@@ -36,7 +36,7 @@
       brms
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.1</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.2</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -95,7 +95,7 @@
                         <h4 data-toc-skip class="author">Paul
 Bürkner</h4>
             
-            <h4 data-toc-skip class="date">2026-09-01</h4>
+            <h4 data-toc-skip class="date">2026-09-04</h4>
       
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/vignettes/brms_monotonic.Rmd" class="external-link"><code>vignettes/brms_monotonic.Rmd</code></a></small>
       <div class="d-none name"><code>brms_monotonic.Rmd</code></div>
@@ -171,18 +171,18 @@ Formula: ls ~ mo(income)
 
 Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    30.85      1.45    28.00    33.73 1.00     2770     2384
-moincome     15.20      0.70    13.80    16.57 1.00     2501     2706
+Intercept    30.84      1.45    27.99    33.68 1.00     2560     2497
+moincome     15.20      0.70    13.82    16.54 1.00     2238     2552
 
 Monotonic Simplex Parameters:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.65      0.04     0.57     0.72 1.00     3018     2506
-moincome1[2]     0.24      0.04     0.16     0.33 1.00     3318     2536
-moincome1[3]     0.11      0.04     0.03     0.19 1.00     1978     1068
+moincome1[1]     0.65      0.04     0.57     0.72 1.00     4184     2829
+moincome1[2]     0.24      0.04     0.16     0.33 1.00     2800     2048
+moincome1[3]     0.11      0.04     0.03     0.19 1.00     2757     1973
 
 Further Distributional Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.12      0.52     6.20     8.27 1.00     3452     2765
+sigma     7.13      0.52     6.21     8.23 1.00     3534     2653
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -261,7 +261,7 @@ Computed from 4000 by 100 log-likelihood matrix.
          Estimate   SE
 elpd_loo   -340.2  7.2
 p_loo         4.9  0.8
-looic       680.5 14.5
+looic       680.4 14.4
 ------
 MCSE of elpd_loo is 0.0.
 MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.0]).
@@ -302,7 +302,7 @@ See help('pareto-k-diagnostic') for details.
 Model comparisons:
  model elpd_diff se_diff p_worse       diag_diff diag_elpd
   fit3       0.0     0.0      NA                          
-  fit1      -0.1     0.2    0.61 |elpd_diff| &lt; 4          
+  fit1       0.0     0.2    0.58 |elpd_diff| &lt; 4          
   fit2     -28.6     5.6    1.00                          </code></pre>
 <p>The monotonic model fits better than the continuous model, which is
 not surprising given that the relationship between <code>income</code>
@@ -352,18 +352,18 @@ Formula: ls ~ mo(income)
 
 Regression Coefficients:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept    30.79      1.46    27.98    33.61 1.00     2714     2526
-moincome     15.20      0.72    13.78    16.59 1.00     2093     2243
+Intercept    30.81      1.46    27.98    33.73 1.00     2810     2016
+moincome     15.18      0.70    13.82    16.50 1.00     2129     2435
 
 Monotonic Simplex Parameters:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]     0.65      0.04     0.58     0.73 1.00     2921     2272
-moincome1[2]     0.24      0.04     0.16     0.32 1.00     3813     2892
-moincome1[3]     0.11      0.04     0.03     0.19 1.00     3261     1970
+moincome1[1]     0.65      0.04     0.58     0.73 1.00     3327     2749
+moincome1[2]     0.24      0.04     0.15     0.32 1.00     2608     2162
+moincome1[3]     0.11      0.04     0.02     0.19 1.00     2103     1306
 
 Further Distributional Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.13      0.53     6.17     8.25 1.00     3290     2408
+sigma     7.12      0.52     6.18     8.23 1.00     3149     2253
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -400,23 +400,23 @@ Formula: ls ~ mo(income) * age
 
 Regression Coefficients:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       25.40      5.07    15.04    34.89 1.00      988     1544
-age              0.13      0.12    -0.09     0.37 1.00     1003     1591
-moincome        17.11      2.52    12.34    22.01 1.00      773     1145
-moincome:age    -0.05      0.06    -0.17     0.07 1.00      783     1228
+Intercept       25.48      5.19    14.91    35.41 1.00     1181     2130
+age              0.13      0.12    -0.10     0.39 1.00     1137     1903
+moincome        17.00      2.59    12.15    22.26 1.00      939     1259
+moincome:age    -0.04      0.06    -0.17     0.07 1.00      948     1246
 
 Monotonic Simplex Parameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.63      0.06     0.52     0.76 1.00     1387     1287
-moincome1[2]         0.24      0.05     0.14     0.35 1.00     2113     1815
-moincome1[3]         0.12      0.05     0.03     0.23 1.00     1646     1479
-moincome:age1[1]     0.39      0.24     0.02     0.87 1.00     1895     1806
-moincome:age1[2]     0.32      0.23     0.01     0.81 1.00     2178     2297
-moincome:age1[3]     0.29      0.22     0.01     0.81 1.00     2243     2074
+moincome1[1]         0.63      0.06     0.52     0.76 1.00     1638     1496
+moincome1[2]         0.25      0.05     0.15     0.35 1.00     2310     2193
+moincome1[3]         0.12      0.05     0.02     0.23 1.00     1550      926
+moincome:age1[1]     0.39      0.25     0.02     0.87 1.00     2279     2120
+moincome:age1[2]     0.32      0.23     0.01     0.84 1.00     2378     2308
+moincome:age1[3]     0.29      0.22     0.01     0.79 1.00     2497     2232
 
 Further Distributional Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.12      0.53     6.20     8.25 1.00     3329     2869
+sigma     7.13      0.52     6.20     8.22 1.00     3144     3073
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -452,29 +452,29 @@ Formula: ls ~ mo(income) * age + (mo(income) | city)
 Multilevel Hyperparameters:
 ~city (Number of levels: 10) 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sd(Intercept)              16.84      4.60    10.21    27.81 1.00     1318     2127
-sd(moincome)                1.28      1.05     0.05     3.97 1.00     1371     2216
-cor(Intercept,moincome)    -0.24      0.51    -0.96     0.87 1.00     3232     2307
+sd(Intercept)              16.83      4.76    10.02    28.07 1.01     1190     1971
+sd(moincome)                1.30      1.05     0.05     3.81 1.00     1277     1757
+cor(Intercept,moincome)    -0.23      0.50    -0.95     0.84 1.00     4104     2582
 
 Regression Coefficients:
              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-Intercept       22.18      7.70     7.56    37.98 1.00     1140     1653
-age              0.15      0.12    -0.08     0.40 1.00     1679     2440
-moincome        16.90      2.58    12.00    21.94 1.00     1376     1430
-moincome:age    -0.05      0.06    -0.17     0.07 1.00     1369     2236
+Intercept       21.66      7.40     7.37    36.51 1.00     1156     1590
+age              0.16      0.12    -0.07     0.40 1.00     1847     2427
+moincome        17.05      2.60    11.88    22.38 1.00     1597     1801
+moincome:age    -0.05      0.06    -0.18     0.07 1.00     1481     1648
 
 Monotonic Simplex Parameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-moincome1[1]         0.64      0.06     0.51     0.77 1.00     2119     1787
-moincome1[2]         0.24      0.06     0.13     0.37 1.00     3157     2065
-moincome1[3]         0.12      0.05     0.02     0.23 1.00     2328     1762
-moincome:age1[1]     0.34      0.23     0.02     0.83 1.00     4107     2609
-moincome:age1[2]     0.36      0.24     0.01     0.86 1.00     4641     2939
-moincome:age1[3]     0.30      0.22     0.01     0.79 1.00     3817     2476
+moincome1[1]         0.63      0.06     0.50     0.75 1.00     2155     1938
+moincome1[2]         0.25      0.06     0.14     0.37 1.00     2785     1962
+moincome1[3]         0.12      0.05     0.02     0.24 1.00     2612     1751
+moincome:age1[1]     0.34      0.23     0.01     0.83 1.00     3784     2243
+moincome:age1[2]     0.36      0.24     0.02     0.84 1.00     3462     2467
+moincome:age1[3]     0.30      0.22     0.01     0.78 1.00     4059     2646
 
 Further Distributional Parameters:
       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-sigma     7.01      0.56     5.97     8.21 1.00     4117     3027
+sigma     7.02      0.57     6.03     8.25 1.00     3919     2892
 
 Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 and Tail_ESS are effective sample size measures, and Rhat is the potential

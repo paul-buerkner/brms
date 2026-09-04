@@ -53,7 +53,7 @@ function is an alias of `stancode`.
 ``` r
 stancode(rating ~ treat + period + carry + (1|subject),
          data = inhaler, family = "cumulative")
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #>   /* cumulative-logit log-PDF for a single response
 #>    * Args:

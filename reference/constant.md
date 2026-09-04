@@ -36,7 +36,7 @@ A named list with elements `const` and `broadcast`.
 ``` r
 stancode(count ~ Base + Age, data = epilepsy,
          prior = prior(constant(1), class = "b"))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -85,7 +85,7 @@ stancode(count ~ Base + Age, data = epilepsy,
 stancode(count ~ Base + Age, data = epilepsy,
          prior = prior(constant(alpha), class = "b"),
          stanvars = stanvar(c(1, 0), name = "alpha"))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -134,7 +134,7 @@ stancode(count ~ Base + Age, data = epilepsy,
 stancode(count ~ Base + Age, data = epilepsy,
          prior = prior(constant(alpha, broadcast = FALSE), class = "b"),
          stanvars = stanvar(c(1, 0), name = "alpha"))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {

@@ -563,8 +563,8 @@ summary(fit_ir3)
 
     Regression Coefficients:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    eta_ability         0.87      0.24     0.43     1.37 1.00     2777     2493
-    guess_Intercept     0.40      0.05     0.30     0.50 1.00     2968     2439
+    eta_ability         0.88      0.25     0.43     1.39 1.00     2493     2167
+    guess_Intercept     0.40      0.05     0.30     0.50 1.00     2532     2249
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential

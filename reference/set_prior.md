@@ -426,7 +426,7 @@ bprior <- c(prior_string("normal(0,10)", class = "b"),
 stancode(rating ~ treat + period + carry + (1|subject),
          data = inhaler, family = cumulative(),
          prior = bprior)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #>   /* cumulative-logit log-PDF for a single response
 #>    * Args:
@@ -543,7 +543,7 @@ stancode(rating ~ treat + period + carry + (1|subject),
 stancode(count ~ zAge + zBase * Trt,
          data = epilepsy, family = poisson(),
          prior = set_prior("horseshoe(3)"))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #>   /* Efficient computation of the horseshoe scale parameters
 #>    * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866
@@ -629,7 +629,7 @@ bprior <- prior(constant(1), class = "b") +
   prior(constant(0.5), class = "sd")
 stancode(count ~ zAge + zBase + (1 | patient),
               data = epilepsy, prior = bprior)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -697,7 +697,7 @@ stancode(count ~ zAge + zBase + (1 | patient),
 # pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 stancode(count ~ Trt, data = epilepsy, prior = prior)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -757,7 +757,7 @@ prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
 prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
 stancode(count ~ Trt + zAge + zBase + (1 | patient),
          data = epilepsy, prior = c(prior_cov, prior_trt))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {

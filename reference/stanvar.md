@@ -84,7 +84,7 @@ bprior <- prior(normal(mean_intercept, 10), class = "Intercept")
 stanvars <- stanvar(5, name = "mean_intercept")
 stancode(count ~ Trt, epilepsy, prior = bprior,
          stanvars = stanvars)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -135,7 +135,7 @@ stanvars <- stanvar(rep(0, 2), "M", scode = "  vector[K] M;") +
   stanvar(diag(2), "V", scode = "  matrix[K, K] V;")
 stancode(count ~ Trt + zBase, epilepsy,
          prior = bprior, stanvars = stanvars)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -189,7 +189,7 @@ stanvars <- stanvar(scode = "real<lower=0> tau;",
                     block = "parameters")
 stancode(count ~ Trt + zBase, epilepsy,
          prior = bprior, stanvars = stanvars)
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #> }
 #> data {
@@ -242,7 +242,7 @@ stanvars <- stanvar(scode = "real<lower=0> tau;",
                     block = "parameters", pll_args = "real tau")
 stancode(count ~ Trt + zBase, epilepsy,
          stanvars = stanvars, threads = threading(2))
-#> // generated with brms 2.23.1
+#> // generated with brms 2.23.2
 #> functions {
 #>   /* integer sequence of values
 #>    * Args:

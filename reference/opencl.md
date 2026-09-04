@@ -41,7 +41,7 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
            backend = "cmdstanr")
 #> /usr/bin/ld: cannot find -lOpenCL: No such file or directory
 #> collect2: error: ld returned 1 exit status
-#> make: *** [make/program:82: /tmp/RtmpXzyq7F/model-2afd7d63379f] Error 1
+#> make: *** [make/program:82: /tmp/RtmpQs8xrx/model-2298ee73917] Error 1
 #> Error: An error occured during compilation! See the message above for more information.
 summary(fit)
 #> Error: object 'fit' not found
