@@ -67,6 +67,15 @@ such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 * Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
 `$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
 * Enable updating argument `data2` for `brmsfit_multiple` objects. (#1776)
+* Restore the mode parameterization of the `com_poisson` family on the Stan
+side, which had switched to the classical parameterization in #1765 while the
+R-side density functions did not, so that R-side post-processing no longer
+disagrees with the sampled density whenever `shape != 1`. Also correct the
+condition selecting the asymptotic normalizing constant, which was left
+unchanged by that switch and so no longer described the intended region.
+Models fitted with `com_poisson` and `shape != 1` using affected versions
+were sampled under the classical parameterization and should be
+refitted. (#1927)
 * Fix several other minor bugs.
 
 ### Other Changes
