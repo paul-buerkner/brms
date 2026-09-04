@@ -1041,6 +1041,115 @@ test_that("standata handles cox models correctly", {
   expect_equivalent(sdata$con_sbhaz, con_mat)
 })
 
+test_that("cox baseline hazard knots are based on event times only", {
+  skip_if_not_installed("splines2")
+  set.seed(1234)
+  data <- data.frame(
+    y = c(rexp(80), rep(1000, 20)),
+    cens = c(rep(0, 80), rep(1, 20)),
+    x = rnorm(100)
+  )
+  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
+
+  # the basis is still evaluated at all response times
+  sdata1 <- standata(bform, data)
+  expect_equal(nrow(sdata1$Zbhaz), 100)
+
+  # changing the (large) censoring times must not move the internal knots
+  data2 <- data
+  data2$y[data2$cens == 1] <- 2000
+  sdata2 <- standata(bform, data2)
+  expect_equal(attr(sdata1$Zbhaz, "knots"), attr(sdata2$Zbhaz, "knots"))
+
+  # boundary knots still span all times so censored times can be evaluated
+  expect_true(attr(sdata1$Zbhaz, "Boundary.knots")[2] > 1000)
+
+  # fall back to all times when there are no exact events (e.g. fully censored)
+  data_cens <- data
+  data_cens$cens <- 1
+  expect_warning(
+    sdata4 <- standata(bform, data_cens),
+    "No exact events were found"
+  )
+  expect_equal(nrow(sdata4$Zbhaz), 100)
+
+  # the same data with all times being events defines the all-times basis
+  data_ev <- data
+  data_ev$cens <- 0
+  sdata_ev <- standata(bform, data_ev)
+
+  # older models keep using the old behavior of placing knots at all times
+  op <- options(.brmsfit_version = as.package_version("2.23.1"))
+  on.exit(options(op))
+  sdata3 <- standata(bform, data)
+  expect_false(isTRUE(all.equal(
+    attr(sdata1$Zbhaz, "knots"), attr(sdata3$Zbhaz, "knots")
+  )))
+  # the old data are reproduced exactly
+  expect_equal(attr(sdata3$Zbhaz, "knots"), attr(sdata_ev$Zbhaz, "knots"))
+  expect_equal(
+    attr(sdata3$Zbhaz, "Boundary.knots"),
+    attr(sdata_ev$Zbhaz, "Boundary.knots")
+  )
+  expect_equivalent(unclass(sdata3$Zbhaz), unclass(sdata_ev$Zbhaz))
+})
+
+test_that("cox baseline hazard basis is fixed after model fitting", {
+  skip_if_not_installed("splines2")
+  set.seed(1234)
+  data <- data.frame(
+    y = c(rexp(80), rep(1000, 20)),
+    cens = c(rep(0, 80), rep(1, 20)),
+    x = rnorm(100)
+  )
+  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
+  bform_nl <- bf(
+    y | bhaz(df = 8) + cens(cens) ~ exp(a), a ~ x, nl = TRUE,
+    family = brmsfamily("cox")
+  )
+  # the basis must be fixed for linear and non-linear formulas alike
+  for (bf_i in list(bform, bform_nl)) {
+    fit <- brm(bf_i, data = data, empty = TRUE)
+    sdata <- standata(fit)
+
+    # with newdata, the basis stored at fitting time is reused, never redefined
+    newdata <- data[1:10, ]
+    newdata$cens <- 0
+    sdata_new <- standata(fit, newdata = newdata)
+    expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
+    expect_equal(
+      attr(sdata_new$Zbhaz, "Boundary.knots"),
+      attr(sdata$Zbhaz, "Boundary.knots")
+    )
+    expect_equal(nrow(sdata_new$Zbhaz), 10)
+
+    # a single new observation is not enough to define a basis on its own
+    expect_equal(nrow(standata(fit, newdata = data[1, ])$Zbhaz), 1)
+  }
+})
+
+test_that("cox baseline hazard basis stored by brms 2.23.0 is still used", {
+  skip_if_not_installed("splines2")
+  set.seed(1234)
+  data <- data.frame(
+    y = c(rexp(80), rep(1000, 20)),
+    cens = c(rep(0, 80), rep(1, 20)),
+    x = rnorm(100)
+  )
+  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
+  fit <- brm(bform, data = data, empty = TRUE)
+  sdata <- standata(fit)
+
+  # brms 2.23.0 stored the basis with the predictor terms
+  fit$basis$dpars$mu$bhaz <- fit$basis$bhaz
+  fit$basis$bhaz <- NULL
+  newdata <- data[1:10, ]
+  newdata$cens <- 0
+  sdata_new <- standata(fit, newdata = newdata)
+  expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
+  expect_equal(nrow(sdata_new$Zbhaz), 10)
+})
+
 test_that("standata handles addition term 'rate' is correctly", {
   data <- data.frame(y = rpois(10, 1), x = rnorm(10), time = 1:10)
   sdata <- standata(y | rate(time) ~ x, data, poisson())
