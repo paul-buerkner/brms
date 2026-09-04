@@ -1079,7 +1079,7 @@ test_that("cox baseline hazard knots are based on event times only", {
   sdata_ev <- standata(bform, data_ev)
 
   # older models keep using the old behavior of placing knots at all times
-  op <- options(.brmsfit_version = as.package_version("2.23.0"))
+  op <- options(.brmsfit_version = as.package_version("2.23.1"))
   on.exit(options(op))
   sdata3 <- standata(bform, data)
   expect_false(isTRUE(all.equal(

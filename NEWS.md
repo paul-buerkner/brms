@@ -44,7 +44,7 @@ Thanks to Ahmed Eldeeb. (#1899)
 definitions in Stan. (#1899)
 * Cox models now place the knots of the baseline hazard based on the event
 times only instead of both event and censoring times. Models fitted with
-earlier versions of brms keep using their original knots in post-processing.
+brms 2.23.1 or earlier keep using their original knots in post-processing.
 (#1898)
 * The basis of the baseline hazard of Cox models is now stored with the
 response instead of with the predictor terms. As a result, `log_lik`, `loo`

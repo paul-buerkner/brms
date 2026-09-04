@@ -525,7 +525,7 @@ bhaz_basis <- function(bframe, data, args = list(), warn = TRUE) {
   # by default, only the event times are used to define the knots; older
   # models used both event and censoring times, which is generally not sensible
   y_knots <- y
-  if (!require_old_default("2.23.1")) {
+  if (!require_old_default("2.23.2")) {
     cens <- get_cens(bframe, data)
     if (!is.null(cens)) {
       y_events <- y[cens == 0]
