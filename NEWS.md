@@ -45,11 +45,11 @@ definitions in Stan. (#1899)
 * Cox models now place the knots of the baseline hazard based on the event
 times only instead of both event and censoring times. Models fitted with
 brms 2.23.1 or earlier keep using their original knots in post-processing.
-(#1898)
+Thanks to Sebastian Weber. (#1898)
 * The basis of the baseline hazard of Cox models is now stored with the
 response instead of with the predictor terms. As a result, `log_lik`, `loo`
 and `kfold` applied to new data reuse the knots chosen at fitting time also
-for non-linear formulas. (#1898)
+for non-linear formulas. Thanks to Sebastian Weber. (#1898)
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 
