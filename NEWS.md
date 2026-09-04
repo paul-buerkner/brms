@@ -2,6 +2,31 @@
 
 ### New Features
 
+* Add an experimental physical sum-to-zero parameterization via
+`gr(..., s2z = TRUE)` for ordinary matched varying intercepts, numeric and
+factor slopes, and interactions. The likelihood uses group deviations that
+sum exactly to zero over observed levels, while conventional population
+coefficients and group effects are reconstructed for the public output.
+Gaussian and Student-t group effects, correlated and independent blocks,
+coefficient-specific scales shared across levels, and multiple local S2Z
+blocks are supported. Separate S2Z IDs may be used in otherwise eligible
+location, distributional, nonlinear, categorical, multinomial, and
+multivariate predictors.
+
+Population coordinates touched by an S2Z omitted-mean map support exact flat,
+normal, Student-t, Cauchy, and logistic priors with numeric constant arguments.
+Logistic priors use explicitly sampled standardized omitted means with their
+exact target density and Jacobian; this includes the default `logistic(0, 1)`
+intercept prior of auxiliary probability predictors. Fixed-only population
+coordinates retain ordinary brms prior handling. The omitted means of multiple
+local blocks are handled jointly, with specialized scalar, diagonal, and
+Gaussian Matheron paths where applicable.
+
+This foundation deliberately excludes ordinal location predictors, centered,
+partially centered, or automatically centered modes, group scales varying by
+level, and structural extensions such as `by`, `cov`, `pw`, multi-membership,
+special group coefficients, cross-predictor IDs, and sparse or QR designs.
+(#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -2306,5 +2331,3 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-
-

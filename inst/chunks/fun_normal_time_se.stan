@@ -22,7 +22,7 @@
     for (i in 1:I) {
       matrix[nobs[i], nobs[i]] Cov_i = Cov[1:nobs[i], 1:nobs[i]];
       // need to add 'se' to the covariance matrix itself
-      Cov_i += diag_matrix(se2[begin[i]:end[i]]);
+      Cov_i = add_diag(Cov_i, se2[begin[i]:end[i]]);
       lp[i] = multi_normal_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], Cov_i);
     }
     return sum(lp);
@@ -44,7 +44,7 @@
       Cov_i = diag_pre_multiply(sigma[begin[i]:end[i]], chol_cor[1:nobs[i], 1:nobs[i]]);
       // need to add 'se' to the covariance matrix itself
       Cov_i = multiply_lower_tri_self_transpose(Cov_i);
-      Cov_i += diag_matrix(se2[begin[i]:end[i]]);
+      Cov_i = add_diag(Cov_i, se2[begin[i]:end[i]]);
       lp[i] = multi_normal_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], Cov_i);
     }
     return sum(lp);
@@ -68,7 +68,7 @@
     for (i in 1:I) {
       array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
       matrix[nobs[i], nobs[i]] Cov_i = Cov[iobs, iobs];
-      Cov_i += diag_matrix(se2[begin[i]:end[i]]);
+      Cov_i = add_diag(Cov_i, se2[begin[i]:end[i]]);
       lp[i] = multi_normal_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], Cov_i);
     }
     return sum(lp);
@@ -92,9 +92,10 @@
     Cor = multiply_lower_tri_self_transpose(chol_cor);
     for (i in 1:I) {
       array[nobs[i]] int iobs = Jtime[i, 1:nobs[i]];
-      matrix[nobs[i], nobs[i]] Cov_i;
-      Cov_i = quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]);
-      Cov_i += diag_matrix(se2[begin[i]:end[i]]);
+      matrix[nobs[i], nobs[i]] Cov_i = add_diag(
+        quad_form_diag(Cor[iobs, iobs], sigma[begin[i]:end[i]]),
+        se2[begin[i]:end[i]]
+      );
       lp[i] = multi_normal_lpdf(y[begin[i]:end[i]] | mu[begin[i]:end[i]], Cov_i);
     }
     return sum(lp);

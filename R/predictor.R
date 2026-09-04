@@ -327,7 +327,7 @@ predictor_gp <- function(prep, i) {
 .predictor_gp_old <- function(x, sdgp, lscale, zgp, cov, nug) {
   Sigma <- cov_gp(x, sdgp = sdgp, lscale = lscale, cov = cov)
   lx <- nrow(x)
-  Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+  diag(Sigma) <- diag(Sigma) + nug
   L_Sigma <- try_nug(t(chol(Sigma)), nug = nug)
   as.numeric(L_Sigma %*% zgp)
 }
@@ -344,7 +344,7 @@ predictor_gp <- function(prep, i) {
   Sigma <- cov_gp(x, sdgp = sdgp, lscale = lscale, cov = cov)
   lx <- nrow(x)
   lx_new <- nrow(x_new)
-  Sigma <- Sigma + diag(rep(nug, lx), lx, lx)
+  diag(Sigma) <- diag(Sigma) + nug
   L_Sigma <- try_nug(t(chol(Sigma)), nug = nug)
   L_Sigma_inverse <- solve(L_Sigma)
   K_div_yL <- L_Sigma_inverse %*% yL
@@ -353,7 +353,8 @@ predictor_gp <- function(prep, i) {
   mu_yL_new <- as.numeric(t(k_x_x_new) %*% K_div_yL)
   v_new <- L_Sigma_inverse %*% k_x_x_new
   cov_yL_new <- cov_gp(x_new, sdgp = sdgp, lscale = lscale, cov = cov) -
-    t(v_new) %*% v_new + diag(rep(nug, lx_new), lx_new, lx_new)
+    crossprod(v_new)
+  diag(cov_yL_new) <- diag(cov_yL_new) + nug
   yL_new <- try_nug(
     rmulti_normal(1, mu = mu_yL_new, Sigma = cov_yL_new),
     nug = nug

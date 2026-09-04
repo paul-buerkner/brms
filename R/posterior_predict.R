@@ -486,7 +486,8 @@ posterior_predict_gaussian_lagsar <- function(i, prep, output = "random", ...) {
   validate_pp_output_support("gaussian_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
-    M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
+    M_new <- with(prep, -ac$lagsar[s] * ac$Msar)
+    diag(M_new) <- diag(M_new) + 1
     mu <- as.numeric(solve(M_new) %*% mu[s, ])
     Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu, Sigma = Sigma)
@@ -500,7 +501,8 @@ posterior_predict_student_lagsar <- function(i, prep, output = "random", ...) {
   validate_pp_output_support("student_lagsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
-    M_new <- with(prep, diag(nobs) - ac$lagsar[s] * ac$Msar)
+    M_new <- with(prep, -ac$lagsar[s] * ac$Msar)
+    diag(M_new) <- diag(M_new) + 1
     mu <- as.numeric(solve(M_new) %*% mu[s, ])
     Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu, Sigma = Sigma)
@@ -516,7 +518,8 @@ posterior_predict_gaussian_errorsar <- function(i, prep, output = "random",
   validate_pp_output_support("gaussian_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
-    M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
+    M_new <- with(prep, -ac$errorsar[s] * ac$Msar)
+    diag(M_new) <- diag(M_new) + 1
     Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_normal(1, mu = mu[s, ], Sigma = Sigma)
   }
@@ -530,7 +533,8 @@ posterior_predict_student_errorsar <- function(i, prep, output = "random",
   validate_pp_output_support("student_errorsar", output)
   stopifnot(i == 1)
   .predict <- function(s) {
-    M_new <- with(prep, diag(nobs) - ac$errorsar[s] * ac$Msar)
+    M_new <- with(prep, -ac$errorsar[s] * ac$Msar)
+    diag(M_new) <- diag(M_new) + 1
     Sigma <- solve(crossprod(M_new)) * sigma[s]^2
     rmulti_student_t(1, df = nu[s], mu = mu[s, ], Sigma = Sigma)
   }
