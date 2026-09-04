@@ -495,6 +495,46 @@ context("Tests for physical sum-to-zero group-level effects")
   pmin(1, pmax(0, 1 - colSums(W^2) / rowSums(L^2)))
 }
 
+# Mirror the blockwise conditioning used by automatic S2Z centering. This
+# helper returns both the cheap per-level formula and a dense Gaussian
+# conditioning reference over all group coefficients.
+.s2z_constrained_fisher_case <- function(information, Sigma) {
+  groups <- length(information)
+  k <- nrow(Sigma)
+  valid_dims <- vapply(
+    information, function(x) identical(dim(x), c(k, k)), logical(1)
+  )
+  stopifnot(
+    groups >= 2L, ncol(Sigma) == k, all(valid_dims)
+  )
+  L <- t(chol(Sigma))
+  W <- lapply(information, function(J) {
+    solve(diag(k) + crossprod(L, J %*% L))
+  })
+  V <- lapply(W, function(Wj) L %*% Wj %*% t(L))
+  S_W <- Reduce(`+`, W)
+  restricted <- lapply(W, function(Wj) {
+    Wc <- Wj - Wj %*% solve(S_W, Wj)
+    L %*% Wc %*% t(L)
+  })
+  cheap <- do.call(rbind, lapply(restricted, diag))
+
+  block <- matrix(0, groups * k, groups * k)
+  for (j in seq_len(groups)) {
+    take <- (j - 1L) * k + seq_len(k)
+    block[take, take] <- V[[j]]
+  }
+  A <- do.call(cbind, rep(list(diag(k)), groups))
+  dense <- block - block %*% t(A) %*% solve(A %*% block %*% t(A)) %*%
+    A %*% block
+  dense_diag <- matrix(diag(dense), nrow = groups, byrow = TRUE)
+  prior_diag <- (1 - 1 / groups) * diag(Sigma)
+  nlist(
+    cheap = 1 - sweep(cheap, 2, prior_diag, "/"),
+    dense = 1 - sweep(dense_diag, 2, prior_diag, "/")
+  )
+}
+
 # Compare the component-wise diagonal-plus-rank-one implementation with the
 # dense complete square it replaces.  This deliberately mirrors the scaled
 # equations in .stan_re_s2z_independent without calling code under test.
@@ -1121,6 +1161,36 @@ test_that("diagonal-only Fisher reliabilities equal the dense contraction", {
       expect_equal(optimized, dense, tolerance = 2e-12, scale = 1)
     }
   }
+})
+
+test_that("blockwise S2Z Fisher conditioning equals dense conditioning", {
+  set.seed(99431)
+  for (groups in c(2L, 3L, 7L)) {
+    for (k in c(1L, 2L, 4L)) {
+      raw_L <- matrix(rnorm(k * k), k, k)
+      Sigma <- tcrossprod(raw_L) + diag(k) / 2
+      information <- lapply(seq_len(groups), function(j) {
+        design <- matrix(rnorm((j + k) * k), ncol = k)
+        crossprod(design) / (j + 1)
+      })
+      ans <- .s2z_constrained_fisher_case(information, Sigma)
+
+      expect_equal(ans$cheap, ans$dense, tolerance = 3e-12, scale = 1)
+      expect_true(all(ans$cheap >= -1e-12 & ans$cheap <= 1 + 1e-12))
+    }
+  }
+
+  Sigma <- matrix(c(1.4, 0.3, 0.3, 0.8), 2L, 2L)
+  no_information <- rep(list(matrix(0, 2L, 2L)), 5L)
+  ans <- .s2z_constrained_fisher_case(no_information, Sigma)
+  expect_equal(ans$cheap, matrix(0, 5L, 2L), tolerance = 2e-15)
+
+  J <- matrix(c(1.1, -0.2, -0.2, 0.7), 2L, 2L)
+  equal_information <- rep(list(J), 5L)
+  ans <- .s2z_constrained_fisher_case(equal_information, Sigma)
+  local <- 1 - diag(solve(solve(Sigma) + J)) / diag(Sigma)
+  expect_equal(ans$cheap, matrix(rep(local, each = 5L), 5L, 2L),
+               tolerance = 2e-14)
 })
 
 test_that("independent Fisher reliabilities cancel diagonal prior scales", {

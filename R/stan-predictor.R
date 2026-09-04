@@ -1522,10 +1522,36 @@ stan_re_s2z_fisher_reference_eta <- function(bfl, n = "n") {
   eta
 }
 
+# Add the realized group-level contribution to the population reference at a
+# precursor draw. This is safe because the resulting information is evaluated
+# only in generated quantities and is frozen before the final fit. In
+# particular, no derivative of the sampled chart is taken through this value.
+stan_re_s2z_fisher_fitted_eta <- function(bfl, n = "n") {
+  eta <- stan_re_s2z_fisher_reference_eta(bfl, n = n)
+  group_eta <- stan_eta_re(bfl, threads = NULL)
+  if (nzchar(group_eta)) {
+    eta <- glue("({eta}{group_eta})")
+  }
+  eta
+}
+
+# Construct drawwise expansion points for every predicted distributional
+# parameter. Likelihood curvature for one parameter may depend on the fitted
+# values of the others, so all linear distributional predictors are supplied.
+stan_re_s2z_fisher_fitted_references <- function(bframe, n = "n") {
+  stopifnot(is.brmsframe(bframe))
+  predicted <- vapply(bframe$dpars, is.bframel, logical(1))
+  out <- lapply(
+    bframe$dpars[predicted], stan_re_s2z_fisher_fitted_eta, n = n
+  )
+  names(out) <- names(bframe$dpars)[predicted]
+  out
+}
+
 # Natural-scale reference and derivative for one distributional parameter.
-# Every reference deliberately excludes group-level contrasts. Consequently
-# an automatic chart may depend on population and nuisance parameters without
-# making the restricted S2Z Jacobian depend on the coordinates it transforms.
+# By default a reference excludes group-level contrasts. The automatic
+# precursor overrides linear predictors with their fitted values; this is
+# valid because the candidate is generated after sampling and then frozen.
 stan_re_s2z_fisher_dpar_reference <- function(
     bframe, dpar, n = "n", eta = NULL
 ) {
@@ -2958,7 +2984,10 @@ stan_re_s2z_fisher_info <- function(id, r, bframe, threads) {
     ))
   }
 
-  closed <- stan_re_s2z_fisher_closed_form(model_frame, dpar = dpar)
+  closed <- stan_re_s2z_fisher_closed_form(
+    model_frame, dpar = dpar,
+    reference_eta = stan_re_s2z_fisher_fitted_references(model_frame)
+  )
   if (is.null(closed)) {
     unsupported(paste0(
       "has no response-free expected-information rule for family '",
@@ -3312,10 +3341,11 @@ stan_re_s2z_fisher_tdata <- function(out, id, r, fisher_info) {
   out
 }
 
-# Compute Eq. (33) without an eigendecomposition or explicit inverse. For
-# J_j = sum_n w_F z_n z_n' and Sigma = L L', the posterior covariance is
-# V_j = L (I + L' J_j L)^-1 L'. Its marginal variance contractions are valid
-# diagonal fractions for the existing exact restricted S2Z transform.
+# Compute local Gaussian variance contractions without an eigendecomposition
+# or explicit inverse. For J_j = sum_n w_F z_n z_n' and Sigma = L L', the
+# posterior covariance is V_j = L (I + L' J_j L)^-1 L'. For iid Gaussian S2Z
+# blocks, condition these covariances on sum_j u_j = 0 before taking marginal
+# contractions; other supported structures retain their local contraction.
 stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
                                     scale = NULL, row_var = NULL,
                                     diag_scale = NULL,
@@ -3326,6 +3356,8 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
   M <- fisher_info$M
   stopifnot(length(M) == 1L, M >= 1L)
   row_var_j <- row_var %||% "1.0"
+  constrained_s2z <- all(r$s2z) && all(r$dist == "gaussian") &&
+    all(r$scale == "shared") && is.null(row_var)
 
   # For one coefficient, posterior variance contraction is the scalar
   # reliability I * tau^2 / (1 + I * tau^2). Ordinary designs use the
@@ -3374,19 +3406,51 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       }, character(1)), collapse = "")
       information_j <- "info_fisher_s2z[j]"
     }
-    return(glue(
-      "  {{\n",
-      "{info_def}",
-      "{accumulation}",
-      "    for (j in 1:N_{id}) {{\n",
-      "      real scaled_info_fisher_s2z = {row_var_j} * square({scale}) * ",
-      "{information_j};\n",
-      "      {rho}[j, 1] = 1.0 - ",
-      "inv(1.0 + scaled_info_fisher_s2z);\n",
-      "    }}\n",
-      "    {mean_rho}[1] = mean({rho}[, 1]);\n",
-      "  }}\n"
-    ))
+    if (constrained_s2z) {
+      return(glue(
+        "  {{\n",
+        "{info_def}",
+        "    vector[N_{id}] relative_post_var_fisher_s2z;\n",
+        "    real restricted_prior_fraction_fisher_s2z = ",
+        "1.0 - inv(N_{id});\n",
+        "    real sum_relative_post_var_fisher_s2z = 0.0;\n",
+        "{accumulation}",
+        "    for (j in 1:N_{id}) {{\n",
+        "      real scaled_info_fisher_s2z = square({scale}) * ",
+        "{information_j};\n",
+        "      relative_post_var_fisher_s2z[j] = ",
+        "inv(1.0 + scaled_info_fisher_s2z);\n",
+        "      sum_relative_post_var_fisher_s2z += ",
+        "relative_post_var_fisher_s2z[j];\n",
+        "    }}\n",
+        "    for (j in 1:N_{id}) {{\n",
+        "      real restricted_relative_post_var_fisher_s2z = ",
+        "relative_post_var_fisher_s2z[j] - ",
+        "square(relative_post_var_fisher_s2z[j]) / ",
+        "sum_relative_post_var_fisher_s2z;\n",
+        "      // Compare posterior and prior variances on the S2Z subspace.\n",
+        "      {rho}[j, 1] = fmin(1.0, fmax(0.0, 1.0 - ",
+        "restricted_relative_post_var_fisher_s2z / ",
+        "restricted_prior_fraction_fisher_s2z));\n",
+        "    }}\n",
+        "    {mean_rho}[1] = mean({rho}[, 1]);\n",
+        "  }}\n"
+      ))
+    } else {
+      return(glue(
+        "  {{\n",
+        "{info_def}",
+        "{accumulation}",
+        "    for (j in 1:N_{id}) {{\n",
+        "      real scaled_info_fisher_s2z = {row_var_j} * square({scale}) * ",
+        "{information_j};\n",
+        "      {rho}[j, 1] = 1.0 - ",
+        "inv(1.0 + scaled_info_fisher_s2z);\n",
+        "    }}\n",
+        "    {mean_rho}[1] = mean({rho}[, 1]);\n",
+        "  }}\n"
+      ))
+    }
   }
 
   diagonal <- !is.null(diag_scale)
@@ -3464,6 +3528,95 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
     } else {
       glue("{row_var_j} * quad_form(info_fisher_s2z[j], {L})")
     }
+  }
+
+  if (constrained_s2z) {
+    restricted_cov_def <- if (diagonal) {
+      ""
+    } else {
+      glue(
+        "      matrix[M_{id}, M_{id}] restricted_post_cov_fisher_s2z = ",
+        "({L}) * restricted_white_post_cov_fisher_s2z * ({L})';\n"
+      )
+    }
+    reliability_comp <- if (diagonal) {
+      glue(
+        "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
+        "          restricted_white_post_cov_fisher_s2z[k, k] / ",
+        "restricted_prior_fraction_fisher_s2z));\n"
+      )
+    } else {
+      glue(
+        "        real restricted_prior_var_fisher_s2z = ",
+        "restricted_prior_fraction_fisher_s2z * ",
+        "prior_var_fisher_s2z[k];\n",
+        "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
+        "          restricted_post_cov_fisher_s2z[k, k] / ",
+        "restricted_prior_var_fisher_s2z));\n"
+      )
+    }
+    return(glue(
+      "  {{\n",
+      "{info_def}",
+      "    array[N_{id}] matrix[M_{id}, M_{id}] ",
+      "white_post_cov_fisher_s2z;\n",
+      "    matrix[M_{id}, M_{id}] sum_white_post_cov_fisher_s2z = ",
+      "rep_matrix(0.0, M_{id}, M_{id});\n",
+      "    matrix[M_{id}, M_{id}] L_sum_white_post_cov_fisher_s2z;\n",
+      "    real restricted_prior_fraction_fisher_s2z = ",
+      "1.0 - inv(N_{id});\n",
+      str_if(
+        !diagonal,
+        glue(
+          "    vector[M_{id}] prior_var_fisher_s2z = ",
+          "rows_dot_self({L});\n"
+        )
+      ),
+      "{initialization}",
+      "{accumulation}",
+      "    for (j in 1:N_{id}) {{\n",
+      "      matrix[M_{id}, M_{id}] K_fisher_s2z = {K_j};\n",
+      "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
+      "      matrix[M_{id}, M_{id}] white_factor_fisher_s2z;\n",
+      "      K_fisher_s2z = 0.5 * (K_fisher_s2z + K_fisher_s2z');\n",
+      "      L_post_precision_fisher_s2z = cholesky_decompose(\n",
+      "        add_diag(K_fisher_s2z, 1.0)\n",
+      "      );\n",
+      "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
+      "        L_post_precision_fisher_s2z, ",
+      "diag_matrix(rep_vector(1.0, M_{id}))\n",
+      "      );\n",
+      "      white_post_cov_fisher_s2z[j] = ",
+      "crossprod(white_factor_fisher_s2z);\n",
+      "      sum_white_post_cov_fisher_s2z += ",
+      "white_post_cov_fisher_s2z[j];\n",
+      "    }}\n",
+      "    sum_white_post_cov_fisher_s2z = 0.5 * ",
+      "(sum_white_post_cov_fisher_s2z + ",
+      "sum_white_post_cov_fisher_s2z');\n",
+      "    L_sum_white_post_cov_fisher_s2z = ",
+      "cholesky_decompose(sum_white_post_cov_fisher_s2z);\n",
+      "    for (j in 1:N_{id}) {{\n",
+      "      matrix[M_{id}, M_{id}] constraint_factor_fisher_s2z = ",
+      "mdivide_left_tri_low(\n",
+      "        L_sum_white_post_cov_fisher_s2z, ",
+      "white_post_cov_fisher_s2z[j]\n",
+      "      );\n",
+      "      matrix[M_{id}, M_{id}] ",
+      "restricted_white_post_cov_fisher_s2z = ",
+      "white_post_cov_fisher_s2z[j] - ",
+      "crossprod(constraint_factor_fisher_s2z);\n",
+      "{restricted_cov_def}",
+      "      for (k in 1:M_{id}) {{\n",
+      "        // Compare posterior and prior variances on the S2Z subspace.\n",
+      "{reliability_comp}",
+      "      }}\n",
+      "    }}\n",
+      "    for (k in 1:M_{id}) {{\n",
+      "      {mean_rho}[k] = mean({rho}[, k]);\n",
+      "    }}\n",
+      "  }}\n"
+    ))
   }
 
   variance_def <- if (diagonal) {

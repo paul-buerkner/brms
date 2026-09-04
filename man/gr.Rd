@@ -233,18 +233,30 @@ This is a new statistical model rather than only a change of coordinates.}
   \code{\link{centering_weights}} to inspect the fixed result.
 
   Candidate fractions combine the precursor draw of the Gaussian
-  group-effect covariance with likelihood information. If \eqn{J_j} is the
-  group likelihood information, \eqn{\Sigma} the group covariance, and
-  \eqn{V_j=(\Sigma^{-1}+J_j)^{-1}}, the fraction for coefficient \eqn{k} is
-  \eqn{1-(V_j)_{kk}/\Sigma_{kk}}. Thus \eqn{\Sigma} supplies the prior
-  metric. The information calculation uses design and missingness together
-  with precursor draws of scale, covariance, likelihood, and supported
-  loading parameters, but does not inspect observed response values
-  directly. Because those parameter draws come from the precursor posterior,
-  the aggregated fractions may nevertheless be data-informed. With a fixed
-  \code{cov} matrix, its covariance on the arithmetic S2Z space is included
-  in this prior metric. The former dynamic spelling
-  \code{center = "fisher"} is not supported.
+  group-effect covariance with likelihood information evaluated at that
+  draw's fitted predictor. If \eqn{J_j} is the group likelihood information,
+  \eqn{\Sigma} the group covariance, and
+  \eqn{V_j=(\Sigma^{-1}+J_j)^{-1}}, then \eqn{V_j} is the covariance of the
+  local second-order (Laplace/Fisher-scoring) surrogate. For an iid Gaussian
+  S2Z block, the zero-sum constraint is incorporated before forming the
+  fraction: with \eqn{S=\sum_l V_l},
+  \eqn{V_j^c=V_j-V_jS^{-1}V_j}, and the coefficient-\eqn{k} fraction is
+  \eqn{1-(V_j^c)_{kk}/\{(1-1/G)\Sigma_{kk}\}}, where \eqn{G} is the number
+  of levels. This propagates information between levels through the exact
+  constraint at cost linear in \eqn{G}. Ordinary effects and S2Z structures
+  with Student-t effects, varying scales, or a fixed \code{cov} matrix retain
+  the local fraction \eqn{1-(V_j)_{kk}/\Sigma_{kk}}.
+
+  The information calculation uses design and missingness together with
+  precursor draws of fitted group effects, scale, covariance, likelihood,
+  and supported loading parameters. Expected Fisher information does not
+  inspect observed response values directly, but its Pathfinder expansion
+  point and all precursor parameter draws are posterior- and hence
+  data-informed. The local score changes the surrogate mean, not its
+  covariance, so no extra score or Hamiltonian step is required for the
+  centering matrix. With a fixed \code{cov} matrix, its covariance on the
+  arithmetic S2Z space is included in the local prior metric. The former
+  dynamic spelling \code{center = "fisher"} is not supported.
 
   Closed-form expected Fisher information is used when available. Other
   supported native likelihood coordinates use documented positive analytic,
