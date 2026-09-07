@@ -1669,16 +1669,21 @@ expect_truncated_cdf_density_quantile <- function(entry, lb, ub,
     return(invisible(TRUE))
   }
   if (is.null(q)) q <- entry$q_ref
+  # the lower bound is inclusive for integer responses, so the normalizer
+  # uses F(ceiling(lb) - 1). The rule is written out here rather than taken
+  # from brms, so that these checks pin the convention. See #1923
+  int_response <- isTRUE(entry$flags$discrete_support)
+  lb_norm <- if (int_response) ceiling(lb) - 1 else lb
   F <- function(x) as.numeric(call_dist(entry$p, x, entry$params))
-  denom <- F(ub) - F(lb)
+  denom <- F(ub) - F(lb_norm)
   testthat::expect_true(denom > 0, info = paste(entry$name, "trunc mass"))
 
   # truncated CDF (cheatsheet)
-  F_tr <- (F(q) - F(lb)) / denom
+  F_tr <- (F(q) - F(lb_norm)) / denom
   F_tr_pp <- do.call(
     brms:::pp_cdf,
     c(list(q = q, distribution = entry$backend, lb = lb, ub = ub,
-           randomized = FALSE), entry$params)
+           randomized = FALSE, int_response = int_response), entry$params)
   )
   testthat::expect_equal(as.numeric(F_tr_pp), F_tr, tolerance = tol,
                          info = paste(entry$name, "trunc CDF"))
@@ -1688,20 +1693,22 @@ expect_truncated_cdf_density_quantile <- function(entry, lb, ub,
     dens_tr <- if (q < lb || q > ub) 0 else dens / denom
     dens_pp <- do.call(
       brms:::pp_density,
-      c(list(q = q, distribution = entry$backend, lb = lb, ub = ub),
-        entry$params)
+      c(list(q = q, distribution = entry$backend, lb = lb, ub = ub,
+             int_response = int_response), entry$params)
     )
     testthat::expect_equal(as.numeric(dens_pp), dens_tr, tolerance = tol,
                            info = paste(entry$name, "trunc density"))
   }
 
   if (has_fun(entry, "q")) {
-    p_star <- p * denom + F(lb)
+    # p > 0 always inverts to at least ceiling(lb), so the floor that
+    # pp_quantile() applies for integer responses is inactive here
+    p_star <- p * denom + F(lb_norm)
     q_tr <- as.numeric(call_dist(entry$q, p_star, entry$params))
     q_pp <- do.call(
       brms:::pp_quantile,
-      c(list(p = p, distribution = entry$backend, lb = lb, ub = ub),
-        entry$params)
+      c(list(p = p, distribution = entry$backend, lb = lb, ub = ub,
+             int_response = int_response), entry$params)
     )
     testthat::expect_equal(as.numeric(q_pp), q_tr, tolerance = 1e-5,
                            info = paste(entry$name, "trunc quantile"))

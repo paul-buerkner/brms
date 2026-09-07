@@ -46,6 +46,9 @@ test_that("truncation formulas match compute_* helpers", {
   for (entry in dist_active_entries(truncation = TRUE)) {
     if (isTRUE(entry$flags$discrete_support)) {
       expect_truncated_cdf_density_quantile(entry, lb = 1, ub = 6)
+      # a non-integer bound admits the same support as ceiling(lb), which
+      # separates ceiling(lb) - 1 from a plain lb - 1. See #1923
+      expect_truncated_cdf_density_quantile(entry, lb = 1.5, ub = 6)
     } else {
       qs <- as.numeric(call_dist(entry$q, c(0.2, 0.8), entry$params))
       expect_truncated_cdf_density_quantile(entry, lb = qs[1], ub = qs[2])

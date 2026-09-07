@@ -689,3 +689,80 @@ test_that("randomized PIT is reproducible with the same seed", {
   pit3 <- entry$pp_fun(1L, prep = prep, output = "pit", q = 3)
   expect_true(any(pit1 != pit3))
 })
+
+test_that("truncated discrete pp_* helpers keep the lower bound", {
+  # lb is inclusive for integer responses, as in the Stan code, log_lik and
+  # posterior_epred. The references come from stats:: rather than from brms,
+  # so these pin the convention inside the three helpers; the call sites that
+  # pass int_response are covered by expect_pp_truncation() and by the pit
+  # and rounding tests below. See #1923
+  lam <- 3
+  lb <- 2
+  ub <- 6
+  Z <- ppois(ub, lam) - ppois(lb - 1, lam)
+
+  dens <- sapply(lb:ub, function(y) {
+    brms:::pp_density(y, "pois", lb = lb, ub = ub,
+                      int_response = TRUE, lambda = lam)
+  })
+  expect_equal(sum(dens), 1)
+  expect_equal(dens, dpois(lb:ub, lam) / Z)
+
+  cdf <- sapply(lb:ub, function(y) {
+    brms:::pp_cdf(y, "pois", lb = lb, ub = ub, randomized = FALSE,
+                  int_response = TRUE, lambda = lam)
+  })
+  expect_equal(cdf, (ppois(lb:ub, lam) - ppois(lb - 1, lam)) / Z)
+  expect_equal(cdf[length(cdf)], 1)
+
+  # lb must be attainable, which it is not under the exclusive convention
+  expect_equal(
+    brms:::pp_quantile(0.001, "pois", lb = lb, ub = ub,
+                       int_response = TRUE, lambda = lam),
+    lb
+  )
+
+  # continuous responses are untouched
+  expect_equal(
+    brms:::pp_density(0.5, "norm", lb = 0, ub = 1, mean = 0, sd = 1),
+    dnorm(0.5) / (pnorm(1) - pnorm(0))
+  )
+})
+
+test_that("randomized PIT respects the lower bound for truncated counts", {
+  # under the exclusive convention the PIT at y = lb is negative, and
+  # expect_pp_truncation() never exercises output = "pit"; see #1923
+  lam <- 3
+  prep <- structure(list(ndraws = 200L, nobs = 1L), class = "brmsprep")
+  prep$dpars <- list(mu = matrix(rep(lam, 200), ncol = 1))
+  prep$family <- poisson()
+  prep$data <- list(Y = 2, lb = 2, ub = 6)
+  set.seed(1234)
+  pit <- brms:::posterior_predict_poisson(1, prep, output = "pit")
+  expect_true(all(pit >= 0 & pit <= 1))
+
+  # the per-value intervals [F(y-1), F(y)] must tile [0, 1]
+  set.seed(1234)
+  cdf <- sapply(1:6, function(y) {
+    brms:::pp_cdf(y, "pois", lb = 2, ub = 6, randomized = FALSE,
+                  int_response = TRUE, lambda = lam)
+  })
+  expect_equal(cdf[1], 0)
+  expect_equal(cdf[6], 1)
+})
+
+test_that("non-random posterior_predict outputs are not rounded", {
+  # check_discrete_trunc_bounds() rounds predicted responses, which would
+  # collapse probabilities and densities to 0 or 1; see #1923
+  prep <- structure(list(ndraws = 4L, nobs = 2L), class = "brmsprep")
+  prep$dpars <- list(mu = matrix(3, nrow = 4, ncol = 2))
+  prep$family <- poisson()
+  prep$family$fun <- "poisson"
+  prep$data <- list(Y = c(2, 3), lb = c(2, 2), ub = c(6, 6))
+  dens <- brms:::posterior_predict.brmsprep(prep, output = "density")
+  expect_false(all(dens %in% c(0, 1)))
+  expect_equal(
+    dens[1, 1],
+    dpois(2, 3) / (ppois(6, 3) - ppois(1, 3))
+  )
+})
