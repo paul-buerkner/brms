@@ -113,8 +113,12 @@ loo_moment_match.loo <- function(x, fit, ...) {
   loo_moment_match(fit, loo = x, ...)
 }
 
-# compute a vector of log-likelihood values for the ith observation
+# compute a vector of log-likelihood values for the ith pointwise unit
 .log_lik_i <- function(x, i, newdata, ...) {
+  if (has_mix_groups(x$family)) {
+    # 'i' indexes a mixture group; predict all of its observations jointly
+    i <- mixgr_row_ids(x, newdata)[[i]]
+  }
   as.vector(log_lik(x, newdata = newdata[i, , drop = FALSE], ...))
 }
 

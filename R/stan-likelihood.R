@@ -62,6 +62,10 @@ stan_log_lik_family <- function(bterms, threads, ...) {
 # Stan code for the log likelihood of a mixture family
 stan_log_lik_mixfamily <- function(bterms, threads, ...) {
   stopifnot(is.brmsterms(bterms), is.mixfamily(bterms$family))
+  grouped <- has_mix_groups(bterms$family)
+  if (grouped && use_threading(threads)) {
+    stop2("Threading is not supported for group-level mixture models.")
+  }
   dp_ids <- dpar_id(names(bterms$dpars))
   fdp_ids <- dpar_id(names(bterms$fdpars))
   pred_mix_prob <- any(dpar_class(names(bterms$dpars)) %in% "theta")
@@ -76,6 +80,9 @@ stan_log_lik_mixfamily <- function(bterms, threads, ...) {
     )
   }
   resp <- usc(bterms$resp)
+  if (grouped) {
+    return(stan_log_lik_mixfamily_grouped(ll, resp, pred_mix_prob))
+  }
   n <- stan_nn(threads)
   has_weights <- has_ad_terms(bterms, "weights")
   weights <- str_if(has_weights, glue("weights{resp}{n} * "))
@@ -88,6 +95,41 @@ stan_log_lik_mixfamily <- function(bterms, threads, ...) {
   str_add(out) <- collapse("    ", ll)
   str_add(out) <- glue(
     "  {tp()}{weights}log_sum_exp(ps);\n",
+    "  }}\n"
+  )
+  out
+}
+
+# Stan code for a group-level mixture likelihood: accumulate each component's
+# log density per group, then marginalize the mixture once per group
+# @param ll character vector of per-component accumulation statements
+# @param resp optional response prefix
+# @param pred_mix_prob are mixing proportions predicted (per group)?
+stan_log_lik_mixfamily_grouped <- function(ll, resp, pred_mix_prob) {
+  nmix <- length(ll)
+  k <- seq_len(nmix)
+  theta <- str_if(pred_mix_prob,
+    glue("theta{k}{resp}[Jmixrep{resp}[j]]"),
+    glue("log(theta{k}{resp})")
+  )
+  ps <- glue("ps[{k}] = {theta} + Lmix{resp}[j, {k}];\n")
+  out <- glue(
+    "  // likelihood of the group-level mixture model\n",
+    "  {{\n",
+    "    matrix[Ngrmix{resp}, {nmix}] Lmix{resp}",
+    " = rep_matrix(0.0, Ngrmix{resp}, {nmix});\n",
+    "    for (n in 1:N{resp}) {{\n"
+  )
+  str_add(out) <- collapse("      ", ll)
+  str_add(out) <- glue(
+    "    }}\n",
+    "    for (j in 1:Ngrmix{resp}) {{\n",
+    "      array[{nmix}] real ps;\n"
+  )
+  str_add(out) <- collapse("      ", ps)
+  str_add(out) <- glue(
+    "    {tp()}log_sum_exp(ps);\n",
+    "    }}\n",
     "  }}\n"
   )
   out
@@ -188,14 +230,23 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
   stopifnot(is.sdist(ll))
   resp <- usc(bterms$resp)
   mix <- get_mix_id(bterms)
+  Y <- stan_log_lik_Y_name(bterms)
+  n <- stan_nn(threads)
+  if (has_mix_groups(bterms$family)) {
+    # always use the normalized lpdf: normalization constants do not
+    # cancel from the group-level log_sum_exp
+    lpdf <- stan_log_lik_lpdf_name(bterms, normalize = TRUE)
+    return(glue(
+      "Lmix{resp}[Jmix{resp}{n}, {mix}] += ",
+      "{ll$dist}_{lpdf}({Y}{resp}{n}{ll$shift} | {ll$args});\n"
+    ))
+  }
   theta <- str_if(pred_mix_prob,
     glue("theta{mix}{resp}[n]"),
     glue("log(theta{mix}{resp})")
   )
   tr <- stan_log_lik_trunc(ll, bterms, threads = threads)
   lpdf <- stan_log_lik_lpdf_name(bterms, normalize, dist = ll$dist)
-  Y <- stan_log_lik_Y_name(bterms)
-  n <- stan_nn(threads)
   if (is.formula(bterms$adforms$cens)) {
     # mostly copied over from stan_log_lik_cens
     # no vectorized version available for mixture models

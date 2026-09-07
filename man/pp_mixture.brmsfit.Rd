@@ -87,6 +87,10 @@ the (posterior) mixing probability of component k
 (i.e. parameter \code{theta<k>}), and
 \deqn{P(Y_n) = \sum_{k=1,...,K} P(Y_n | K_n = k) P(K_n = k)}
 is a normalizing constant.
+
+For group-level mixtures (argument \code{gr} of \code{\link{mixture}}),
+component memberships are defined per group rather than per observation,
+so the dimension N of the returned array corresponds to the groups.
 }
 \examples{
 \dontrun{

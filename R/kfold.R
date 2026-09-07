@@ -90,6 +90,13 @@
 #'   \link[loo:kfold-helpers]{kfold-helpers} page).
 #'   }
 #'
+#'   For group-level mixture models (argument \code{gr} of
+#'   \code{\link{mixture}}), the pointwise unit of the likelihood is the
+#'   mixture group rather than the observation: folds are always formed over
+#'   whole groups, arguments \code{group} and \code{joint} are not supported,
+#'   \code{folds = "loo"} performs exact leave-one-group-out cross-validation,
+#'   and a numeric \code{folds} vector must be constant within each group.
+#'
 #'   When running \code{kfold} on a \code{brmsfit} created with the
 #'   \pkg{cmdstanr} backend in a different \R session, several recompilations
 #'   will be triggered because by default, \pkg{cmdstanr} writes the model
@@ -188,6 +195,23 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     newdata2 <- validate_data2(newdata2, bterms)
   }
   N <- nrow(newdata)
+  if (has_mix_groups(x$family)) {
+    # group-level mixtures use whole groups as the pointwise unit
+    if (!is.null(group)) {
+      stop2("Argument 'group' is not supported for group-level mixture ",
+            "models; folds are always formed over the mixture groups.")
+    }
+    if (!isFALSE(joint)) {
+      stop2("Argument 'joint' is not supported for group-level mixture ",
+            "models; log likelihoods are always joint per group.")
+    }
+    return(.kfold_grouped(
+      x, K = K, Ksub = Ksub, folds = folds, save_fits = save_fits,
+      newdata = newdata, newdata2 = newdata2, resp = resp,
+      model_name = model_name, recompile = recompile,
+      future_args = future_args, ...
+    ))
+  }
   joint <- validate_joint(joint)
   # validate argument 'group'
   gvar <- NULL
@@ -235,26 +259,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     K <- max(folds)
     message("Setting 'K' to the number of folds (", K, ")")
   }
-  # validate argument 'Ksub'
-  if (is.null(Ksub)) {
-    Ksub <- seq_len(K)
-  } else {
-    # see issue #441 for reasons to check for arrays
-    is_array_Ksub <- is.array(Ksub)
-    Ksub <- as.integer(Ksub)
-    if (length(Ksub) == 0L) {
-      stop2("'Ksub' must be a positive integer or a non-empty integer vector.")
-    }
-    if (any(Ksub <= 0 | Ksub > K)) {
-      stop2("'Ksub' must contain positive integers not larger than 'K'.")
-    }
-    if (length(Ksub) == 1L && !is_array_Ksub) {
-      Ksub <- sample(seq_len(K), Ksub)
-    } else {
-      Ksub <- unique(Ksub)
-    }
-    Ksub <- sort(Ksub)
-  }
+  Ksub <- validate_kfold_ksub(Ksub, K)
 
   # ensure that the model can be run in the current R session
   x <- recompile_model(x, recompile = recompile)
@@ -325,7 +330,6 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   future_args$future.seed <- TRUE
   res <- do_call("future_lapply", future_args, pkg = "future.apply")
 
-  diagnostics <- vector("list")
   lppds <- pred_obs_list <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
@@ -340,12 +344,6 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   }
 
   lppds <- do_call(cbind, lppds)
-
-  diagnostics$pareto_k <- apply(lppds, 2, posterior::pareto_khat,
-                                are_log_weights = TRUE)
-  diagnostics$n_eff <- apply(exp(lppds), 2, posterior::ess_mean)
-  diagnostics$r_eff <- diagnostics$n_eff / nrow(lppds)
-
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
   if (joint == "obs") {
@@ -390,8 +388,151 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     ll_full <- do_call(cbind, ll_full_marg)
   }
   lpds <- apply(ll_full, 2, log_mean_exp)
-  ps <- lpds - elpds
 
+  .kfold_finalize(
+    lppds, elpds, lpds,
+    atts = nlist(K, Ksub, group, folds, fold_type, joint),
+    model_name = model_name, unit = "observations",
+    fits = if (save_fits) fits, data = if (save_fits) newdata,
+    data2 = if (save_fits) newdata2
+  )
+}
+
+# K-fold cross-validation for group-level mixtures: folds are formed
+# over groups and 'log_lik' returns one column per group
+# @inheritParams .kfold
+.kfold_grouped <- function(x, K, Ksub, folds, save_fits, newdata, newdata2,
+                           resp, model_name, recompile = NULL,
+                           future_args = list(), ...) {
+  N <- nrow(newdata)
+  grmix <- mixgr_factor(x$family, newdata)
+  Jrow <- as.integer(grmix)  # group index per observation
+  ngroups <- nlevels(grmix)
+
+  # assign whole groups (not observations) to folds
+  if (is.null(folds)) {
+    fold_type <- "random"
+    gfolds <- loo::kfold_split_random(K, ngroups)
+  } else if (identical(folds, "loo")) {
+    fold_type <- "loo"
+    gfolds <- seq_len(ngroups)
+    K <- ngroups
+    message("Setting 'K' to the number of groups (", K, ")")
+  } else if (is.numeric(folds)) {
+    # per-observation fold ids, required to be constant within each group
+    if (length(folds) != N) {
+      stop2("If 'folds' is a vector, it must be of length N.")
+    }
+    if (any(tapply(folds, Jrow, function(z) length(unique(z))) > 1L)) {
+      stop2("For group-level mixtures, 'folds' must be constant within each ",
+            "group defined by 'gr' in mixture().")
+    }
+    gfolds <- as.numeric(factor(folds[match(seq_len(ngroups), Jrow)]))
+    fold_type <- "custom"
+    K <- max(gfolds)
+    message("Setting 'K' to the number of folds (", K, ")")
+  } else {
+    stop2("Unsupported 'folds' for group-level mixture models. Use the ",
+          "default, folds = 'loo', or a numeric vector constant within groups.")
+  }
+  ofolds <- gfolds[Jrow]  # fold id per observation
+
+  Ksub <- validate_kfold_ksub(Ksub, K)
+
+  # ensure that the model can be run in the current R session
+  x <- recompile_model(x, recompile = recompile)
+
+  # split dots for use in log_lik and update
+  dots <- list(...)
+  ll_arg_names <- arg_names("log_lik")
+  ll_args <- dots[intersect(names(dots), ll_arg_names)]
+  ll_args$allow_new_levels <- TRUE
+  ll_args$sample_new_levels <-
+    first_not_null(ll_args$sample_new_levels, "gaussian")
+  ll_args$resp <- resp
+  ll_args$combine <- TRUE
+  up_args <- dots[setdiff(names(dots), ll_arg_names)]
+  up_args$object <- x
+  up_args$refresh <- 0
+
+  .kfold_grouped_k <- function(k) {
+    message("Fitting model ", k, " out of ", K)
+    omitted <- which(ofolds == k)
+    # held-out groups in ascending order, matching log_lik column order
+    groups_k <- sort(unique(Jrow[omitted]))
+    up_args$newdata <- newdata[-omitted, , drop = FALSE]
+    up_args$data2 <- subset_data2(newdata2, -omitted)
+    fit <- SW(do_call(update, up_args))
+    ll_args$object <- fit
+    ll_args$newdata <- newdata[omitted, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(newdata2, omitted)
+    lppds <- do_call(log_lik, ll_args)
+    out <- nlist(lppds, groups = groups_k, omitted, predicted = omitted)
+    if (save_fits) {
+      out$fit <- fit
+    }
+    return(out)
+  }
+
+  future_args$X <- Ksub
+  future_args$FUN <- .kfold_grouped_k
+  future_args$future.seed <- TRUE
+  res <- do_call("future_lapply", future_args, pkg = "future.apply")
+
+  if (save_fits) {
+    fits <- array(list(), dim = c(length(Ksub), 3))
+    dimnames(fits) <- list(NULL, c("fit", "omitted", "predicted"))
+    for (i in seq_along(Ksub)) {
+      fits[i, ] <- res[[i]][c("fit", "omitted", "predicted")]
+    }
+  }
+
+  # collect per-group columns across folds and order them by group index
+  lppds <- do_call(cbind, lapply(res, "[[", "lppds"))
+  groups <- unlist(lapply(res, "[[", "groups"))
+  lppds <- lppds[, order(groups), drop = FALSE]
+  elpds <- apply(lppds, 2, log_mean_exp)
+
+  # in-sample log-lik of the predicted groups from the full posterior
+  ll_args$object <- x
+  ll_args$newdata <- newdata
+  ll_args$newdata2 <- newdata2
+  if (length(Ksub) < K) {
+    # subsetting by ascending row index preserves the per-group column order
+    rows <- which(Jrow %in% groups)
+    ll_args$newdata <- newdata[rows, , drop = FALSE]
+    ll_args$newdata2 <- subset_data2(newdata2, rows)
+  }
+  ll_full <- do_call(log_lik, ll_args)
+  lpds <- apply(ll_full, 2, log_mean_exp)
+
+  .kfold_finalize(
+    lppds, elpds, lpds,
+    atts = nlist(
+      K, Ksub, group = get_mix_var(x$family), folds = ofolds,
+      fold_type, joint = "group"
+    ),
+    model_name = model_name, unit = "groups",
+    fits = if (save_fits) fits, data = if (save_fits) newdata,
+    data2 = if (save_fits) newdata2
+  )
+}
+
+# assemble and classify a 'kfold' object from pointwise log-likelihoods
+# @param lppds matrix of held-out log-likelihood draws, one column per
+#   pointwise unit (an observation or, for group-level mixtures, a group)
+# @param elpds,lpds pointwise held-out and in-sample log scores
+# @param atts attributes to store in the returned object
+# @param unit name of the pointwise unit ("observations" or "groups")
+# @param fits,data,data2 stored only if 'fits' is non-NULL (save_fits = TRUE)
+.kfold_finalize <- function(lppds, elpds, lpds, atts, model_name, unit,
+                            fits = NULL, data = NULL, data2 = NULL) {
+  diagnostics <- list()
+  diagnostics$pareto_k <- apply(lppds, 2, posterior::pareto_khat,
+                                are_log_weights = TRUE)
+  diagnostics$n_eff <- apply(exp(lppds), 2, posterior::ess_mean)
+  diagnostics$r_eff <- diagnostics$n_eff / nrow(lppds)
+  ps <- lpds - elpds
   # put everything together in a loo object
   pointwise <- cbind(elpd_kfold = elpds, p_kfold = ps, kfoldic = -2 * elpds)
   est <- colSums(pointwise)
@@ -399,19 +540,18 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   estimates <- cbind(Estimate = est, SE = se_est)
   rownames(estimates) <- colnames(pointwise)
   out <- nlist(estimates, pointwise, diagnostics)
-  k_threshold <- min(posterior::ps_khat_threshold(nrow(lppds)), 0.7)
-  atts <- nlist(K, Ksub, group, folds, fold_type, joint, k_threshold)
+  atts$k_threshold <- min(posterior::ps_khat_threshold(nrow(lppds)), 0.7)
   attributes(out)[names(atts)] <- atts
-  if (save_fits) {
+  if (!is.null(fits)) {
     out$fits <- fits
-    out$data <- newdata
-    out$data2 <- newdata2
+    out$data <- data
+    out$data2 <- data2
   }
-  if (length(loo::pareto_k_ids(out, threshold = k_threshold)) > 0) {
+  n_high_k <- length(loo::pareto_k_ids(out, threshold = atts$k_threshold))
+  if (n_high_k > 0) {
     warning2(
-      "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
-      " observations with a pareto_k > ", k_threshold,
-      " in model '", model_name, "'."
+      "Found ", n_high_k, " ", unit, " with a pareto_k > ",
+      atts$k_threshold, " in model '", model_name, "'."
     )
   }
   structure(out, dims = dim(lppds), class = c("kfold", "loo"))
@@ -497,6 +637,31 @@ kfold_predict <- function(x, method = "posterior_predict", resp = NULL, ...) {
     )
   }
   nlist(y, yrep)
+}
+
+# validate argument 'Ksub' of kfold
+# @param K number of folds
+validate_kfold_ksub <- function(Ksub, K) {
+  if (is.null(Ksub)) {
+    Ksub <- seq_len(K)
+  } else {
+    # see issue #441 for reasons to check for arrays
+    is_array_Ksub <- is.array(Ksub)
+    Ksub <- as.integer(Ksub)
+    if (length(Ksub) == 0L) {
+      stop2("'Ksub' must be a positive integer or a non-empty integer vector.")
+    }
+    if (any(Ksub <= 0 | Ksub > K)) {
+      stop2("'Ksub' must contain positive integers not larger than 'K'.")
+    }
+    if (length(Ksub) == 1L && !is_array_Ksub) {
+      Ksub <- sample(seq_len(K), Ksub)
+    } else {
+      Ksub <- unique(Ksub)
+    }
+    Ksub <- sort(Ksub)
+  }
+  Ksub
 }
 
 # validate argument 'joint' in kfold

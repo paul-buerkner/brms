@@ -772,6 +772,33 @@ test_that("standata includes data for mixture models", {
   expect_equal(sdata$theta2, 3/4)
 })
 
+test_that("standata includes data for group-level mixture models", {
+  data <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(c("a", "b"), each = 5))
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian, gr = "g"))
+  sdata <- standata(form, data)
+  expect_equal(sdata$Ngrmix, 2)
+  expect_equal(sdata$Jmix, as.array(rep(1:2, each = 5)))
+  # no representative index unless the mixing proportions are predicted
+  expect_null(sdata$Jmixrep)
+
+  # predicted mixing proportions constant within group -> Jmixrep is emitted
+  form <- bf(y ~ x, theta1 ~ g, family = mixture(gaussian, gaussian, gr = "g"))
+  sdata <- standata(form, data)
+  expect_equal(sdata$Jmixrep, as.array(c(1, 6)))
+
+  # integer grouping variables are supported
+  data$gi <- rep(1:2, each = 5)
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian, gr = "gi"))
+  sdata <- standata(form, data)
+  expect_equal(sdata$Jmix, as.array(rep(1:2, each = 5)))
+
+  # group indices are defined by the data at hand (e.g. for newdata subsets)
+  form <- bf(y ~ x, family = mixture(gaussian, gaussian, gr = "g"))
+  sdata <- standata(form, data[data$g == "b", ])
+  expect_equal(sdata$Ngrmix, 1)
+  expect_equal(sdata$Jmix, as.array(rep(1, 5)))
+})
+
 test_that("standata includes data for Gaussian processes", {
   dat <- data.frame(y = rnorm(10), x1 = rnorm(10),
                     z = factor(c(2, 2, 2, 3, 4, rep(5, 5))))

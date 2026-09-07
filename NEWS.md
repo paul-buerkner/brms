@@ -1,7 +1,18 @@
 # brms 2.23
 
+### Bug Fixes
+
+* Fix pointwise `log_lik` evaluation in multivariate models without residual
+correlations, which failed with an error, for example, when using
+`loo_subsample`.
+
 ### New Features
 
+* Compute `mixture` models over the levels of a grouping variable rather than
+over individual observations via the new `gr` argument of `mixture`, so that
+whole groups are assigned to the same mixture component. Cross-validation is
+then performed with the group as the pointwise unit (leave-one-group-out).
+(#1659)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

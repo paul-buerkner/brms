@@ -84,3 +84,16 @@ test_that("lsp works correctly", {
     c("inv_logit", "inv_logit_scaled")
   )
 })
+
+test_that("validate_kfold_ksub works correctly", {
+  expect_equal(validate_kfold_ksub(NULL, 5), 1:5)
+  # a single integer selects that many random folds
+  expect_length(validate_kfold_ksub(3, 10), 3L)
+  # arrays are taken as fold indices, not a number of folds (#441)
+  expect_equal(validate_kfold_ksub(array(2), 10), 2L)
+  expect_equal(validate_kfold_ksub(c(4, 2, 2), 5), c(2L, 4L))
+  expect_error(validate_kfold_ksub(integer(0), 5),
+               "non-empty integer vector")
+  expect_error(validate_kfold_ksub(7, 5),
+               "not larger than 'K'")
+})
