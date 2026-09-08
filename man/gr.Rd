@@ -219,10 +219,11 @@ This is a new statistical model rather than only a change of coordinates.}
   block in the same linear predictor.
 
   \code{center = "auto"} chooses fixed level- and coefficient-specific
-  fractions through a separate precursor fit. The precursor always uses the
-  fully non-centered parameterization. It runs with CmdStanR Pathfinder by
-  default; \code{autocenter_control(method = "hmc")} instead requests a
-  separate short HMC precursor. At each precursor draw, candidate fractions
+  fractions through a separate precursor fit. CmdStanR Pathfinder uses fully
+  non-centered coordinates and requires a finite Pareto-k below 0.7.
+  \code{autocenter_control(method = "hmc")} instead requests a separate
+  short HMC precursor in fully centered coordinates.
+  At each precursor draw, candidate fractions
   are evaluated only in generated quantities. They do not enter the
   precursor target density. brms aggregates the candidates across draws and
   supplies the resulting numeric matrix as fixed data to a new final HMC

@@ -72,22 +72,44 @@ test_that("method-specific precursor arguments fail before dispatch", {
     )),
     "warmup.*smaller than.*iter"
   )
+  expect_error(
+    call_pilot(autocenter_control(pilot_args = list(calculate_lp = FALSE))),
+    "calculate_lp"
+  )
+  expect_error(
+    call_pilot(autocenter_control(pilot_args = list(psis_resample = TRUE))),
+    "psis_resample"
+  )
+  for (draws in c(0, -1, 1.5, NA_real_, Inf)) {
+    expect_error(
+      call_pilot(autocenter_control(pilot_args = list(draws = draws))),
+      "draws.*integer|single numeric value"
+    )
+  }
 })
 
-test_that("Pathfinder dispatch flips only precursor data and reads raw draws", {
+test_that("Pathfinder centering diagnoses and weights raw precursor draws", {
   capture <- new.env(parent = emptyenv())
   pathfinder <- function(data, seed = NULL, init = NULL, num_paths,
                          show_messages, show_exceptions, draws,
-                         single_path_draws) {
+                         single_path_draws, calculate_lp, psis_resample) {
     capture$data <- data
     capture$num_paths <- num_paths
     capture$draws <- draws
     capture$single_path_draws <- single_path_draws
+    capture$calculate_lp <- calculate_lp
+    capture$psis_resample <- psis_resample
     list(draws = function(variables, format) {
-      out <- matrix(c(0.1, 0.3, 0.2, 0.8, 0.6, 0.7), 3L, 2L)
+      capture$variables <- variables
+      out <- cbind(
+        rep(c(0.1, 0.3, 0.2), 200L),
+        rep(c(0.8, 0.6, 0.7), 200L),
+        0.1 * qnorm((seq_len(600L) - 0.5) / 600L),
+        0
+      )
       colnames(out) <- c(
         "rho_center_candidate_1[1,1]",
-        "rho_center_candidate_1[2,1]"
+        "rho_center_candidate_1[2,1]", "lp__", "lp_approx__"
       )
       out
     })
@@ -109,16 +131,151 @@ test_that("Pathfinder dispatch flips only precursor data and reads raw draws", {
 
   expect_equal(capture$data$rho_s2z_1, matrix(0, 2L, 1L))
   expect_identical(capture$data$compute_rho_center_candidate_1, 1L)
+  expect_equal(final_data$rho_s2z_1, matrix(0.4, 2L, 1L))
   expect_identical(final_data$compute_rho_center_candidate_1, 0L)
   expect_identical(capture$num_paths, 4L)
   expect_identical(capture$draws, 200L)
   expect_identical(capture$single_path_draws, 200L)
+  expect_true(capture$calculate_lp)
+  expect_false(capture$psis_resample)
+  expect_identical(
+    capture$variables,
+    c("rho_center_candidate_1", "lp__", "lp_approx__")
+  )
+  expect_true(all(summary$diagnostics$pareto_k < 0.7))
+  expect_true(all(summary$diagnostics$psis_ess > 0))
   expect_equal(
     unname(unclass(summary$rho[["1"]])), matrix(c(0.2, 0.7), 2L, 1L)
   )
   expect_identical(
     dimnames(summary$rho[["1"]]), list(c("a", "b"), "Intercept")
   )
+})
+
+test_that("HMC centering uses a centered precursor without changing final data", {
+  capture <- new.env(parent = emptyenv())
+  sample <- function(data, seed, init, iter_sampling, iter_warmup, chains,
+                     thin, parallel_chains, show_messages, show_exceptions) {
+    capture$data <- data
+    list(draws = function(variables, format) {
+      matrix(c(0.2, 0.4, 0.6), ncol = 1L, dimnames = list(
+        NULL, "rho_center_candidate_1[1,1]"
+      ))
+    })
+  }
+  final_data <- list(
+    rho_s2z_1 = matrix(0.5, 1L, 1L),
+    compute_rho_center_candidate_1 = 0L,
+    rho_s2z_2 = matrix(0.25, 2L, 1L)
+  )
+  specs <- list(`1` = list(
+    id = 1L, G = 1L, M = 1L, levels = "a", coefficients = "Intercept"
+  ))
+  summary <- brms:::run_re_autocenter_pilot(
+    model = list(sample = sample),
+    sdata = final_data, specs = specs,
+    control = autocenter_control(method = "hmc"),
+    backend = "cmdstanr", chains = 4L, cores = 1L, threads = NULL,
+    opencl = NULL, init = "random", seed = NA, silent = 2L
+  )
+  expect_equal(capture$data$rho_s2z_1, matrix(1, 1L, 1L))
+  expect_identical(capture$data$compute_rho_center_candidate_1, 1L)
+  expect_identical(capture$data$rho_s2z_2, final_data$rho_s2z_2)
+  expect_equal(final_data$rho_s2z_1, matrix(0.5, 1L, 1L))
+  expect_identical(final_data$compute_rho_center_candidate_1, 0L)
+  expect_equal(summary$rho[["1"]][1, 1], 0.4)
+  expect_true(all(is.na(summary$diagnostics[c("pareto_k", "psis_ess")])))
+})
+
+test_that("Pathfinder posterior weighting is deterministic and preserves RNG", {
+  x <- qnorm((seq_len(1000L) - 0.5) / 1000L)
+  draws <- cbind(
+    `rho_center_candidate_1[1,1]` = as.numeric(x > 0),
+    lp__ = dnorm(x, mean = 0.6, log = TRUE),
+    lp_approx__ = dnorm(x, log = TRUE)
+  )
+  set.seed(192)
+  rng_before <- .Random.seed
+  weighted <- brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 2000L)
+  expect_identical(.Random.seed, rng_before)
+  expect_identical(
+    brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 2000L),
+    weighted
+  )
+  expect_equal(nrow(weighted$draws), 2000L)
+  # Tilting a standard normal by these log-density ratios yields N(0.6, 1).
+  # Resampled centering candidates should reflect that posterior probability.
+  expect_equal(mean(draws[, 1]), 0.5)
+  expect_equal(mean(weighted$draws[, 1]), pnorm(0.6), tolerance = 0.01)
+})
+
+test_that("Pathfinder centering requires a finite Pareto k below 0.7", {
+  x <- qnorm((seq_len(200L) - 0.5) / 200L)
+  draws <- cbind(
+    `rho_center_candidate_1[1,1]` = plogis(x),
+    lp__ = 0.1 * x, lp_approx__ = 0
+  )
+  psis <- loo::psis(draws[, "lp__"] - draws[, "lp_approx__"], r_eff = 1)
+  check_k <- function(k, accept = FALSE) {
+    controlled_psis <- psis
+    controlled_psis$diagnostics$pareto_k <- k
+    local_mocked_bindings(
+      psis = function(log_ratios, r_eff, ...) controlled_psis,
+      .package = "loo"
+    )
+    if (accept) {
+      out <- brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L)
+      expect_equal(out$pareto_k, k)
+    } else {
+      expect_error(
+        brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L),
+        "center_control.*autocenter_control.*hmc"
+      )
+    }
+  }
+  check_k(0.699, accept = TRUE)
+  for (k in list(0.7, 0.8, NA_real_, Inf, -Inf, numeric(), c(0.1, 0.2))) {
+    check_k(k)
+  }
+})
+
+test_that("Pathfinder zero-weight draws do not affect centering candidates", {
+  x <- qnorm((seq_len(200L) - 0.5) / 200L)
+  draws <- cbind(
+    `rho_center_candidate_1[1,1]` = c(1, rep(0, 199L)),
+    lp__ = c(-Inf, 0.1 * x[-1L]), lp_approx__ = 0
+  )
+  weighted <- brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L)
+  expect_true(all(weighted$draws[, 1] == 0))
+
+  draws[, "lp__"] <- -Inf
+  expect_error(
+    brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L),
+    "center_control.*autocenter_control.*hmc"
+  )
+})
+
+test_that("Pathfinder centering rejects unavailable or malformed densities", {
+  draws <- cbind(
+    `rho_center_candidate_1[1,1]` = seq(0.1, 0.9, length.out = 100L),
+    lp__ = seq(-1, 1, length.out = 100L), lp_approx__ = 0
+  )
+  invalid <- list(
+    draws[, c(1, 2), drop = FALSE],
+    draws[, c(1, 3), drop = FALSE],
+    draws[FALSE, , drop = FALSE]
+  )
+  for (value in c(NA_real_, Inf)) {
+    malformed <- draws
+    malformed[1L, "lp__"] <- value
+    invalid[[length(invalid) + 1L]] <- malformed
+  }
+  for (malformed in invalid) {
+    expect_error(
+      brms:::.re_autocenter_pathfinder_draws(malformed, ndraws = 200L),
+      "center_control.*autocenter_control.*hmc"
+    )
+  }
 })
 
 test_that("candidate draws resolve to bounded named matrices", {

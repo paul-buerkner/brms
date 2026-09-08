@@ -22,15 +22,16 @@ centering_weights(x, ...)
 }
 \arguments{
 \item{method}{Precursor algorithm. The default \code{"pathfinder"} uses
-CmdStanR Pathfinder. \code{"hmc"} uses a separate short HMC run; it does not
-modify the parameterization during warmup.}
+CmdStanR Pathfinder in fully non-centered coordinates. \code{"hmc"} uses
+a separate short HMC run in fully centered coordinates. Neither method
+modifies the parameterization during warmup.}
 
 \item{aggregate}{How valid candidate fractions are combined across precursor
 draws. The default is \code{"median"}; \code{"mean"} is also available.}
 
 \item{fallback}{Value used if a candidate cell has no valid precursor draws:
 \code{"error"}, \code{"noncentered"}, \code{"centered"}, or a number in
-\code{[0, 1]}.}
+\code{[0, 1]}. This does not override the Pathfinder diagnostic check.}
 
 \item{pilot_args}{A named list of additional arguments passed to the
 CmdStanR Pathfinder or HMC precursor. These arguments control only the
@@ -40,8 +41,10 @@ of chains requested for the final fit. Thus, the usual four-chain fit uses
 four Pathfinder paths, while a one-chain fit uses one path unless
 \code{pilot_args$num_paths} is supplied explicitly. Pathfinder defaults both
 \code{draws} and \code{single_path_draws} to 200 to limit generated-quantities
-work. Supplying \code{draws} sets both defaults unless
-\code{single_path_draws} is supplied explicitly.}
+work. Supplying \code{draws} sets both defaults unless \code{single_path_draws}
+is supplied explicitly. Pathfinder uses \code{calculate_lp = TRUE} and
+\code{psis_resample = FALSE}, as brms checks the original draws before
+deterministic PSIS resampling.}
 
 \item{x}{An object containing centering weights resolved by a precursor.}
 
@@ -59,11 +62,20 @@ Configure the separate precursor used by
 stored in a fitted model.
 }
 \details{
-Automatic centering is a two-stage workflow. The precursor is always fit in
-fully non-centered coordinates. At each precursor draw, level- and
-coefficient-specific candidate fractions are evaluated only in generated
-quantities, so they do not enter the precursor target density. Valid candidates
-are aggregated by the requested method. If a cell has no valid candidate,
+Automatic centering is a two-stage workflow. The Pathfinder precursor uses
+fully non-centered coordinates. Its posterior approximation is accepted only
+when the Pareto-k diagnostic is available, finite, and strictly less than 0.7.
+Otherwise, fitting stops with instructions to rerun using
+\code{center_control = autocenter_control(method = "hmc")}.
+The Pareto-k and PSIS effective sample size are retained in
+\code{fit$autocenter$diagnostics$pareto_k} and
+\code{fit$autocenter$diagnostics$psis_ess}. No effective-sample-size
+threshold is imposed.
+
+At each precursor draw, candidate fractions are evaluated only in generated
+quantities, so they do not enter the precursor target density.
+Valid candidates are aggregated by the requested method,
+after PSIS resampling for Pathfinder. If a cell has no valid candidate,
 \code{fallback} either raises an error or supplies the requested fixed value.
 When multicategory shorthand expands one source \code{gr()} term into several
 generated mean predictors, their resolved proposals are combined elementwise

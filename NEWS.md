@@ -15,10 +15,11 @@ the model, so later new-data calls do not depend on the original R object.
 Equivalent fixed and varying contrast bases are mapped exactly. Student-t
 effects use the exact conditional scale-mixture chart. `center = "auto"`
 chooses fixed, level- and coefficient-specific fractions in a two-stage
-workflow. brms first fits the model in fully non-centered coordinates, using
-CmdStanR Pathfinder by default or a separate short HMC run when requested via
-`autocenter_control()`. Candidate fractions are evaluated only in generated
-quantities, aggregated across precursor draws (by the median by default), and
+workflow. CmdStanR Pathfinder uses fully non-centered coordinates and requires
+a finite Pareto-k below 0.7. Alternatively, `autocenter_control(method = "hmc")`
+requests a separate short HMC precursor in fully centered coordinates.
+Candidate fractions are evaluated only in generated quantities, aggregated
+across precursor draws (median by default, after PSIS resampling for Pathfinder), and
 then supplied as fixed data to the final model. The final HMC fit starts a new
 warmup; the proposal calculation is absent from its target density, and the
 fixed centering weights are not updated during an active HMC run. The former
