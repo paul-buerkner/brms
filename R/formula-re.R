@@ -739,7 +739,9 @@ split_re_terms <- function(re_terms, envir = parent.frame()) {
 # fresh R session. Replacing only the center expression preserves the formula
 # itself while making its fitted coordinate system self-contained, including
 # for computed expressions rather than simple symbols.
-materialize_re_center <- function(x) {
+# With 'source', import only surviving terms from an update formula while
+# retaining the merged formula's environment for its existing terms.
+materialize_re_center <- function(x, source = NULL) {
   if (is.mvbrmsformula(x)) {
     x$forms <- lapply(x$forms, materialize_re_center)
     return(x)
@@ -757,6 +759,26 @@ materialize_re_center <- function(x) {
     source_env <- parent.frame()
   }
   frozen_env <- new.env(parent = source_env)
+  source_terms <- character()
+  is_re_call <- function(expr) {
+    is.call(expr) && is.symbol(expr[[1L]]) &&
+      as.character(expr[[1L]]) %in% c("|", "||")
+  }
+  if (!is.null(source)) {
+    # update.formula retains the old environment. Import only terms supplied
+    # by the update, after its additions and removals have been resolved.
+    stopifnot(is.formula(source))
+    source_env <- environment(source) %||% parent.frame()
+    collect_terms <- function(expr) {
+      if (is_re_call(expr)) {
+        source_terms <<- c(source_terms, deparse0(expr))
+      } else if (is.call(expr)) {
+        lapply(as.list(expr)[-1L], collect_terms)
+      }
+      invisible(NULL)
+    }
+    collect_terms(source)
+  }
   counter <- 0L
   changed <- FALSE
   is_gr_call <- function(call) {
@@ -771,11 +793,17 @@ materialize_re_center <- function(x) {
       as.character(head[[1L]]) %in% c("::", ":::") &&
       identical(as.character(head[[3L]]), "gr")
   }
-  walk <- function(expr) {
+  walk <- function(expr, selected = is.null(source)) {
     if (!is.call(expr)) {
       return(expr)
     }
+    if (!selected && is_re_call(expr)) {
+      selected <- deparse0(expr) %in% source_terms
+    }
     if (is_gr_call(expr)) {
+      if (!selected) {
+        return(expr)
+      }
       center <- which(names(expr) == "center")
       if (length(center)) {
         stopifnot(length(center) == 1L)
@@ -785,15 +813,23 @@ materialize_re_center <- function(x) {
           return(expr)
         }
         value <- eval(center_expr, envir = source_env)
-        if (is.symbol(center_expr)) {
+        keep_symbol <- is.symbol(center_expr)
+        if (keep_symbol && !is.null(source)) {
+          key <- as.character(center_expr)
+          keep_symbol <- !exists(key, envir = frozen_env, inherits = TRUE) ||
+            identical(get(key, envir = frozen_env, inherits = TRUE), value)
+        }
+        if (keep_symbol) {
           # Preserve the user-facing formula for the common `center = rho`
           # case while shadowing rho with its fitted value in the child env.
           key <- as.character(center_expr)
         } else {
+          # Updated terms must not shadow values used by retained old terms.
           repeat {
             counter <<- counter + 1L
             key <- paste0(".brms_group_center_", counter)
-            if (!exists(key, envir = source_env, inherits = TRUE)) {
+            if (!exists(key, envir = source_env, inherits = TRUE) &&
+                !exists(key, envir = frozen_env, inherits = TRUE)) {
               break
             }
           }
@@ -805,7 +841,7 @@ materialize_re_center <- function(x) {
       return(expr)
     }
     for (i in seq_along(expr)[-1L]) {
-      expr[[i]] <- walk(expr[[i]])
+      expr[[i]] <- walk(expr[[i]], selected = selected)
     }
     expr
   }

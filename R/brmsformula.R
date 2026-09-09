@@ -1492,6 +1492,7 @@ update.brmsformula <- function(object, formula.,
   up_form <- formula.$formula
   if (mode == "update") {
     new_form <- update(old_form, up_form, ...)
+    new_form <- materialize_re_center(new_form, source = up_form)
   } else if (mode == "replace") {
     new_form <- up_form
   } else if (mode == "keep") {
