@@ -8,6 +8,10 @@ s2z_count_fixed <- function(x, pattern) {
   )))
 }
 
+s2z_stan_body <- function(x) {
+  substring(x, regexpr("\ndata {", x, fixed = TRUE)[1L])
+}
+
 s2z_dat <- local({
   set.seed(1916)
   n <- 72
@@ -61,9 +65,9 @@ test_that("S2Z uses the dedicated Gaussian scalar kernel", {
     "array[M_1] vector[N_1 - 1] z_s2z_1;",
     "matrix[N_1, M_1] r_s2z_1;",
     "matrix[M_1, M_1] Q_Sigma_s2z_1;",
-    "cholesky_decompose(P_s2z_1)",
+    "cholesky_decompose_brms(P_s2z_1)",
     "mdivide_left_spd(P_s2z_1",
-    "mdivide_left_tri_low(L_Sigma_s2z_1"
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1"
   )) {
     expect_false(grepl(term, scode, fixed = TRUE))
   }
@@ -334,10 +338,10 @@ test_that("independent S2Z specializes centered slopes and interactions", {
     "Q_Sigma_s2z_1",
     "P_s2z_1",
     "L_P_s2z_1",
-    "cholesky_decompose(",
+    "cholesky_decompose_brms(",
     "mdivide_left_spd(",
-    "mdivide_left_tri_low(",
-    "mdivide_right_tri_low("
+    "mdivide_left_tri_low_brms(",
+    "mdivide_right_tri_low_brms("
   )) {
     expect_false(grepl(term, scode, fixed = TRUE), info = term)
   }
@@ -381,7 +385,7 @@ test_that("independent S2Z uses H identity for ten no-intercept effects", {
   expect_match2(scode, "b = q_recovered_s2z_1;")
   expect_false(grepl("real b_Intercept;", scode, fixed = TRUE))
   expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
-  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl("cholesky_decompose_brms(", scode, fixed = TRUE))
   expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
 })
@@ -413,10 +417,10 @@ test_that("independent Student S2Z retains weighted scales unnormalized", {
   expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
   expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
-  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl("cholesky_decompose_brms(", scode, fixed = TRUE))
   expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
-  expect_false(grepl("mdivide_left_tri_low(", scode, fixed = TRUE))
-  expect_false(grepl("mdivide_right_tri_low(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_left_tri_low_brms(", scode, fixed = TRUE))
+  expect_false(grepl("mdivide_right_tri_low_brms(", scode, fixed = TRUE))
 })
 
 test_that("independent S2Z handles slope subsets and heavy-tailed priors", {
@@ -628,7 +632,9 @@ test_that("large crossed scalar Gaussian systems use one-dimensional Matheron wo
     s2z_count_fixed(scode, "theta_star_s2z[1] += dot_product("),
     n_factor
   )
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 0L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 0L
+  )
   expect_false(grepl("matrix[10, 10] P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("P_group_s2z_", scode, fixed = TRUE))
@@ -687,7 +693,9 @@ test_that("Matheron supports overlapping physical S2Z blocks", {
     ),
     2L
   )
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 1L
+  )
 })
 
 test_that("conditional Student and Cauchy population priors use Matheron", {
@@ -790,7 +798,7 @@ test_that("nonseparable or nonbeneficial multiblock models keep dense fallback",
     expect_match2(
       scode, sprintf("matrix[%s, %s] P_s2z_1;", case$total, case$total)
     )
-    expect_match2(scode, "L_P_s2z_1 = cholesky_decompose(P_s2z_1);")
+    expect_match2(scode, "L_P_s2z_1 = cholesky_decompose_brms(P_s2z_1);")
   }
 })
 
@@ -817,7 +825,7 @@ test_that("crossed scalar S2Z factors share one omitted-mean system", {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose("), 0L
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 0L
   )
   expect_equal(
     s2z_count_fixed(
@@ -863,7 +871,7 @@ test_that("independent and correlated interaction blocks stay specialized", {
   # The K=4 independent block remains elementwise. Only the correlated block
   # may perform coefficient-space triangular work before the Matheron update.
   expect_false(grepl(
-    "mdivide_left_tri_low(L_Sigma_s2z_1", scode, fixed = TRUE
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1", scode, fixed = TRUE
   ))
   expect_match2(
     scode,
@@ -871,7 +879,9 @@ test_that("independent and correlated interaction blocks stay specialized", {
   )
   expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
   expect_match2(scode, "corr_matrix[M_2] Cor_2")
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 1L
+  )
   expect_equal(
     s2z_count_fixed(
       scode,
@@ -919,7 +929,9 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
   expect_false(grepl("group_scale_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("P_group_s2z_", scode, fixed = TRUE))
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 1L
+  )
   expect_equal(
     s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1]"), 1L
   )
@@ -964,7 +976,7 @@ test_that("Matheron S2Z supports threading without normalizing constants", {
   expect_false(grepl("log(1.0 * N_2)", scode, fixed = TRUE))
   expect_false(grepl("log(2 * pi())", scode, fixed = TRUE))
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose("), 0L
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 0L
   )
   expect_equal(
     s2z_count_fixed(
