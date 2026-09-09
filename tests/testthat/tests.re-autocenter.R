@@ -91,12 +91,14 @@ test_that("method-specific precursor arguments fail before dispatch", {
 test_that("Pathfinder centering diagnoses and weights raw precursor draws", {
   capture <- new.env(parent = emptyenv())
   pathfinder <- function(data, seed = NULL, init = NULL, num_paths,
-                         show_messages, show_exceptions, draws,
-                         single_path_draws, calculate_lp, psis_resample) {
+                         refresh, show_messages, show_exceptions, draws,
+                         single_path_draws, max_lbfgs_iters,
+                         calculate_lp, psis_resample) {
     capture$data <- data
     capture$num_paths <- num_paths
     capture$draws <- draws
     capture$single_path_draws <- single_path_draws
+    capture$max_lbfgs_iters <- max_lbfgs_iters
     capture$calculate_lp <- calculate_lp
     capture$psis_resample <- psis_resample
     list(draws = function(variables, format) {
@@ -122,27 +124,31 @@ test_that("Pathfinder centering diagnoses and weights raw precursor draws", {
     rho_s2z_1 = matrix(0.4, 2L, 1L),
     compute_rho_center_candidate_1 = 0L
   )
-  summary <- brms:::run_re_autocenter_pilot(
-    model = list(pathfinder = pathfinder), sdata = final_data,
-    specs = specs, control = autocenter_control(), backend = "cmdstanr",
-    chains = 4L, cores = 1L, threads = NULL, opencl = NULL,
-    init = "random", seed = NA, silent = 2L
-  )
+  call_pilot <- function(pilot_args = list()) {
+    brms:::run_re_autocenter_pilot(
+      model = list(pathfinder = pathfinder), sdata = final_data,
+      specs = specs, control = autocenter_control(pilot_args = pilot_args),
+      backend = "cmdstanr", chains = 4L, cores = 1L, threads = NULL,
+      opencl = NULL, init = "random", seed = NA, silent = 2L
+    )
+  }
+  summary <- call_pilot()
 
   expect_equal(capture$data$rho_s2z_1, matrix(0, 2L, 1L))
   expect_identical(capture$data$compute_rho_center_candidate_1, 1L)
   expect_equal(final_data$rho_s2z_1, matrix(0.4, 2L, 1L))
   expect_identical(final_data$compute_rho_center_candidate_1, 0L)
   expect_identical(capture$num_paths, 4L)
-  expect_identical(capture$draws, 200L)
-  expect_identical(capture$single_path_draws, 200L)
+  expect_identical(capture$draws, 1000L)
+  expect_identical(capture$single_path_draws, 1000L)
+  expect_identical(capture$max_lbfgs_iters, 2000L)
   expect_true(capture$calculate_lp)
   expect_false(capture$psis_resample)
   expect_identical(
     capture$variables,
     c("rho_center_candidate_1", "lp__", "lp_approx__")
   )
-  expect_true(all(summary$diagnostics$pareto_k < 0.7))
+  expect_true(all(summary$diagnostics$pareto_k < 1))
   expect_true(all(summary$diagnostics$psis_ess > 0))
   expect_equal(
     unname(unclass(summary$rho[["1"]])), matrix(c(0.2, 0.7), 2L, 1L)
@@ -150,6 +156,16 @@ test_that("Pathfinder centering diagnoses and weights raw precursor draws", {
   expect_identical(
     dimnames(summary$rho[["1"]]), list(c("a", "b"), "Intercept")
   )
+
+  call_pilot(list(draws = 300L))
+  expect_identical(capture$draws, 300L)
+  expect_identical(capture$single_path_draws, 300L)
+  call_pilot(list(
+    draws = 400L, single_path_draws = 500L, max_lbfgs_iters = 600L
+  ))
+  expect_identical(capture$draws, 400L)
+  expect_identical(capture$single_path_draws, 500L)
+  expect_identical(capture$max_lbfgs_iters, 600L)
 })
 
 test_that("HMC centering uses a centered precursor without changing final data", {
@@ -209,34 +225,52 @@ test_that("Pathfinder posterior weighting is deterministic and preserves RNG", {
   expect_equal(mean(weighted$draws[, 1]), pnorm(0.6), tolerance = 0.01)
 })
 
-test_that("Pathfinder centering requires a finite Pareto k below 0.7", {
+test_that("Pathfinder centering warns and continues for unreliable Pareto k", {
   x <- qnorm((seq_len(200L) - 0.5) / 200L)
   draws <- cbind(
     `rho_center_candidate_1[1,1]` = plogis(x),
     lp__ = 0.1 * x, lp_approx__ = 0
   )
   psis <- loo::psis(draws[, "lp__"] - draws[, "lp_approx__"], r_eff = 1)
-  check_k <- function(k, accept = FALSE) {
+  expected <- brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L)
+  check_k <- function(k, warn = FALSE, error = FALSE) {
     controlled_psis <- psis
     controlled_psis$diagnostics$pareto_k <- k
     local_mocked_bindings(
       psis = function(log_ratios, r_eff, ...) controlled_psis,
       .package = "loo"
     )
-    if (accept) {
-      out <- brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L)
-      expect_equal(out$pareto_k, k)
-    } else {
+    if (error) {
       expect_error(
         brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L),
         "center_control.*autocenter_control.*hmc"
       )
+    } else {
+      out <- expect_warning(
+        brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L),
+        if (warn) "center_control.*autocenter_control.*hmc" else NA
+      )
+      expect_equal(out$pareto_k, k)
+      expect_equal(out$draws, expected$draws)
     }
   }
-  check_k(0.699, accept = TRUE)
-  for (k in list(0.7, 0.8, NA_real_, Inf, -Inf, numeric(), c(0.1, 0.2))) {
+  for (k in c(0.7, 0.9, 0.999)) {
     check_k(k)
   }
+  for (k in c(1, 1.1, NA_real_, Inf, -Inf)) {
+    check_k(k, warn = TRUE)
+  }
+  for (k in list(numeric(), c(0.1, 0.2))) {
+    check_k(k, error = TRUE)
+  }
+
+  # Equal importance ratios yield valid uniform weights despite Pareto-k = Inf.
+  draws[, c("lp__", "lp_approx__")] <- 0
+  out <- expect_warning(
+    brms:::.re_autocenter_pathfinder_draws(draws, ndraws = 200L),
+    "Pareto-k = Inf.*center_control.*autocenter_control.*hmc"
+  )
+  expect_equal(unname(unclass(out$draws)), unname(draws))
 })
 
 test_that("Pathfinder zero-weight draws do not affect centering candidates", {

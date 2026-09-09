@@ -367,7 +367,7 @@ test_that("fixed ordinal centering charts retain the local dense system", {
       "// S2Z block 1 in a joint omitted-mean system",
       "// joint omitted-mean system for S2Z blocks 1",
       "matrix[2, 2] P_s2z_1;",
-      "L_P_s2z_1 = cholesky_decompose(P_s2z_1);",
+      "L_P_s2z_1 = cholesky_decompose_brms(P_s2z_1);",
       "H_s2z_1[1, 1] = -1;",
       "H_s2z_1[4, 2] = 1;",
       "q_recovered_s2z_1 -= H_s2z_1 * mean_r_s2z_1;",

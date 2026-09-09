@@ -196,7 +196,7 @@
 #'
 #'   \code{center = "auto"} chooses fixed level- and coefficient-specific
 #'   fractions through a separate precursor fit. CmdStanR Pathfinder uses fully
-#'   non-centered coordinates and requires a finite Pareto-k below 0.7.
+#'   non-centered coordinates and warns if Pareto-k is at least 1 or non-finite.
 #'   \code{autocenter_control(method = "hmc")} instead requests a separate
 #'   short HMC precursor in fully centered coordinates.
 #'   At each precursor draw, candidate fractions

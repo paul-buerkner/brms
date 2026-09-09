@@ -594,9 +594,25 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
     str_add(out$tdata_comp) <- glue(
       "  // compute and scale QR decomposition\n",
       "  XQ{p} = qr_thin_Q(X{ct}{p}) * sqrt(N{resp} - 1);\n",
-      "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n",
-      "  XR{p}_inv = inverse(XR{p});\n"
+      "  XR{p} = qr_thin_R(X{ct}{p}) / sqrt(N{resp} - 1);\n"
     )
+    if (length(fixef) <= 2L) {
+      str_add(out$tdata_comp) <- glue(
+        "  XR{p}_inv = rep_matrix(0.0, K{ct}{p}, K{ct}{p});\n",
+        "  XR{p}_inv[1, 1] = inv(XR{p}[1, 1]);\n"
+      )
+      if (length(fixef) == 2L) {
+        str_add(out$tdata_comp) <- glue(
+          "  XR{p}_inv[2, 2] = inv(XR{p}[2, 2]);\n",
+          "  XR{p}_inv[1, 2] = -XR{p}[1, 2] * ",
+          "XR{p}_inv[1, 1] * XR{p}_inv[2, 2];\n"
+        )
+      }
+    } else {
+      str_add(out$tdata_comp) <- glue(
+        "  XR{p}_inv = inverse(XR{p});\n"
+      )
+    }
     str_add(out$pll_args) <- glue(", data matrix XQ{p}")
   }
   if (length(fixef) && !primitive) {
@@ -713,6 +729,12 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
     )
   })
   out <- collapse_lists(ls = c(list(out), tmp, joint))
+  if (any(grepl(
+    "(mdivide_left_tri_low|mdivide_right_tri_low|cholesky_decompose|chol2inv)_brms\\(",
+    unlist(out, use.names = FALSE)
+  ))) {
+    out$fun <- paste0("  #include 'fun_small_matrix.stan'\n", out$fun)
+  }
   # Several independent S2Z IDs can require the same Stan helper. Includes
   # define functions in place, so retaining more than one copy would produce
   # duplicate function definitions. Keep the first occurrence after all
@@ -1350,7 +1372,7 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
         "      for (k in 1:M_{id}) {{\n",
         "        L_partial_center_re[k, k] += 1.0 - {rho_j}[k];\n",
         "      }}\n",
-        "      white_center_re = mdivide_left_tri_low(\n",
+        "      white_center_re = mdivide_left_tri_low_brms(\n",
         "        L_partial_center_re, z_{id}[, j] - ",
         "{rho_j} .* {mean_name}\n",
         "      );\n",
@@ -1796,7 +1818,7 @@ stan_re_s2z_fisher_closed_form <- function(
     if (Klogit && length(sigma_dpars) == Klogit) {
       definitions <- c(definitions, glue(
         "        matrix[{Klogit}, {Klogit}] corr_precision_fisher_s2z_ln = ",
-        "chol2inv(Llncor{resp});\n"
+        "chol2inv_brms(Llncor{resp});\n"
       ))
       if (dpar %in% mu_dpars) {
         k <- match(dpar, mu_dpars)
@@ -3579,10 +3601,10 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
       "      matrix[M_{id}, M_{id}] white_factor_fisher_s2z;\n",
       "      K_fisher_s2z = 0.5 * (K_fisher_s2z + K_fisher_s2z');\n",
-      "      L_post_precision_fisher_s2z = cholesky_decompose(\n",
+      "      L_post_precision_fisher_s2z = cholesky_decompose_brms(\n",
       "        add_diag(K_fisher_s2z, 1.0)\n",
       "      );\n",
-      "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
+      "      white_factor_fisher_s2z = mdivide_left_tri_low_brms(\n",
       "        L_post_precision_fisher_s2z, ",
       "diag_matrix(rep_vector(1.0, M_{id}))\n",
       "      );\n",
@@ -3595,10 +3617,10 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "(sum_white_post_cov_fisher_s2z + ",
       "sum_white_post_cov_fisher_s2z');\n",
       "    L_sum_white_post_cov_fisher_s2z = ",
-      "cholesky_decompose(sum_white_post_cov_fisher_s2z);\n",
+      "cholesky_decompose_brms(sum_white_post_cov_fisher_s2z);\n",
       "    for (j in 1:N_{id}) {{\n",
       "      matrix[M_{id}, M_{id}] constraint_factor_fisher_s2z = ",
-      "mdivide_left_tri_low(\n",
+      "mdivide_left_tri_low_brms(\n",
       "        L_sum_white_post_cov_fisher_s2z, ",
       "white_post_cov_fisher_s2z[j]\n",
       "      );\n",
@@ -3633,7 +3655,7 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
     ""
   } else {
     glue(
-      "      white_factor_fisher_s2z = mdivide_left_tri_low(\n",
+      "      white_factor_fisher_s2z = mdivide_left_tri_low_brms(\n",
       "        L_post_precision_fisher_s2z, sqrt({row_var_j}) * ({L})'\n",
       "      );\n",
       "      post_var_fisher_s2z = columns_dot_self(",
@@ -3645,7 +3667,7 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "      for (k in 1:M_{id}) {{\n",
       "        vector[M_{id}] unit_column_fisher_s2z;\n",
       "        unit_rhs_fisher_s2z[k] = 1.0;\n",
-      "        unit_column_fisher_s2z = mdivide_left_tri_low(\n",
+      "        unit_column_fisher_s2z = mdivide_left_tri_low_brms(\n",
       "          L_post_precision_fisher_s2z, unit_rhs_fisher_s2z\n",
       "        );\n",
       "        // The exact ratio is in [0, 1]; clamp roundoff.\n",
@@ -3679,7 +3701,7 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
     "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
     "{variance_def}",
     "      K_fisher_s2z = 0.5 * (K_fisher_s2z + K_fisher_s2z');\n",
-    "      L_post_precision_fisher_s2z = cholesky_decompose(\n",
+    "      L_post_precision_fisher_s2z = cholesky_decompose_brms(\n",
     "        add_diag(K_fisher_s2z, 1.0)\n",
     "      );\n",
     "{variance_comp}",
@@ -3767,19 +3789,19 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
     }
     white_delta <- if (has_cov) {
       glue(
-        "mdivide_left_tri_low(Lcov_{id}, ",
+        "mdivide_left_tri_low_brms(Lcov_{id}, ",
         "coef_white_cov_s2z')"
       )
     } else {
       "coef_white_cov_s2z'"
     }
     one_white <- if (has_cov) {
-      glue("mdivide_left_tri_low(Lcov_{id}, {mean_rhs})")
+      glue("mdivide_left_tri_low_brms(Lcov_{id}, {mean_rhs})")
     } else {
       mean_rhs
     }
     coef_white <- if (is_cor) {
-      "mdivide_left_tri_low(L_coef_cov_s2z, scaled_delta_cov_s2z')"
+      "mdivide_left_tri_low_brms(L_coef_cov_s2z, scaled_delta_cov_s2z')"
     } else {
       "scaled_delta_cov_s2z'"
     }
@@ -3807,13 +3829,13 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
   if (!is_cor) {
     white_delta <- if (has_cov) {
       glue(
-        "mdivide_left_tri_low(Lcov_{id}, scaled_delta_cov_s2z[, k])"
+        "mdivide_left_tri_low_brms(Lcov_{id}, scaled_delta_cov_s2z[, k])"
       )
     } else {
       "scaled_delta_cov_s2z[, k]"
     }
     white_basis <- if (has_cov) {
-      glue("mdivide_left_tri_low(Lcov_{id}, mean_basis_cov_s2z)")
+      glue("mdivide_left_tri_low_brms(Lcov_{id}, mean_basis_cov_s2z)")
     } else {
       "mean_basis_cov_s2z"
     }
@@ -3842,7 +3864,7 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
   }
   white_delta <- if (has_cov) {
     glue(
-      "mdivide_left_tri_low(Lcov_{id}, ",
+      "mdivide_left_tri_low_brms(Lcov_{id}, ",
       "coef_white_cov_s2z')"
     )
   } else {
@@ -3850,7 +3872,7 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
   }
   white_basis <- if (has_cov) {
     glue(
-      "mdivide_left_tri_low(Lcov_{id}, ",
+      "mdivide_left_tri_low_brms(Lcov_{id}, ",
       "coef_basis_cov_s2z')"
     )
   } else {
@@ -3866,14 +3888,14 @@ stan_re_s2z_cov_group_comp <- function(id, varying, is_cor, is_student,
     "    matrix[N_{id} * M_{id}, M_{id}] mean_factor_cov_s2z;\n",
     "{student_scale}",
     "    scaled_delta_cov_s2z = {delta} ./ scale_cov_s2z;\n",
-    "    coef_white_cov_s2z = mdivide_left_tri_low(",
+    "    coef_white_cov_s2z = mdivide_left_tri_low_brms(",
     "L_coef_cov_s2z, scaled_delta_cov_s2z');\n",
     "    white_delta_cov_s2z = {white_delta};\n",
     "    for (k in 1:M_{id}) {{\n",
     "      matrix[N_{id}, M_{id}] mean_basis_cov_s2z = ",
     "rep_matrix(L_Sigma_s2z_{id}[, k]', N_{id}) ./ scale_cov_s2z;\n",
     "      matrix[M_{id}, N_{id}] coef_basis_cov_s2z = ",
-    "mdivide_left_tri_low(L_coef_cov_s2z, mean_basis_cov_s2z');\n",
+    "mdivide_left_tri_low_brms(L_coef_cov_s2z, mean_basis_cov_s2z');\n",
     "      matrix[N_{id}, M_{id}] white_basis_cov_s2z = ",
     "{white_basis};\n",
     "      mean_factor_cov_s2z[, k] = to_vector(white_basis_cov_s2z);\n",
@@ -3905,7 +3927,7 @@ stan_re_s2z_partial_cor_transform <- function(id) {
     "        L_partial_s2z[k, k] += 1.0 - rho_s2z_{id}[j, k];\n",
     "      }}\n",
     "      r_s2z_{id}[j] = (L_Sigma_s2z_{id} * ",
-    "mdivide_left_tri_low(L_partial_s2z, r_s2z_{id}[j]'))';\n",
+    "mdivide_left_tri_low_brms(L_partial_s2z, r_s2z_{id}[j]'))';\n",
     "      mean_partial_s2z += r_s2z_{id}[j];\n",
     "      log_det_partial_s2z_{id} -= ",
     "sum(log(diagonal(L_partial_s2z)));\n",
@@ -4267,7 +4289,7 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
   str_add(out$tpar_comp) <- glue(
     "  {{\n",
     "    matrix[M_{id}, N_{id}] white_group_s2z = ",
-    "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
     "{explicit_group_quad_code}",
     "  }}\n",
     cglue("  {r_s2z} = r_s2z_{id}[, {J}];\n")
@@ -4734,7 +4756,7 @@ stan_re_s2z_H_code <- function(info) {
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
       "    matrix[M_{id}, N_{id}] white_group_s2z = ",
-      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "mdivide_left_tri_low_brms(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
       "    group_quad_s2z_{id} = dot_self(to_vector(white_group_s2z));\n",
       "  }}\n"
     )
@@ -4761,9 +4783,9 @@ stan_re_s2z_H_code <- function(info) {
       "    matrix[M_{id}, M_{id}] L_level_s2z = ",
       "diag_pre_multiply(sd_level_s2z_{id}[j]', L_{id});\n",
       "    matrix[M_{id}, M_{id}] relative_precision_s2z = ",
-      "mdivide_left_tri_low(L_level_s2z, L_Sigma_s2z_{id});\n",
+      "mdivide_left_tri_low_brms(L_level_s2z, L_Sigma_s2z_{id});\n",
       "    vector[M_{id}] white_level_s2z = ",
-      "mdivide_left_tri_low(L_level_s2z, r_s2z_{id}[j]');\n",
+      "mdivide_left_tri_low_brms(L_level_s2z, r_s2z_{id}[j]');\n",
       "    P_group_s2z_{id} += {level_weight}",
       "crossprod(relative_precision_s2z);\n",
       "    h_group_s2z_{id} -= {level_weight}",
@@ -4819,7 +4841,7 @@ stan_re_s2z_H_code <- function(info) {
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
       "    matrix[M_{id}, N_{id}] white_group_s2z = ",
-      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "mdivide_left_tri_low_brms(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
       "    group_info_s2z_{id} = {group_info};\n",
       "{group_score_code}",
       "  }}\n"
@@ -5000,11 +5022,11 @@ stan_re_s2z_H_code <- function(info) {
   } else if (rdim > 1L) {
     str_add(out$tpar_comp) <- glue(
       "  L_W_matheron_s2z_{set_id} = ",
-      "cholesky_decompose(W_matheron_s2z_{set_id});\n",
+      "cholesky_decompose_brms(W_matheron_s2z_{set_id});\n",
       "  {{\n",
       "    vector[{rdim}] theta_difference_s2z = ",
       "theta_s2z{p}[{P_index}] - prior_mean_s2z_{set_id}[{P_index}];\n",
-      "    theta_white_matheron_s2z_{set_id} = mdivide_left_tri_low(",
+      "    theta_white_matheron_s2z_{set_id} = mdivide_left_tri_low_brms(",
       "L_W_matheron_s2z_{set_id}, theta_difference_s2z);\n",
       "  }}\n"
     )
@@ -5152,9 +5174,9 @@ stan_re_s2z_H_code <- function(info) {
       )
     }
     str_add(out$gen_comp) <- glue(
-      "      forward_solve_s2z = mdivide_left_tri_low(",
+      "      forward_solve_s2z = mdivide_left_tri_low_brms(",
       "L_W_matheron_s2z_{set_id}, theta_innovation_s2z);\n",
-      "      delta_s2z = (mdivide_right_tri_low(",
+      "      delta_s2z = (mdivide_right_tri_low_brms(",
       "forward_solve_s2z', L_W_matheron_s2z_{set_id}))';\n",
       "    }}\n"
     )
@@ -5357,10 +5379,10 @@ stan_re_s2z_H_code <- function(info) {
   str_add(out$tpar_comp) <- glue(
     "    h_joint_s2z_{set_id} += prior_factor_s2z' * ",
     "prior_difference_s2z;\n",
-    "    L_P_s2z_{set_id} = cholesky_decompose(P_s2z_{set_id});\n",
-    "    forward_solve_s2z = mdivide_left_tri_low(",
+    "    L_P_s2z_{set_id} = cholesky_decompose_brms(P_s2z_{set_id});\n",
+    "    forward_solve_s2z = mdivide_left_tri_low_brms(",
     "L_P_s2z_{set_id}, h_joint_s2z_{set_id});\n",
-    "    mhat_s2z_{set_id} = (mdivide_right_tri_low(",
+    "    mhat_s2z_{set_id} = (mdivide_right_tri_low_brms(",
     "forward_solve_s2z', L_P_s2z_{set_id}))';\n",
     "    joint_quad_s2z_{set_id} -= dot_self(forward_solve_s2z);\n",
     "  }}\n"
@@ -5482,7 +5504,7 @@ stan_re_s2z_H_code <- function(info) {
     "    vector[{total_M}] mean_white_s2z;\n",
     "    for (k in 1:{total_M}) z_mean_s2z[k] = std_normal_rng();\n",
     "    mean_white_s2z = mhat_s2z_{set_id} + ",
-    "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{set_id}))';\n",
+    "(mdivide_right_tri_low_brms(z_mean_s2z', L_P_s2z_{set_id}))';\n",
     "    q_recovered_s2z_{set_id} = theta_s2z{p};\n"
   )
   for (b in seq_along(infos)) {
@@ -5838,12 +5860,12 @@ stan_re_s2z_H_code <- function(info) {
           "crossprod(prior_factor_s2z)", id, group_precision_kind
         ),
         ";\n",
-        "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
-        "    forward_solve_s2z = mdivide_left_tri_low(",
+        "    L_P_s2z_{id} = cholesky_decompose_brms(P_s2z_{id});\n",
+        "    forward_solve_s2z = mdivide_left_tri_low_brms(",
         "L_P_s2z_{id}, h_s2z);\n",
         "    group_quad_s2z_{id} -= dot_self(forward_solve_s2z);\n",
         "    mhat_s2z_{id} = L_Sigma_s2z_{id} * ",
-        "(mdivide_right_tri_low(forward_solve_s2z', L_P_s2z_{id}))';\n",
+        "(mdivide_right_tri_low_brms(forward_solve_s2z', L_P_s2z_{id}))';\n",
         "  }}\n"
       )
     } else {
@@ -5866,9 +5888,9 @@ stan_re_s2z_H_code <- function(info) {
         "      matrix[M_{id}, M_{id}] L_level_s2z = ",
         "diag_pre_multiply(sd_level_s2z_{id}[j]', L_{id});\n",
         "      matrix[M_{id}, M_{id}] relative_precision_s2z = ",
-        "mdivide_left_tri_low(L_level_s2z, L_Sigma_s2z_{id});\n",
+        "mdivide_left_tri_low_brms(L_level_s2z, L_Sigma_s2z_{id});\n",
         "      vector[M_{id}] white_level_s2z = ",
-        "mdivide_left_tri_low(L_level_s2z, r_s2z_{id}[j]');\n",
+        "mdivide_left_tri_low_brms(L_level_s2z, r_s2z_{id}[j]');\n",
         "      P_s2z_{id} += {level_weight}",
         "crossprod(relative_precision_s2z);\n",
         "      h_s2z -= {level_weight}",
@@ -5876,12 +5898,12 @@ stan_re_s2z_H_code <- function(info) {
         "      group_quad_s2z_{id} += {level_weight}",
         "dot_self(white_level_s2z);\n",
         "    }}\n",
-        "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
-        "    forward_solve_s2z = mdivide_left_tri_low(",
+        "    L_P_s2z_{id} = cholesky_decompose_brms(P_s2z_{id});\n",
+        "    forward_solve_s2z = mdivide_left_tri_low_brms(",
         "L_P_s2z_{id}, h_s2z);\n",
         "    group_quad_s2z_{id} -= dot_self(forward_solve_s2z);\n",
         "    mhat_s2z_{id} = L_Sigma_s2z_{id} * ",
-        "(mdivide_right_tri_low(forward_solve_s2z', L_P_s2z_{id}))';\n",
+        "(mdivide_right_tri_low_brms(forward_solve_s2z', L_P_s2z_{id}))';\n",
         "  }}\n"
       )
     }
@@ -6186,7 +6208,7 @@ stan_re_s2z_H_code <- function(info) {
       "    vector[M_{id}] z_mean_s2z;\n",
       "    for (k in 1:M_{id}) z_mean_s2z[k] = std_normal_rng();\n",
       "    mean_r_s2z_{id} = mhat_s2z_{id} + L_Sigma_s2z_{id} * ",
-      "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{id}))';\n",
+      "(mdivide_right_tri_low_brms(z_mean_s2z', L_P_s2z_{id}))';\n",
       "  }}\n",
       "  q_recovered_s2z_{id} = theta_s2z{p} - ",
       "H_s2z_{id} * mean_r_s2z_{id};\n",
@@ -6392,7 +6414,7 @@ stan_re_s2z_H_code <- function(info) {
     str_add(out$tpar_comp) <- glue(
       "  {{\n",
       "    matrix[M_{id}, N_{id}] white_latent_s2z = ",
-      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "mdivide_left_tri_low_brms(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
       "    group_quad_s2z_{id} = dot_self(to_vector(white_latent_s2z));\n",
       "  }}\n"
     )
@@ -6640,22 +6662,33 @@ stan_re_s2z_H_code <- function(info) {
       diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
     )
   }
-  partial_transform <- if (s2z_partial) {
-    stan_re_s2z_partial_cor_transform(id)
-  } else {
-    str_if(
-      !s2z_center,
-      glue("  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n")
+  if (is_cor || !s2z_partial) {
+    str_add(out$tpar_comp) <- glue(
+      "  for (k in 1:M_{id}) {{\n",
+      "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
+      "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
+      "N_{id} - 1));\n",
+      "  }}\n"
     )
   }
-  str_add(out$tpar_comp) <- glue(
-    "  for (k in 1:M_{id}) {{\n",
-    "    r_s2z_{id}[, k] = sum_to_zero_constrain_brms(",
-    "segment(z_s2z_{id}, (k - 1) * (N_{id} - 1) + 1, ",
-    "N_{id} - 1));\n",
-    "  }}\n",
-    "{partial_transform}"
-  )
+  if (s2z_partial) {
+    if (is_cor) {
+      str_add(out$tpar_comp) <- stan_re_s2z_partial_cor_transform(id)
+    } else {
+      str_add(out$tpar_comp) <- glue(
+        "  log_det_partial_s2z_{id} = 0.0;\n"
+      )
+      for (j in seq_len(M)) {
+        str_add(out$tpar_comp) <- stan_re_s2z_partial_independent_transform(
+          id, j, glue("r_s2z_{id}[, {j}]"), glue("sd_{id}[{j}]")
+        )
+      }
+    }
+  } else if (!s2z_center) {
+    str_add(out$tpar_comp) <- glue(
+      "  r_s2z_{id} = r_s2z_{id} * L_Sigma_s2z_{id}';\n"
+    )
+  }
 
   for (k in seq_len(q)) {
     spec <- info$prior[[k]]
@@ -6703,8 +6736,8 @@ stan_re_s2z_H_code <- function(info) {
       "group_info_s2z_{id});\n",
       "    h_s2z = prior_factor_s2z' * prior_difference_s2z + ",
       "h_group_s2z_{id};\n",
-      "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
-      "    whitened_h_s2z = mdivide_left_tri_low(L_P_s2z_{id}, h_s2z);\n",
+      "    L_P_s2z_{id} = cholesky_decompose_brms(P_s2z_{id});\n",
+      "    whitened_h_s2z = mdivide_left_tri_low_brms(L_P_s2z_{id}, h_s2z);\n",
       "    group_quad_s2z_{id} -= dot_self(whitened_h_s2z);\n",
       "  }}\n",
       cglue("  r_s2z_{idp}_{r$cn} = r_s2z_{id}[, {J}];\n")
@@ -6741,7 +6774,7 @@ stan_re_s2z_H_code <- function(info) {
       "sqrt(prior_prec_s2z_{id}) .* ",
       "(theta_s2z{p} - prior_mean_s2z_{id});\n",
       "    matrix[M_{id}, N_{id}] white_s2z = ",
-      "mdivide_left_tri_low(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
+      "mdivide_left_tri_low_brms(L_Sigma_s2z_{id}, r_s2z_{id}');\n",
       "    vector[M_{id}] h_s2z;\n",
       "    vector[M_{id}] whitened_h_s2z;\n",
       "{contrast_score_code}",
@@ -6749,8 +6782,8 @@ stan_re_s2z_H_code <- function(info) {
       "{group_info});\n",
       "    h_s2z = prior_factor_s2z' * prior_difference_s2z",
       "{contrast_score};\n",
-      "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
-      "    whitened_h_s2z = mdivide_left_tri_low(L_P_s2z_{id}, h_s2z);\n",
+      "    L_P_s2z_{id} = cholesky_decompose_brms(P_s2z_{id});\n",
+      "    whitened_h_s2z = mdivide_left_tri_low_brms(L_P_s2z_{id}, h_s2z);\n",
       "    group_quad_s2z_{id} = -dot_self(whitened_h_s2z);\n",
       "{group_quad_code}",
       "  }}\n",
@@ -6851,14 +6884,14 @@ stan_re_s2z_H_code <- function(info) {
     "(theta_s2z{p} - prior_mean_s2z_{id});\n",
     "    vector[M_{id}] h_s2z = prior_factor_s2z' * ",
     "prior_difference_s2z{contrast_score};\n",
-    "    vector[M_{id}] forward_solve_s2z = mdivide_left_tri_low(",
+    "    vector[M_{id}] forward_solve_s2z = mdivide_left_tri_low_brms(",
     "L_P_s2z_{id}, h_s2z);\n",
-    "    vector[M_{id}] r_mean_s2z = (mdivide_right_tri_low(",
+    "    vector[M_{id}] r_mean_s2z = (mdivide_right_tri_low_brms(",
     "forward_solve_s2z', L_P_s2z_{id}))';\n",
     "    vector[M_{id}] z_mean_s2z;\n",
     "    for (k in 1:M_{id}) z_mean_s2z[k] = std_normal_rng();\n",
     "    mean_r_s2z_{id} = L_Sigma_s2z_{id} * (r_mean_s2z + ",
-    "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{id}))');\n",
+    "(mdivide_right_tri_low_brms(z_mean_s2z', L_P_s2z_{id}))');\n",
     "  }}\n",
     "  q_recovered_s2z_{id} = theta_s2z{p} - H_s2z_{id} * mean_r_s2z_{id};\n",
     "  r_{id} = r_s2z_{id};\n",

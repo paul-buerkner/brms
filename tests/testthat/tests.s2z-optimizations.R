@@ -20,6 +20,62 @@ s2z_fixed_position <- function(code, pattern) {
   out
 }
 
+test_that("small-matrix helpers cover group-effect solves without duplicate definitions", {
+  Omega <- diag(nlevels(s2z_opt_dat$g))
+  dimnames(Omega) <- rep(list(levels(s2z_opt_dat$g)), 2L)
+  forms <- list(
+    ordinary = bf(
+      y ~ x + (1 + x | gr(g, center = 0.4)),
+      sigma ~ x + (1 + x | gr(h, center = 0.4))
+    ),
+    s2z = y ~ x + (1 + x | gr(g, s2z = TRUE, center = "auto")),
+    scalar_cov = y ~ 1 + (1 | gr(g, s2z = TRUE, cov = Omega)),
+    joint = y ~ x + (1 + x | gr(g, s2z = TRUE)) +
+      (1 + x | gr(h, s2z = TRUE)),
+    cross = bf(mvbind(y, z) ~ 1 + (1 | p | gr(g, s2z = TRUE))) +
+      set_rescor(FALSE),
+    larger = y ~ x + z + (1 + x + z | gr(g, s2z = TRUE))
+  )
+  for (form in forms) {
+    code <- stancode(form, data = s2z_opt_dat, data2 = list(Omega = Omega))
+    expect_equal(
+      lengths(regmatches(code, gregexpr(
+        "matrix cholesky_decompose_brms(matrix A)", code, fixed = TRUE
+      ))),
+      1L
+    )
+    body <- substring(code, regexpr("\ndata {", code, fixed = TRUE)[1L])
+    expect_match2(body, "mdivide_left_tri_low_brms(")
+    expect_false(grepl(
+      "(mdivide_left_tri_low|mdivide_right_tri_low|cholesky_decompose)\\(",
+      body
+    ))
+  }
+
+  # Models using only elementwise operations do not need the helper chunk.
+  scalar <- stancode(y ~ 1 + (1 | gr(g, s2z = TRUE)), s2z_opt_dat)
+  expect_false(grepl("mdivide_left_tri_low_brms", scalar, fixed = TRUE))
+})
+
+test_that("one- and two-column QR inverses use scalar arithmetic", {
+  forms <- list(y ~ x, y ~ x + z, y ~ x * z)
+  for (k in seq_along(forms)) {
+    code <- stancode(bf(forms[[k]], decomp = "QR"), s2z_opt_dat)
+    if (k <= 2L) {
+      expect_match2(code, "XR_inv[1, 1] = inv(XR[1, 1]);")
+      expect_false(grepl("inverse(XR)", code, fixed = TRUE))
+    } else {
+      expect_match2(code, "XR_inv = inverse(XR);")
+    }
+    if (k == 2L) {
+      expect_match2(code, "XR_inv[2, 2] = inv(XR[2, 2]);")
+      expect_match2(
+        code, "XR_inv[1, 2] = -XR[1, 2] * XR_inv[1, 1] * XR_inv[2, 2];"
+      )
+    }
+  }
+})
+
 test_that("fixed S2Z maps live in transformed data", {
   code <- stancode(
     y ~ x + z + (1 + x + z | gr(g, s2z = TRUE)),

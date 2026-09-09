@@ -8,6 +8,10 @@ s2z_count_fixed <- function(x, pattern) {
   )))
 }
 
+s2z_stan_body <- function(x) {
+  substring(x, regexpr("\ndata {", x, fixed = TRUE)[1L])
+}
+
 s2z_stan_between <- function(x, start, end) {
   start_at <- regexpr(start, x, fixed = TRUE)[1L]
   expect_gt(start_at, 0L)
@@ -311,8 +315,8 @@ test_that("multivariate auto S2Z keeps target fixed and proposes in GQ", {
   expect_false(grepl("design_fisher_s2z", tpar, fixed = TRUE))
   expect_false(grepl("rho_center_candidate_1", tpar, fixed = TRUE))
   expect_match2(gq, "inv_square(sigma)")
-  expect_match2(gq, "cholesky_decompose(")
-  expect_match2(gq, "mdivide_left_tri_low(")
+  expect_match2(gq, "cholesky_decompose_brms(")
+  expect_match2(gq, "mdivide_left_tri_low_brms(")
   expect_match2(gq, "L_post_precision_fisher_s2z")
   expect_match2(gq, "white_factor_fisher_s2z")
   expect_match2(gq, "white_post_cov_fisher_s2z[j] = crossprod(")
@@ -1192,7 +1196,9 @@ test_that("partial S2Z code covers every specialized covariance path", {
   expect_false(grepl(
     "matrix[M_1, M_1] L_partial_s2z", independent_ten, fixed = TRUE
   ))
-  expect_false(grepl("cholesky_decompose(", independent_ten, fixed = TRUE))
+  expect_false(grepl(
+    "cholesky_decompose_brms(", s2z_stan_body(independent_ten), fixed = TRUE
+  ))
 
   correlated <- stancode(
     y ~ x * z +
@@ -1207,7 +1213,7 @@ test_that("partial S2Z code covers every specialized covariance path", {
     "L_partial_s2z[k, k] += 1.0 - rho_s2z_1[j, k];",
     paste0(
       "r_s2z_1[j] = (L_Sigma_s2z_1 * ",
-      "mdivide_left_tri_low(L_partial_s2z, r_s2z_1[j]'))';"
+      "mdivide_left_tri_low_brms(L_partial_s2z, r_s2z_1[j]'))';"
     ),
     "mean_partial_s2z += r_s2z_1[j];",
     "mean_partial_s2z /= N_1;",
@@ -1331,7 +1337,7 @@ test_that("partial varying-scale Student kernels retain every measure term", {
       ),
       paste0(
         "matrix[M_1, M_1] relative_precision_s2z = ",
-        "mdivide_left_tri_low(L_level_s2z, L_Sigma_s2z_1);"
+        "mdivide_left_tri_low_brms(L_level_s2z, L_Sigma_s2z_1);"
       ),
       paste0(
         "P_s2z_1 += group_prec_s2z_1[j] * ",
@@ -1380,7 +1386,9 @@ test_that("partial varying-scale Student kernels retain every measure term", {
     expect_false(grepl(
       "matrix[M_1, M_1] L_partial_s2z", scalar, fixed = TRUE
     ))
-    expect_false(grepl("cholesky_decompose(", scalar, fixed = TRUE))
+    expect_false(grepl(
+      "cholesky_decompose_brms(", s2z_stan_body(scalar), fixed = TRUE
+    ))
 
     if (normalize) {
       expect_match2(correlated, "+ 0.5 * M_1 * log(1.0 * N_1)")
@@ -1506,7 +1514,9 @@ test_that("direct independent S2Z scales K4 and K10 component-wise", {
       expect_true(grepl(term, code, fixed = TRUE), info = term)
     }
     expect_false(grepl("matrix[M_1, M_1]", code, fixed = TRUE))
-    expect_false(grepl("cholesky_decompose(", code, fixed = TRUE))
+    expect_false(grepl(
+      "cholesky_decompose_brms(", s2z_stan_body(code), fixed = TRUE
+    ))
   }
 
   student_direct <- stancode(
@@ -1708,7 +1718,7 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
     correlated_direct, fixed = TRUE
   ))
   for (term in c(
-    "relative_precision_s2z = mdivide_left_tri_low(",
+    "relative_precision_s2z = mdivide_left_tri_low_brms(",
     "P_s2z_1 += crossprod(relative_precision_s2z);",
     "group_quad_s2z_1 -= dot_self(forward_solve_s2z)",
     "- sum(log(diagonal(L_P_s2z_1)))",
@@ -1733,7 +1743,7 @@ test_that("direct varying-scale S2Z cancels only its reference determinant", {
   ))
   for (term in c(
     "group_prec_s2z_1 = inv_square(group_scale_s2z_1)",
-    "relative_precision_s2z = mdivide_left_tri_low(",
+    "relative_precision_s2z = mdivide_left_tri_low_brms(",
     "- M_1 * sum(log(group_scale_s2z_1))",
     "- sum(log(diagonal(L_P_s2z_1)))"
   )) {
@@ -1851,9 +1861,9 @@ test_that("S2Z uses the dedicated Gaussian scalar kernel", {
     "vector[M_1 * (N_1 - 1)] z_s2z_1;",
     "matrix[N_1, M_1] r_s2z_1;",
     "matrix[M_1, M_1] Q_Sigma_s2z_1;",
-    "cholesky_decompose(P_s2z_1)",
+    "cholesky_decompose_brms(P_s2z_1)",
     "mdivide_left_spd(P_s2z_1",
-    "mdivide_left_tri_low(L_Sigma_s2z_1"
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1"
   )) {
     expect_false(grepl(term, scode, fixed = TRUE))
   }
@@ -2068,7 +2078,7 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
   expect_match2(
     sc_cor,
     paste0(
-      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low(",
+      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low_brms(",
       "L_Sigma_s2z_1, r_s2z_1');"
     )
   )
@@ -2079,11 +2089,11 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
       "1.0 * N_1);"
     )
   )
-  expect_match2(sc_cor, "L_P_s2z_1 = cholesky_decompose(P_s2z_1);")
+  expect_match2(sc_cor, "L_P_s2z_1 = cholesky_decompose_brms(P_s2z_1);")
   expect_match2(
     sc_cor,
     paste0(
-      "whitened_h_s2z = mdivide_left_tri_low(",
+      "whitened_h_s2z = mdivide_left_tri_low_brms(",
       "L_P_s2z_1, h_s2z);"
     )
   )
@@ -2095,14 +2105,14 @@ test_that("S2Z supports correlated and diagonal Gaussian effects", {
     sc_cor,
     paste0(
       "mean_r_s2z_1 = L_Sigma_s2z_1 * (r_mean_s2z + ",
-      "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_1))');"
+      "(mdivide_right_tri_low_brms(z_mean_s2z', L_P_s2z_1))');"
     )
   )
   for (term in c(
     "Q_Sigma_s2z_1",
     "L_inv_s2z",
     "mdivide_left_spd(",
-    "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1, diag_matrix",
     "qhat_s2z_1"
   )) {
     expect_false(grepl(term, sc_cor, fixed = TRUE), info = term)
@@ -2173,12 +2183,12 @@ test_that("independent S2Z specializes centered slopes and interactions", {
     "Q_Sigma_s2z_1",
     "P_s2z_1",
     "L_P_s2z_1",
-    "cholesky_decompose(",
+    "cholesky_decompose_brms(",
     "mdivide_left_spd(",
-    "mdivide_left_tri_low(",
-    "mdivide_right_tri_low("
+    "mdivide_left_tri_low_brms(",
+    "mdivide_right_tri_low_brms("
   )) {
-    expect_false(grepl(term, scode, fixed = TRUE), info = term)
+    expect_false(grepl(term, s2z_stan_body(scode), fixed = TRUE), info = term)
   }
 })
 
@@ -2220,7 +2230,9 @@ test_that("independent S2Z uses H identity for ten no-intercept effects", {
   expect_match2(scode, "b = q_recovered_s2z_1;")
   expect_false(grepl("real b_Intercept;", scode, fixed = TRUE))
   expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
-  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl(
+    "cholesky_decompose_brms(", s2z_stan_body(scode), fixed = TRUE
+  ))
   expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
 })
@@ -2252,10 +2264,16 @@ test_that("independent Student S2Z retains weighted scales unnormalized", {
   expect_match2(scode, "- 0.5 * log1p(rank1_info_s2z_1)")
   expect_false(grepl("log(1.0 * N_1)", scode, fixed = TRUE))
   expect_false(grepl("matrix[M_1, M_1]", scode, fixed = TRUE))
-  expect_false(grepl("cholesky_decompose(", scode, fixed = TRUE))
+  expect_false(grepl(
+    "cholesky_decompose_brms(", s2z_stan_body(scode), fixed = TRUE
+  ))
   expect_false(grepl("mdivide_left_spd(", scode, fixed = TRUE))
-  expect_false(grepl("mdivide_left_tri_low(", scode, fixed = TRUE))
-  expect_false(grepl("mdivide_right_tri_low(", scode, fixed = TRUE))
+  expect_false(grepl(
+    "mdivide_left_tri_low_brms(", s2z_stan_body(scode), fixed = TRUE
+  ))
+  expect_false(grepl(
+    "mdivide_right_tri_low_brms(", s2z_stan_body(scode), fixed = TRUE
+  ))
 })
 
 test_that("independent S2Z handles slope subsets and heavy-tailed priors", {
@@ -2862,7 +2880,7 @@ test_that("correlated group-varying scales use the heterogeneous kernel", {
   expect_match2(
     scode,
     paste0(
-      "relative_precision_s2z = mdivide_left_tri_low(",
+      "relative_precision_s2z = mdivide_left_tri_low_brms(",
       "L_level_s2z, L_Sigma_s2z_1);"
     )
   )
@@ -2947,11 +2965,11 @@ test_that("independent varying scales retain the O(K) specialization", {
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("relative_sd_s2z_1", scode, fixed = TRUE))
   for (term in c(
-    "matrix[M_1, M_1]", "cholesky_decompose(",
-    "mdivide_left_spd(", "mdivide_left_tri_low(",
-    "mdivide_right_tri_low("
+    "matrix[M_1, M_1]", "cholesky_decompose_brms(",
+    "mdivide_left_spd(", "mdivide_left_tri_low_brms(",
+    "mdivide_right_tri_low_brms("
   )) {
-    expect_false(grepl(term, scode, fixed = TRUE), info = term)
+    expect_false(grepl(term, s2z_stan_body(scode), fixed = TRUE), info = term)
   }
 
   student_code <- stancode(
@@ -3088,7 +3106,7 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
   expect_match2(
     scode,
     paste0(
-      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low(",
+      "matrix[M_1, N_1] white_s2z = mdivide_left_tri_low_brms(",
       "L_Sigma_s2z_1, r_s2z_1');"
     )
   )
@@ -3120,7 +3138,7 @@ test_that("S2Z handles Student-t effects by conditional Gaussian integration", {
     "Q_Sigma_s2z_1",
     "L_inv_s2z",
     "mdivide_left_spd(",
-    "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1, diag_matrix",
     "qhat_s2z_1"
   )) {
     expect_false(grepl(term, scode, fixed = TRUE), info = term)
@@ -3625,6 +3643,9 @@ test_that("known group covariance composes with conventional S2Z charts", {
     partial = y ~ x + (1 | gr(
       g, s2z = TRUE, center = 0.4, cov = Omega
     )),
+    independent_partial = y ~ x + (1 + x || gr(
+      g, s2z = TRUE, center = 0.4, cov = Omega
+    )),
     fisher = y ~ x + (1 | gr(
       g, s2z = TRUE, center = "auto", cov = Omega
     )),
@@ -3651,6 +3672,21 @@ test_that("known group covariance composes with conventional S2Z charts", {
       "- M_1 * sum(log(diagonal(Lcov_1)))"
     )) {
       expect_match2(scode, term)
+    }
+    if (names(forms)[i] %in% c("partial", "independent_partial", "fisher")) {
+      ncoef <- if (names(forms)[i] == "independent_partial") 2L else 1L
+      expect_false(grepl("L_partial_s2z", scode, fixed = TRUE))
+      expect_equal(s2z_count_fixed(
+        scode, "= sum_to_zero_constrain_brms("
+      ), ncoef)
+      expect_equal(s2z_count_fixed(
+        scode, "log_det_partial_s2z_1 = 0.0;"
+      ), 1L)
+      for (k in seq_len(ncoef)) {
+        expect_match2(scode, sprintf(
+          "centered_partial_s2z = sd_1[%s] * centered_partial_s2z", k
+        ))
+      }
     }
     if (!startsWith(names(forms)[i], "varying")) {
       expect_match2(scode, "one_white_cov_s2z")
@@ -3764,7 +3800,10 @@ test_that("large crossed scalar Gaussian systems use one-dimensional Matheron wo
     s2z_count_fixed(scode, "theta_star_s2z[1] += dot_product("),
     n_factor
   )
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 0L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("),
+    0L
+  )
   expect_false(grepl("matrix[10, 10] P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("L_P_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("P_group_s2z_", scode, fixed = TRUE))
@@ -3836,7 +3875,10 @@ test_that("Matheron supports overlapping blocks and all centering modes", {
     ),
     2L
   )
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("),
+    1L
+  )
 
   selective_prior <- prior(normal(0, 2), class = Intercept) +
     prior(normal(0, 1), class = b, coef = "x:z")
@@ -3953,7 +3995,7 @@ test_that("nonseparable or nonbeneficial multiblock models keep dense fallback",
     expect_match2(
       scode, sprintf("matrix[%s, %s] P_s2z_1;", case$total, case$total)
     )
-    expect_match2(scode, "L_P_s2z_1 = cholesky_decompose(P_s2z_1);")
+    expect_match2(scode, "L_P_s2z_1 = cholesky_decompose_brms(P_s2z_1);")
   }
 })
 
@@ -3981,7 +4023,7 @@ test_that("joint Student varying scales retain precision weights", {
       "group_quad_s2z_1 += group_prec_s2z_1[j] * ",
       "dot_self(white_level_s2z);"
     ),
-    "L_P_s2z_1 = cholesky_decompose(P_s2z_1);"
+    "L_P_s2z_1 = cholesky_decompose_brms(P_s2z_1);"
   )) {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
@@ -4081,7 +4123,7 @@ test_that("crossed scalar S2Z factors share one omitted-mean system", {
     expect_true(grepl(term, scode, fixed = TRUE), info = term)
   }
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose("), 0L
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 0L
   )
   expect_equal(
     s2z_count_fixed(
@@ -4155,7 +4197,7 @@ test_that("independent and correlated interaction blocks stay specialized", {
     "matrix[M_1, M_1] L_partial_s2z", scode, fixed = TRUE
   ))
   expect_false(grepl(
-    "mdivide_left_tri_low(L_Sigma_s2z_1", scode, fixed = TRUE
+    "mdivide_left_tri_low_brms(L_Sigma_s2z_1", scode, fixed = TRUE
   ))
   expect_match2(
     scode,
@@ -4166,7 +4208,10 @@ test_that("independent and correlated interaction blocks stay specialized", {
   )
   expect_false(grepl("corr_matrix[M_1] Cor_1", scode, fixed = TRUE))
   expect_match2(scode, "corr_matrix[M_2] Cor_2")
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("),
+    1L
+  )
   expect_equal(
     s2z_count_fixed(
       scode,
@@ -4225,7 +4270,10 @@ test_that("Gaussian and Student blocks contribute separately to one solve", {
   }
   expect_false(grepl("group_scale_s2z_1", scode, fixed = TRUE))
   expect_false(grepl("group_prec_s2z_1", scode, fixed = TRUE))
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("),
+    1L
+  )
   expect_equal(
     s2z_count_fixed(scode, "normal_lpdf(theta_s2z[1]"), 1L
   )
@@ -4284,7 +4332,7 @@ test_that("shared and varying scales compose in a joint S2Z model", {
     "matrix[M_1, M_1] L_level_s2z", scode, fixed = TRUE
   ))
   expect_false(grepl(
-    "mdivide_left_tri_low(L_level_s2z", scode, fixed = TRUE
+    "mdivide_left_tri_low_brms(L_level_s2z", scode, fixed = TRUE
   ))
   expect_false(grepl(
     "std_normal_lpdf(z_sd_s2z_1[k])", scode, fixed = TRUE
@@ -4296,7 +4344,10 @@ test_that("shared and varying scales compose in a joint S2Z model", {
     ),
     1L
   )
-  expect_equal(s2z_count_fixed(scode, "cholesky_decompose("), 1L)
+  expect_equal(
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("),
+    1L
+  )
 })
 
 test_that("Matheron S2Z supports threading without normalizing constants", {
@@ -4331,7 +4382,7 @@ test_that("Matheron S2Z supports threading without normalizing constants", {
   expect_false(grepl("log(1.0 * N_2)", scode, fixed = TRUE))
   expect_false(grepl("log(2 * pi())", scode, fixed = TRUE))
   expect_equal(
-    s2z_count_fixed(scode, "cholesky_decompose("), 0L
+    s2z_count_fixed(s2z_stan_body(scode), "cholesky_decompose_brms("), 0L
   )
   expect_equal(
     s2z_count_fixed(
@@ -4585,7 +4636,7 @@ test_that("strict latent S2Z blocks span nonlinear score predictors", {
   expect_match2(centered_code, "vector[N_1] r_s2z_1_eta2_2;")
   expect_match2(
     centered_code,
-    "white_latent_s2z = mdivide_left_tri_low("
+    "white_latent_s2z = mdivide_left_tri_low_brms("
   )
   expect_match2(
     centered_code,

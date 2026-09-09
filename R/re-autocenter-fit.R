@@ -369,20 +369,24 @@ re_autocenter_occurrence_weights <- function(bframe, weights, formula,
     reject("has invalid importance ratios, so Pareto-k cannot be checked")
   }
   psis <- tryCatch(
-    # loo may warn at a sample-size-dependent threshold below 0.7. This
-    # workflow checks its own fixed threshold and reports an actionable error.
+    # Use the autocenter threshold instead of loo's stricter warning threshold.
     suppressWarnings(loo::psis(log_ratios, r_eff = 1)),
     error = function(error) {
       reject("could not compute Pareto-k: ", conditionMessage(error))
     }
   )
   pareto_k <- as.numeric(loo::pareto_k_values(psis))
-  if (length(pareto_k) != 1L || !is.finite(pareto_k)) {
-    reject("did not yield a finite Pareto-k diagnostic")
+  if (length(pareto_k) != 1L) {
+    reject("did not yield a single Pareto-k diagnostic")
   }
-  if (pareto_k >= 0.7) {
-    reject("has Pareto-k = ", format(pareto_k, digits = 4),
-           "; estimating centering weights requires Pareto-k < 0.7")
+  if (!is.finite(pareto_k) || pareto_k >= 1) {
+    warning2(
+      "The automatic-centering Pathfinder precursor has Pareto-k = ",
+      format(pareto_k, digits = 4), "; centering weights may be unreliable. ",
+      "Consider rerunning with ",
+      "center_control = autocenter_control(method = \"hmc\") ",
+      "to estimate centering weights from a centered HMC precursor."
+    )
   }
   psis_ess <- as.numeric(loo::psis_n_eff_values(psis))
   weights <- as.numeric(stats::weights(psis, normalize = TRUE, log = FALSE))
@@ -443,16 +447,14 @@ run_re_autocenter_pilot <- function(model, sdata, specs, control, backend,
     pilot_chains <- .validate_re_autocenter_integer(
       num_paths, "pilot_args$num_paths"
     )
-    # Candidate generated quantities can be comparatively expensive.  A few
-    # hundred approximate draws are ample for the default median aggregation.
-    # Use separate controls for one path and PSIS-combined paths;
-    # interpret a user-supplied `draws` value for both unless they explicitly
-    # distinguish `single_path_draws`.
+    # A user-supplied draws count also sets the per-path default unless
+    # single_path_draws is supplied explicitly.
     pilot_args$draws <- .validate_re_autocenter_integer(
-      pilot_args$draws %||% 200L, "pilot_args$draws"
+      pilot_args$draws %||% 1000L, "pilot_args$draws"
     )
     pilot_args$single_path_draws <-
       pilot_args$single_path_draws %||% pilot_args$draws
+    pilot_args$max_lbfgs_iters <- pilot_args$max_lbfgs_iters %||% 2000L
   } else {
     if ("num_paths" %in% names(pilot_args)) {
       stop2("Autocenter HMC 'pilot_args' cannot contain 'num_paths'.")
@@ -537,8 +539,9 @@ run_re_autocenter_pilot <- function(model, sdata, specs, control, backend,
   if (identical(control$method, "pathfinder")) {
     c(args) <- list(
       num_paths = pilot_chains,
-      show_messages = silent < 2,
-      show_exceptions = silent == 0
+      refresh = 0L,
+      show_messages = FALSE,
+      show_exceptions = FALSE
     )
     if (threaded) {
       args$num_threads <- threads$threads

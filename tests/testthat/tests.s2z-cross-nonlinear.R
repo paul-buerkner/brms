@@ -58,7 +58,7 @@ test_that("a correlated S2Z ID spans nonlinear predictors", {
     "H_s2z_1[2, 2] = 1.0;",
     "H_s2z_1[3, 3] = 1.0;",
     "r_s2z_1 = r_s2z_1 * L_Sigma_s2z_1';",
-    "L_mean_s2z_1 = cholesky_decompose(add_diag(",
+    "L_mean_s2z_1 = cholesky_decompose_brms(add_diag(",
     "tcrossprod(L_Sigma_s2z_1) / N_1,",
     "1.0 ./ prior_prec_s2z_1",
     "z_mean_s2z[1] = z_theta_s2z_ult[1];",

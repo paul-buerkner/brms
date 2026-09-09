@@ -15,8 +15,11 @@ the model, so later new-data calls do not depend on the original R object.
 Equivalent fixed and varying contrast bases are mapped exactly. Student-t
 effects use the exact conditional scale-mixture chart. `center = "auto"`
 chooses fixed, level- and coefficient-specific fractions in a two-stage
-workflow. CmdStanR Pathfinder uses fully non-centered coordinates and requires
-a finite Pareto-k below 0.7. Alternatively, `autocenter_control(method = "hmc")`
+workflow. CmdStanR Pathfinder uses fully non-centered coordinates and warns
+if Pareto-k is at least 1 or non-finite, suggesting a centered HMC precursor.
+Its defaults are 1000 draws per path, 1000 resampled
+draws, and up to 2000 L-BFGS iterations per path.
+Alternatively, `autocenter_control(method = "hmc")`
 requests a separate short HMC precursor in fully centered coordinates.
 Candidate fractions are evaluated only in generated quantities, aggregated
 across precursor draws (median by default, after PSIS resampling for Pathfinder), and

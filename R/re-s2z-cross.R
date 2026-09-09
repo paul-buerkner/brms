@@ -221,7 +221,7 @@ stan_re_s2z_cross_fisher_info <- function(id, r, bframe, threads) {
     "rep_matrix(0.0, nresp, M_{id});\n",
     "        matrix[nresp, M_{id}] white_design_fisher_s2z;\n",
     "{assignments}",
-    "        white_design_fisher_s2z = mdivide_left_tri_low(\n",
+    "        white_design_fisher_s2z = mdivide_left_tri_low_brms(\n",
     "          L_residual_fisher_s2z, design_fisher_s2z\n",
     "        );\n",
     "        info_fisher_s2z[{first$group}[n]] += ",
@@ -579,7 +579,7 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
 
   if (mean_noncenter) {
     str_add(out$tpar_comp) <- glue(
-      "  L_mean_s2z_{id} = cholesky_decompose(add_diag(\n",
+      "  L_mean_s2z_{id} = cholesky_decompose_brms(add_diag(\n",
       "    tcrossprod(L_Sigma_s2z_{id}) / N_{id}, ",
       "1.0 ./ prior_prec_s2z_{id}\n",
       "  ));\n",
@@ -638,8 +638,8 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
     ";\n",
     "    h_s2z = prior_factor_s2z' * prior_difference_s2z + ",
     "h_group_s2z_{id};\n",
-    "    L_P_s2z_{id} = cholesky_decompose(P_s2z_{id});\n",
-    "    whitened_h_s2z = mdivide_left_tri_low(L_P_s2z_{id}, h_s2z);\n",
+    "    L_P_s2z_{id} = cholesky_decompose_brms(P_s2z_{id});\n",
+    "    whitened_h_s2z = mdivide_left_tri_low_brms(L_P_s2z_{id}, h_s2z);\n",
     "    group_quad_s2z_{id} -= dot_self(whitened_h_s2z);\n",
     "  }}\n",
     cglue("  r_s2z_{idp}_{r$cn} = r_s2z_{id}[, {J}];\n")
@@ -761,12 +761,12 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
     "    h_s2z = prior_factor_s2z' * prior_difference_s2z",
     " + h_group_s2z_{id}",
     ";\n",
-    "    forward_solve_s2z = mdivide_left_tri_low(L_P_s2z_{id}, h_s2z);\n",
-    "    r_mean_s2z = (mdivide_right_tri_low(",
+    "    forward_solve_s2z = mdivide_left_tri_low_brms(L_P_s2z_{id}, h_s2z);\n",
+    "    r_mean_s2z = (mdivide_right_tri_low_brms(",
     "forward_solve_s2z', L_P_s2z_{id}))';\n",
     "    for (k in 1:M_{id}) z_mean_s2z[k] = std_normal_rng();\n",
     "    mean_r_s2z_{id} = L_Sigma_s2z_{id} * (r_mean_s2z + ",
-    "(mdivide_right_tri_low(z_mean_s2z', L_P_s2z_{id}))');\n",
+    "(mdivide_right_tri_low_brms(z_mean_s2z', L_P_s2z_{id}))');\n",
     "  }}\n"
   )
   for (a in seq_along(cross$infos)) {

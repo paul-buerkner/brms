@@ -2402,7 +2402,7 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   expect_match2(
     gaussian_code,
     paste0(
-      "whitened_h_s2z = mdivide_left_tri_low(",
+      "whitened_h_s2z = mdivide_left_tri_low_brms(",
       "L_P_s2z_1, h_s2z);"
     )
   )
@@ -2436,7 +2436,7 @@ test_that("generated Stan code contains the S2Z algebra and measure", {
   for (code in list(gaussian_code, student_code)) {
     for (term in c(
       "Q_Sigma_s2z_1", "L_inv_s2z", "mdivide_left_spd(",
-      "mdivide_left_tri_low(L_Sigma_s2z_1, diag_matrix",
+      "mdivide_left_tri_low_brms(L_Sigma_s2z_1, diag_matrix",
       "qhat_s2z_1"
     )) {
       expect_false(grepl(term, code, fixed = TRUE), info = term)
