@@ -594,8 +594,9 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
     }
     # only prepare predictions of effects specified in the new formula
     cols_match <- c("coef", "resp", "dpar", "nlpar")
-    used_rpars <- which(find_rows(old_reframe_g, ls = reframe_g[cols_match]))
-    used_rpars <- outer(seq_len(nlevels), (used_rpars - 1) * nlevels, "+")
+    used_ranef <- which(find_rows(old_reframe_g, ls = reframe_g[cols_match]))
+    used_old_reframe_g <- old_reframe_g[used_ranef, , drop = FALSE]
+    used_rpars <- outer(seq_len(nlevels), (used_ranef - 1) * nlevels, "+")
     used_rpars <- as.vector(used_rpars)
     rdraws <- rdraws[, used_rpars, drop = FALSE]
     rdraws <- column_to_row_major_order(rdraws, nranef)
@@ -615,7 +616,8 @@ prepare_predictions_re_global <- function(bframe, draws, sdata, old_reframe, res
     }
     # generate draws for new levels
     args_new_rdraws <- nlist(
-      reframe = reframe_g, gf, used_levels = used_levels_g,
+      # A reduced re_formula need not repeat the fitted distribution options.
+      reframe = used_old_reframe_g, gf, used_levels = used_levels_g,
       old_levels = old_levels_g, rdraws = rdraws, draws, sample_new_levels
     )
     new_rdraws <- do_call(get_new_rdraws, args_new_rdraws)
