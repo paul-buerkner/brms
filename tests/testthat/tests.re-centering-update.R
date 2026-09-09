@@ -63,13 +63,20 @@ test_that("new centering symbols still support later formula subtraction", {
   removed <- update(added, ~ . - (1 | gr(g, center = rho_new)))
   expect_equal(removed$formula, old$formula)
 
-  same_binding <- environment(added$formula)
-  repeated <- as.formula(
-    "~ . + (1 | gr(h, center = rho_new))", env = same_binding
-  )
+  repeated <- ~ . + (1 | gr(h, center = rho_new))
   added_again <- update(added, repeated)
+  expect_equal(standata(added_again, re_center_update_dat)$rho_s2z_2[, 1],
+               c(0.2, 0.3, 0.4))
   removed_again <- update(added_again, ~ . - (1 | gr(h, center = rho_new)))
   expect_equal(removed_again$formula, added$formula, ignore_attr = TRUE)
+
+  shifted <- local({
+    shift <- 0.1
+    ~ . + (1 | gr(h, center = rho_new + shift))
+  })
+  shifted <- update(added, shifted)
+  expect_equal(standata(shifted, re_center_update_dat)$rho_s2z_2[, 1],
+               c(0.3, 0.4, 0.5))
 })
 
 test_that("centering expressions use incoming environments in formula updates", {

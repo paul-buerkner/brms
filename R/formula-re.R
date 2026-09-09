@@ -812,7 +812,23 @@ materialize_re_center <- function(x, source = NULL) {
         if (!is.symbol(center_expr) && !is.call(center_expr)) {
           return(expr)
         }
-        value <- eval(center_expr, envir = source_env)
+        eval_env <- source_env
+        if (!is.null(source)) {
+          # Stored values remain available when an update reuses them without
+          # supplying a new binding; incoming bindings take precedence.
+          stored <- all.vars(center_expr, functions = TRUE)
+          stored <- stored[vapply(stored, function(key) {
+            !exists(key, envir = source_env, inherits = TRUE) &&
+              exists(key, envir = frozen_env, inherits = TRUE)
+          }, logical(1))]
+          if (length(stored)) {
+            eval_env <- list2env(
+              mget(stored, envir = frozen_env, inherits = TRUE),
+              parent = source_env
+            )
+          }
+        }
+        value <- eval(center_expr, envir = eval_env)
         keep_symbol <- is.symbol(center_expr)
         if (keep_symbol && !is.null(source)) {
           key <- as.character(center_expr)
