@@ -320,8 +320,11 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         inactive_prior$pll_args <- NULL
         str_add_list(out) <- inactive_prior
       } else {
+        inactive_priors <- stan_re_s2z_inactive_priors(
+          prior, coef = inactive_names, fixef = fixef, px = px
+        )
         inactive_prior <- stan_prior(
-          prior, class = "b", coef = inactive_names,
+          inactive_priors, class = "b", coef = inactive_names,
           type = glue("vector[{length(inactive_s2z)}]"),
           suffix = glue("_s2z_inactive{p}"), px = px,
           comment = "S2Z-inactive regression coefficients",
@@ -564,6 +567,80 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
     str_add(out$eta) <- eta_fe
   }
   out
+}
+
+# Keep global scalar-distribution priors on the original coefficient indices
+# when the S2Z split shortens the fixed-only vector. Active-coordinate prior
+# validation is unchanged; explicit coefficient priors retain their arguments.
+stan_re_s2z_inactive_priors <- function(prior, coef, fixef, px) {
+  local_prior <- subset2(
+    prior, class = "b", coef = c(coef, ""), group = "", ls = px
+  )
+  base <- stan_base_prior(local_prior)
+  name <- trimws(sub("\\(.*$", "", trimws(base)))
+  if (!name %in% c("normal", "student_t", "cauchy", "logistic")) {
+    return(prior)
+  }
+  # Split only top-level commas, retaining nested Stan expressions verbatim.
+  args <- sub("^[^(]*\\(", "", base)
+  args <- sub("\\)[[:space:]]*$", "", args)
+  chars <- strsplit(args, "", fixed = TRUE)[[1L]]
+  depth <- 0L
+  quoted <- escaped <- FALSE
+  commas <- integer()
+  for (i in seq_along(chars)) {
+    ch <- chars[i]
+    if (quoted) {
+      if (escaped) {
+        escaped <- FALSE
+      } else if (ch == "\\") {
+        escaped <- TRUE
+      } else if (ch == '"') {
+        quoted <- FALSE
+      }
+    } else if (ch == '"') {
+      quoted <- TRUE
+    } else if (ch %in% c("(", "[", "{")) {
+      depth <- depth + 1L
+    } else if (ch %in% c(")", "]", "}")) {
+      depth <- depth - 1L
+    } else if (ch == "," && depth == 0L) {
+      commas <- c(commas, i)
+    }
+  }
+  args <- trimws(substring(
+    args, c(1L, commas + 1L), c(commas - 1L, nchar(args))
+  ))
+  symbolic <- !is.finite(suppressWarnings(as.numeric(args)))
+  if (!any(symbolic)) {
+    return(prior)
+  }
+  indices <- match(coef, fixef)
+  stopifnot(!anyNA(indices))
+  base_tag <- stan_base_prior(local_prior, col = "tag")
+  for (i in seq_along(coef)) {
+    rows <- which(find_rows(prior, class = "b", coef = coef[i],
+                            group = "", ls = px))
+    if (any(nzchar(prior$prior[rows]))) {
+      next
+    }
+    indexed <- args
+    indexed[symbolic] <- glue(
+      "s2z_prior_coordinate_brms({args[symbolic]}, ",
+      "{indices[i]}, {length(fixef)})"
+    )
+    value <- paste0(name, "(", paste(indexed, collapse = ", "), ")")
+    if (length(rows)) {
+      prior$prior[rows] <- value
+      prior$tag[rows] <- base_tag
+    } else {
+      prior <- rbind(prior, set_prior(
+        value, class = "b", coef = coef[i], resp = px$resp,
+        dpar = px$dpar, nlpar = px$nlpar, tag = base_tag
+      ))
+    }
+  }
+  prior
 }
 
 # Stan code for group-level effects

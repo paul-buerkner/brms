@@ -486,6 +486,45 @@ test_that("additional S2Z gates reject in the intended phase with context", {
   expect_match(msg, "drop_unused_levels = TRUE", fixed = TRUE)
 })
 
+test_that("fixed-only global prior vectors retain original slope indices", {
+  bprior <- prior(normal(prior_mu, prior_scale), class = b) +
+    prior(normal(0, 1), class = b, coef = x)
+  vars <- stanvar(c(0.1, 0.2, 0.3), "prior_mu") +
+    stanvar(c(1.1, 1.2, 1.3), "prior_scale")
+  form <- y ~ x + z + w + (0 + x | gr(g, s2z = TRUE))
+  code <- stancode(form, s2z_cap_dat, prior = bprior, stanvars = vars)
+  for (i in 1:2) {
+    expect_match2(code, paste0(
+      "normal_lpdf(fixed_s2z[", i, "] | ",
+      "s2z_prior_coordinate_brms(prior_mu, ", i + 1L, ", 3), ",
+      "s2z_prior_coordinate_brms(prior_scale, ", i + 1L, ", 3))"
+    ))
+  }
+  expect_false(grepl("normal_lpdf(fixed_s2z |", code, fixed = TRUE))
+
+  override <- stancode(
+    form, s2z_cap_dat, prior = bprior + prior(normal(-2, 4), class = b, coef = z),
+    stanvars = vars, normalize = FALSE
+  )
+  expect_match2(override, "normal_lupdf(fixed_s2z[1] | -2, 4)")
+  expect_match2(override, "s2z_prior_coordinate_brms(prior_mu, 3, 3)")
+  expect_false(grepl("s2z_prior_coordinate_brms(prior_mu, 2, 3)",
+                     override, fixed = TRUE))
+
+  # Scalar global priors retain their existing vectorized target.
+  scalar <- stancode(
+    form, s2z_cap_dat,
+    prior = prior(normal(2, 3), class = b) +
+      prior(normal(0, 1), class = b, coef = x)
+  )
+  expect_match2(scalar, "normal_lpdf(fixed_s2z | 2, 3)")
+  # Active-coordinate arguments still obey the foundation's numeric-only gate.
+  expect_error(stancode(
+    form, s2z_cap_dat, prior = prior(normal(prior_mu, prior_scale), class = b),
+    stanvars = vars
+  ), "numeric constants")
+})
+
 test_that("foundation code contains no later S2Z APIs or state", {
   public_arguments <- names(formals(gr))
   expect_false("center" %in% public_arguments)

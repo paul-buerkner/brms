@@ -11,3 +11,42 @@
     }
     return z;
   }
+
+  real s2z_prior_coordinate_brms(real x, int index, int expected_size) {
+    return x;
+  }
+
+  real s2z_prior_coordinate_brms(vector x, int index, int expected_size) {
+    if (num_elements(x) != expected_size) {
+      reject("An S2Z vector-valued population-prior argument must have one ",
+             "entry per population-level coefficient.");
+    }
+    return x[index];
+  }
+
+  real s2z_prior_coordinate_brms(row_vector x, int index,
+                                 int expected_size) {
+    if (num_elements(x) != expected_size) {
+      reject("An S2Z vector-valued population-prior argument must have one ",
+             "entry per population-level coefficient.");
+    }
+    return x[index];
+  }
+
+  real s2z_prior_coordinate_brms(array[] real x, int index,
+                                 int expected_size) {
+    if (num_elements(x) != expected_size) {
+      reject("An S2Z vector-valued population-prior argument must have one ",
+             "entry per population-level coefficient.");
+    }
+    return x[index];
+  }
+
+  real s2z_prior_coordinate_brms(array[] int x, int index,
+                                 int expected_size) {
+    if (num_elements(x) != expected_size) {
+      reject("An S2Z vector-valued population-prior argument must have one ",
+             "entry per population-level coefficient.");
+    }
+    return x[index];
+  }
