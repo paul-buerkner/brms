@@ -35,7 +35,12 @@ For multicategory shorthand that expands one source group term into several
 mean predictors, the predictor-specific proposals are combined elementwise by
 the requested aggregation rule and shared as one fixed matrix.
 The proposal combines precursor draws of the current group covariance with
-the existing expected-information catalog. The information calculation uses
+the existing expected-information catalog. Because every partial chart
+interpolates the group scale linearly, the stored fraction is the
+chart-consistent transform `rho / (rho + (1 - rho) * s)` of the surrogate
+reliability `rho`, where `s` is the level's chart scale; the two agree only
+at unit scale. Student-t mixing scales and realized varying scales enter the
+surrogate covariance of each level. The information calculation uses
 the design and missingness but does not inspect observed response values
 directly; the resulting weights can nevertheless be data-informed through the
 precursor draws. Fixed fractions also support ordinal, distributional,

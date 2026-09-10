@@ -305,6 +305,40 @@ test_that("ordinary independent and Student charts retain conditional scales", {
     "vector[M_1] prior_var_fisher_s2z = rows_dot_self(L_center_re_1);"
   )
   expect_match2(student_fisher, "L_group_center_re *= dfm_1[j];")
+  student_fisher_gq <- .re_center_stan_between(
+    student_fisher, "generated quantities {", "\n}"
+  )
+  expect_match2(
+    student_fisher_gq,
+    "quad_form(gram_fisher_s2z_1[j], L_center_re_1)"
+  )
+  expect_match2(
+    student_fisher_gq,
+    "square(dfm_1[j]) * obs_prec_fisher_s2z * quad_form("
+  )
+  expect_match2(
+    student_fisher_gq,
+    paste0(
+      "rho_center_candidate_1[j, k] = rho_center_candidate_1[j, k] / ",
+      "(rho_center_candidate_1[j, k] + ",
+      "(1.0 - rho_center_candidate_1[j, k]) * ",
+      "(L_center_re_1[k, k] * dfm_1[j]));"
+    )
+  )
+  student_fisher_independent_gq <- .re_center_stan_between(
+    student_fisher_independent, "generated quantities {", "\n}"
+  )
+  expect_match2(
+    student_fisher_independent_gq,
+    paste0(
+      "square(dfm_1[j]) * obs_prec_fisher_s2z * ",
+      "quad_form_diag(gram_fisher_s2z_1[j], sd_1)"
+    )
+  )
+  expect_match2(
+    student_fisher_independent_gq,
+    "(1.0 - rho_center_candidate_1[j, k]) * (sd_1[k] * dfm_1[j]));"
+  )
   expect_match2(
     student_fisher_independent,
     "rho_group_center_re = rho_s2z_1[, 1];"

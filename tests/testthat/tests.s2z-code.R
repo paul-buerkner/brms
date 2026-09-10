@@ -260,6 +260,14 @@ test_that("scalar auto S2Z proposes rho only in generated quantities", {
   expect_match2(
     gq,
     paste0(
+      "rho_center_candidate_1[j, 1] = rho_center_candidate_1[j, 1] / ",
+      "(rho_center_candidate_1[j, 1] + ",
+      "(1.0 - rho_center_candidate_1[j, 1]) * (sd_1[1]));"
+    )
+  )
+  expect_match2(
+    gq,
+    paste0(
       "restricted_relative_post_var_fisher_s2z = ",
       "relative_post_var_fisher_s2z[j] - ",
       "square(relative_post_var_fisher_s2z[j]) / ",
@@ -380,7 +388,19 @@ test_that("multivariate auto S2Z keeps target fixed and proposes in GQ", {
     varying_gq,
     paste0(
       "quad_form_diag(gram_fisher_s2z_1[j], ",
-      "reference_sd_s2z_1)"
+      "sd_level_s2z_1[j]')"
+    )
+  )
+  expect_false(grepl(
+    "quad_form_diag(gram_fisher_s2z_1[j], reference_sd_s2z_1)",
+    varying_gq, fixed = TRUE
+  ))
+  expect_match2(
+    varying_gq,
+    paste0(
+      "rho_center_candidate_1[j, k] = rho_center_candidate_1[j, k] / ",
+      "(rho_center_candidate_1[j, k] + ",
+      "(1.0 - rho_center_candidate_1[j, k]) * (reference_sd_s2z_1[k]));"
     )
   )
   expect_false(grepl(
@@ -3488,7 +3508,12 @@ test_that("cross-response S2Z composes charts, scales, Student, and cov", {
     "matrix<lower=0,upper=1>[N_1, M_1] rho_s2z_1;",
     "info_fisher_s2z[J_1_phen[n]] += obs_prec_fisher_s2z",
     "info_fisher_s2z[J_1_cofactor[n]] += obs_prec_fisher_s2z",
-    "row_var_fisher_s2z_1[j] * quad_form(info_fisher_s2z[j]",
+    paste0(
+      "row_var_fisher_s2z_1[j] * square(group_scale_s2z_1[j]) * ",
+      "quad_form(info_fisher_s2z[j], ",
+      "diag_pre_multiply(sd_level_s2z_1[j]', L_1))"
+    ),
+    "(1.0 - rho_center_candidate_1[j, k]) * (L_Sigma_s2z_1[k, k]));",
     "group_scale_s2z_1 = dfm_1;",
     "+ log_det_partial_s2z_1",
     "- M_1 * sum(log(diagonal(Lcov_1)))"
@@ -3576,10 +3601,29 @@ test_that("cross-response S2Z composes charts, scales, Student, and cov", {
   for (fallback_code in fisher_fallback) {
     expect_false(grepl("modal_fisher_s2z", fallback_code, fixed = TRUE))
     expect_false(grepl("Ecov_s2z_1", fallback_code, fixed = TRUE))
-    expect_match2(fallback_code, "row_var_fisher_s2z_1[j] * quad_form(")
+    expect_match2(fallback_code, "row_var_fisher_s2z_1[j] * ")
+    expect_match2(fallback_code, "* quad_form(info_fisher_s2z[j], ")
     expect_match2(fallback_code, "rho_center_candidate_1[j, k]")
     expect_match2(fallback_code, "+ log_det_partial_s2z_1")
   }
+  expect_match2(
+    fisher_fallback$independent,
+    "row_var_fisher_s2z_1[j] * quad_form(info_fisher_s2z[j], L_Sigma_s2z_1)"
+  )
+  expect_match2(
+    fisher_fallback$varying,
+    paste0(
+      "row_var_fisher_s2z_1[j] * quad_form(info_fisher_s2z[j], ",
+      "diag_pre_multiply(sd_level_s2z_1[j]', L_1))"
+    )
+  )
+  expect_match2(
+    fisher_fallback$student,
+    paste0(
+      "row_var_fisher_s2z_1[j] * square(group_scale_s2z_1[j]) * ",
+      "quad_form(info_fisher_s2z[j], L_Sigma_s2z_1)"
+    )
+  )
   independent_data <- standata(
     bf(mvbind(phen, cofactor) ~ 1 + (1 | q | gr(
       phylo, s2z = TRUE, center = "auto", cov = Omega

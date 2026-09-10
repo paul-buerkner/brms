@@ -246,7 +246,17 @@ This is a new statistical model rather than only a change of coordinates.}
   of levels. This propagates information between levels through the exact
   constraint at cost linear in \eqn{G}. Ordinary effects and S2Z structures
   with Student-t effects, varying scales, or a fixed \code{cov} matrix retain
-  the local fraction \eqn{1-(V_j)_{kk}/\Sigma_{kk}}.
+  the local fraction \eqn{1-(V_j)_{kk}/\Sigma_{kk}}, where \eqn{\Sigma} is
+  the conditional covariance of that level: the Student-t mixing scale and
+  the realized varying scale of the level enter the surrogate as they enter
+  the exact target. The stored fraction is not this reliability \eqn{\rho}
+  itself. Every partial chart interpolates the scale linearly, with
+  denominator \eqn{1-\rho+\rho s}, where \eqn{s} is the chart's scale for
+  that level and coefficient. Under this chart, the fraction that decouples
+  the sampled coordinate from both the population mean and the group scale
+  is \eqn{\rho^*=\rho/\{\rho+(1-\rho)s\}}, which equals \eqn{\rho} only at
+  \eqn{s=1}. The precursor evaluates \eqn{\rho^*} with each draw's scale
+  and aggregates that value.
 
   The information calculation uses design and missingness together with
   precursor draws of fitted group effects, scale, covariance, likelihood,
@@ -288,9 +298,9 @@ This is a new statistical model rather than only a change of coordinates.}
   reference, so sampled population-level loadings and conditionally
   independent wide responses contribute draw-specific proposals without
   using score contrasts.
-  Varying-scale and Student-t group-effect models use the Gaussian reference
-  covariance for proposal reliability; their exact physical targets still use
-  every realized scale and Student-t mixing variable.
+  Varying-scale and Student-t group-effect models use each precursor draw's
+  realized level scales and Student-t mixing variables in the proposal
+  surrogate, matching their exact physical targets.
   All coefficients sharing an \code{id} must use automatic centering together.
   For correlated blocks, the chart can depend on coefficient order, although
   the posterior remains unchanged.

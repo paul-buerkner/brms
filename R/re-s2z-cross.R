@@ -537,10 +537,15 @@ validate_re_s2z_cross_id <- function(bframe, prior, id, stanvars = NULL) {
     "  L_Sigma_s2z_{id} = diag_pre_multiply({scale}, L_{id});\n"
   )
   if (s2z_fisher) {
+    fisher_args <- stan_re_s2z_fisher_scale_args(
+      id, M = M, is_cor = TRUE, varying = varying, reference = scale
+    )
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      L = glue("L_Sigma_s2z_{id}"),
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL
+      L = fisher_args$L, chart_scale = fisher_args$chart_scale,
+      row_var = stan_re_s2z_fisher_row_var(
+        id, has_cov = has_cov, is_student = is_student
+      )
     )
   }
 

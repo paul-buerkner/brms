@@ -1322,9 +1322,16 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
       "  L_center_re_{id} = diag_pre_multiply(sd_{id}, L_{id});\n"
     )
     if (!is.null(fisher_info)) {
+      # The chart conditions on the Student-t mixing scale of each level, so
+      # both the surrogate covariance and the chart scale include dfm[j].
       str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
         id, r = r, fisher_info = fisher_info,
-        L = glue("L_center_re_{id}")
+        L = glue("L_center_re_{id}"),
+        row_var = if (is_student) glue("square(dfm{g}[j])") else NULL,
+        chart_scale = glue(
+          "L_center_re_{id}[k, k]",
+          str_if(is_student, glue(" * dfm{g}[j]"))
+        )
       )
     }
     if (identical(mode, "centered")) {
@@ -1428,10 +1435,16 @@ stan_re <- function(bframe, prior, normalize, ..., stanvars = NULL) {
       "  // actual group-level effects\n"
     )
     if (!is.null(fisher_info)) {
+      chart_index <- if (M == 1L) "1" else "k"
       str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
         id, r = r, fisher_info = fisher_info,
         scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
-        diag_scale = if (M > 1L) glue("sd_{id}") else NULL
+        diag_scale = if (M > 1L) glue("sd_{id}") else NULL,
+        row_var = if (is_student) glue("square(dfm{g}[j])") else NULL,
+        chart_scale = glue(
+          "sd_{id}[{chart_index}]",
+          str_if(is_student, glue(" * dfm{g}[j]"))
+        )
       )
     }
     if (identical(mode, "centered")) {
@@ -3228,13 +3241,14 @@ stan_re_s2z_fisher_def <- function(out, id) {
 stan_re_s2z_fisher_gq_comp <- function(id, r, fisher_info, L = NULL,
                                        scale = NULL, row_var = NULL,
                                        diag_scale = NULL,
+                                       chart_scale = NULL,
                                        precompute = "") {
   rho <- glue("rho_center_candidate_{id}")
   mean_rho <- glue("mean_rho_center_candidate_{id}")
   proposal <- stan_re_s2z_fisher_comp(
     id, r = r, fisher_info = fisher_info, L = L, scale = scale,
     row_var = row_var, diag_scale = diag_scale,
-    rho = rho, mean_rho = mean_rho
+    chart_scale = chart_scale, rho = rho, mean_rho = mean_rho
   )
   glue(
     "  if (compute_rho_center_candidate_{id}) {{\n",
@@ -3363,14 +3377,87 @@ stan_re_s2z_fisher_tdata <- function(out, id, r, fisher_info) {
   out
 }
 
+# Surrogate and chart scale inputs for a conventional S2Z proposal. Every
+# conventional S2Z chart interpolates with the reference scale (sd, or the
+# geometric-mean reference_sd of a varying-scale block), so the chart scale is
+# always the reference. The surrogate covariance instead uses the realized
+# level scale when scales vary, matching the exact conditional target.
+stan_re_s2z_fisher_scale_args <- function(id, M, is_cor, varying = FALSE,
+                                          reference = glue("sd_{id}")) {
+  realized <- glue("sd_level_s2z_{id}")
+  list(
+    L = if (is_cor) {
+      if (varying) {
+        glue("diag_pre_multiply({realized}[j]', L_{id})")
+      } else {
+        glue("L_Sigma_s2z_{id}")
+      }
+    },
+    scale = if (M == 1L) {
+      if (varying) glue("{realized}[j, 1]") else glue("{reference}[1]")
+    },
+    diag_scale = if (!is_cor && M > 1L) {
+      if (varying) glue("{realized}[j]'") else reference
+    },
+    chart_scale = if (is_cor) {
+      glue("L_Sigma_s2z_{id}[k, k]")
+    } else if (M == 1L) {
+      glue("{reference}[1]")
+    } else {
+      glue("{reference}[k]")
+    }
+  )
+}
+
+# Level-specific prior variance factor for the proposal surrogate. Student-t
+# effects are conditionally Gaussian with covariance dfm_j^2 Sigma, and a
+# fixed grouping covariance contributes its centered marginal variance. Both
+# multiply the reference covariance used to build the surrogate at level j.
+stan_re_s2z_fisher_row_var <- function(id, has_cov = FALSE,
+                                       is_student = FALSE,
+                                       group_scale = glue(
+                                         "group_scale_s2z_{id}[j]"
+                                       )) {
+  factors <- character()
+  if (isTRUE(has_cov)) {
+    factors <- c(factors, glue("row_var_fisher_s2z_{id}[j]"))
+  }
+  if (isTRUE(is_student)) {
+    factors <- c(factors, glue("square({group_scale})"))
+  }
+  if (!length(factors)) {
+    return(NULL)
+  }
+  paste(factors, collapse = " * ")
+}
+
+# Map a surrogate reliability to the fraction that decouples the sampled
+# coordinate under the partial chart 1 - rho + rho * s. For the linear scale
+# interpolation used by every partial chart, the location and scale
+# decouplings both hold at odds(rho*) = odds(rho) / s, where s is the exact
+# per-level, per-coefficient scale in that chart's denominator. The two agree
+# only at s = 1, so the raw reliability is never stored directly.
+stan_re_s2z_fisher_chart_adjust <- function(rho_element, chart_scale,
+                                            indent = "      ") {
+  glue(
+    "{indent}{rho_element} = {rho_element} / ({rho_element} + ",
+    "(1.0 - {rho_element}) * ({chart_scale}));\n"
+  )
+}
+
 # Compute local Gaussian variance contractions without an eigendecomposition
 # or explicit inverse. For J_j = sum_n w_F z_n z_n' and Sigma = L L', the
 # posterior covariance is V_j = L (I + L' J_j L)^-1 L'. For iid Gaussian S2Z
 # blocks, condition these covariances on sum_j u_j = 0 before taking marginal
 # contractions; other supported structures retain their local contraction.
+# The scale, diag_scale, and L inputs describe the surrogate prior covariance
+# at level j and may reference the loop index j (realized varying scales).
+# chart_scale is the Stan expression for the scale in the fixed chart's
+# denominator for level j and coefficient k; it defaults to the surrogate
+# scale and must be supplied whenever the chart uses a different scale.
 stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
                                     scale = NULL, row_var = NULL,
-                                    diag_scale = NULL,
+                                    diag_scale = NULL, chart_scale = NULL,
                                     rho = glue("rho_s2z_{id}"),
                                     mean_rho = glue("mean_rho_s2z_{id}")) {
   fixed_design <- isTRUE(fisher_info$fixed_design)
@@ -3380,6 +3467,16 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
   row_var_j <- row_var %||% "1.0"
   constrained_s2z <- all(r$s2z) && all(r$dist == "gaussian") &&
     all(r$scale == "shared") && is.null(row_var)
+  if (is.null(chart_scale)) {
+    chart_scale <- if (M == 1L) {
+      scale
+    } else if (!is.null(diag_scale)) {
+      glue("{diag_scale}[k]")
+    } else {
+      glue("{L}[k, k]")
+    }
+  }
+  chart_scale <- as_one_character(chart_scale)
 
   # For one coefficient, posterior variance contraction is the scalar
   # reliability I * tau^2 / (1 + I * tau^2). Ordinary designs use the
@@ -3454,6 +3551,9 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
         "      {rho}[j, 1] = fmin(1.0, fmax(0.0, 1.0 - ",
         "restricted_relative_post_var_fisher_s2z / ",
         "restricted_prior_fraction_fisher_s2z));\n",
+        stan_re_s2z_fisher_chart_adjust(
+          glue("{rho}[j, 1]"), chart_scale
+        ),
         "    }}\n",
         "    {mean_rho}[1] = mean({rho}[, 1]);\n",
         "  }}\n"
@@ -3468,6 +3568,9 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
         "{information_j};\n",
         "      {rho}[j, 1] = 1.0 - ",
         "inv(1.0 + scaled_info_fisher_s2z);\n",
+        stan_re_s2z_fisher_chart_adjust(
+          glue("{rho}[j, 1]"), chart_scale
+        ),
         "    }}\n",
         "    {mean_rho}[1] = mean({rho}[, 1]);\n",
         "  }}\n"
@@ -3561,11 +3664,15 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
         "({L}) * restricted_white_post_cov_fisher_s2z * ({L})';\n"
       )
     }
+    chart_adjust <- stan_re_s2z_fisher_chart_adjust(
+      glue("{rho}[j, k]"), chart_scale, indent = "        "
+    )
     reliability_comp <- if (diagonal) {
       glue(
         "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
         "          restricted_white_post_cov_fisher_s2z[k, k] / ",
-        "restricted_prior_fraction_fisher_s2z));\n"
+        "restricted_prior_fraction_fisher_s2z));\n",
+        "{chart_adjust}"
       )
     } else {
       glue(
@@ -3574,7 +3681,8 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
         "prior_var_fisher_s2z[k];\n",
         "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
         "          restricted_post_cov_fisher_s2z[k, k] / ",
-        "restricted_prior_var_fisher_s2z));\n"
+        "restricted_prior_var_fisher_s2z));\n",
+        "{chart_adjust}"
       )
     }
     return(glue(
@@ -3662,6 +3770,9 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "white_factor_fisher_s2z);\n"
     )
   }
+  chart_adjust <- stan_re_s2z_fisher_chart_adjust(
+    glue("{rho}[j, k]"), chart_scale, indent = "        "
+  )
   reliability_comp <- if (diagonal) {
     glue(
       "      for (k in 1:M_{id}) {{\n",
@@ -3673,6 +3784,7 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "        // The exact ratio is in [0, 1]; clamp roundoff.\n",
       "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
       "          dot_self(unit_column_fisher_s2z)));\n",
+      "{chart_adjust}",
       "        unit_rhs_fisher_s2z[k] = 0.0;\n",
       "      }}\n"
     )
@@ -3683,20 +3795,26 @@ stan_re_s2z_fisher_comp <- function(id, r, fisher_info, L = NULL,
       "        {rho}[j, k] = fmin(1.0, fmax(0.0, 1.0 -\n",
       "          post_var_fisher_s2z[k] / ",
       "({row_var_j} * prior_var_fisher_s2z[k])));\n",
+      "{chart_adjust}",
       "      }}\n"
     )
   }
 
+  # The surrogate covariance factor may vary by level (realized varying
+  # scales), so its prior variances are formed inside the level loop.
   glue(
     "  {{\n",
     "{info_def}",
-    str_if(
-      !diagonal,
-      glue("    vector[M_{id}] prior_var_fisher_s2z = rows_dot_self({L});\n")
-    ),
     "{initialization}",
     "{accumulation}",
     "    for (j in 1:N_{id}) {{\n",
+    str_if(
+      !diagonal,
+      glue(
+        "      vector[M_{id}] prior_var_fisher_s2z = ",
+        "rows_dot_self({L});\n"
+      )
+    ),
     "      matrix[M_{id}, M_{id}] K_fisher_s2z = {K_j};\n",
     "      matrix[M_{id}, M_{id}] L_post_precision_fisher_s2z;\n",
     "{variance_def}",
@@ -4214,11 +4332,15 @@ stan_re_s2z_prior_target <- function(spec, par, normalize) {
     )
   }
   if (s2z_fisher) {
+    fisher_args <- stan_re_s2z_fisher_scale_args(
+      id, M = M, is_cor = is_cor
+    )
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
-      scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
-      diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
+      L = fisher_args$L, scale = fisher_args$scale,
+      diag_scale = fisher_args$diag_scale,
+      chart_scale = fisher_args$chart_scale,
+      row_var = stan_re_s2z_fisher_row_var(id, is_student = is_student)
     )
   }
   if (is_cor || !s2z_partial) {
@@ -4686,12 +4808,17 @@ stan_re_s2z_H_code <- function(info) {
   }
 
   if (s2z_fisher) {
+    fisher_args <- stan_re_s2z_fisher_scale_args(
+      id, M = M, is_cor = is_cor, varying = varying, reference = scale
+    )
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
-      scale = if (M == 1L) glue("{scale}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
-      diag_scale = if (!is_cor && M > 1L) scale else NULL
+      L = fisher_args$L, scale = fisher_args$scale,
+      diag_scale = fisher_args$diag_scale,
+      chart_scale = fisher_args$chart_scale,
+      row_var = stan_re_s2z_fisher_row_var(
+        id, has_cov = has_cov, is_student = is_student
+      )
     )
   }
 
@@ -5741,18 +5868,18 @@ stan_re_s2z_H_code <- function(info) {
   )
 
   if (s2z_fisher) {
-    L_fisher <- if (is_cor) {
-      glue("diag_pre_multiply(reference_sd_s2z_{id}, L_{id})")
-    } else {
-      NULL
-    }
+    fisher_args <- stan_re_s2z_fisher_scale_args(
+      id, M = M, is_cor = is_cor, varying = TRUE,
+      reference = glue("reference_sd_s2z_{id}")
+    )
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
-      id, r = r, fisher_info = fisher_info, L = L_fisher,
-      scale = if (M == 1L) glue("reference_sd_s2z_{id}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
-      diag_scale = if (!is_cor && M > 1L) {
-        glue("reference_sd_s2z_{id}")
-      }
+      id, r = r, fisher_info = fisher_info,
+      L = fisher_args$L, scale = fisher_args$scale,
+      diag_scale = fisher_args$diag_scale,
+      chart_scale = fisher_args$chart_scale,
+      row_var = stan_re_s2z_fisher_row_var(
+        id, has_cov = has_cov, is_student = is_student
+      )
     )
   }
 
@@ -6654,12 +6781,17 @@ stan_re_s2z_H_code <- function(info) {
     )
   }
   if (s2z_fisher) {
+    fisher_args <- stan_re_s2z_fisher_scale_args(
+      id, M = M, is_cor = is_cor
+    )
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      L = if (is_cor) glue("L_Sigma_s2z_{id}") else NULL,
-      scale = if (M == 1L) glue("sd_{id}[1]") else NULL,
-      row_var = if (has_cov) glue("row_var_fisher_s2z_{id}[j]") else NULL,
-      diag_scale = if (!is_cor && M > 1L) glue("sd_{id}") else NULL
+      L = fisher_args$L, scale = fisher_args$scale,
+      diag_scale = fisher_args$diag_scale,
+      chart_scale = fisher_args$chart_scale,
+      row_var = stan_re_s2z_fisher_row_var(
+        id, has_cov = has_cov, is_student = is_student
+      )
     )
   }
   if (is_cor || !s2z_partial) {
@@ -7032,7 +7164,8 @@ stan_re_s2z_H_code <- function(info) {
   if (s2z_fisher) {
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      diag_scale = glue("sd_{id}")
+      diag_scale = glue("sd_{id}"),
+      row_var = stan_re_s2z_fisher_row_var(id, is_student = is_student)
     )
   }
   if (s2z_partial) {
@@ -7402,7 +7535,8 @@ stan_re_s2z_H_code <- function(info) {
   if (s2z_fisher) {
     str_add(out$gen_comp) <- stan_re_s2z_fisher_gq_comp(
       id, r = r, fisher_info = fisher_info,
-      scale = glue("sd_{id}[1]")
+      scale = glue("sd_{id}[1]"),
+      row_var = stan_re_s2z_fisher_row_var(id, is_student = is_student)
     )
   }
   if (s2z_partial) {
