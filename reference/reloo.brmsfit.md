@@ -158,8 +158,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.6 seconds.
+#> Chain 1: Gradient evaluation took 4.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.43 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -176,15 +176,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.002 seconds (Warm-up)
-#> Chain 1:                1.817 seconds (Sampling)
-#> Chain 1:                3.819 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.064 seconds (Warm-up)
+#> Chain 1:                1.884 seconds (Sampling)
+#> Chain 1:                3.948 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 2: Gradient evaluation took 2.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -201,15 +201,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.813 seconds (Warm-up)
-#> Chain 2:                1.362 seconds (Sampling)
-#> Chain 2:                3.175 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.873 seconds (Warm-up)
+#> Chain 2:                1.409 seconds (Sampling)
+#> Chain 2:                3.282 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 3: Gradient evaluation took 2.7e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -226,15 +226,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.93 seconds (Warm-up)
-#> Chain 3:                1.556 seconds (Sampling)
-#> Chain 3:                3.486 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.999 seconds (Warm-up)
+#> Chain 3:                1.609 seconds (Sampling)
+#> Chain 3:                3.608 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 4: Gradient evaluation took 3.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -251,9 +251,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.866 seconds (Warm-up)
-#> Chain 4:                1.367 seconds (Sampling)
-#> Chain 4:                3.233 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.926 seconds (Warm-up)
+#> Chain 4:                1.42 seconds (Sampling)
+#> Chain 4:                3.346 seconds (Total)
 #> Chain 4: 
 
 # throws warning about some pareto k estimates being too high

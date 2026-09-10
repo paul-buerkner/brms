@@ -63,8 +63,8 @@ fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
+#> Chain 1: Gradient evaluation took 0.000153 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.53 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -81,9 +81,9 @@ fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.012 seconds (Warm-up)
-#> Chain 1:                0.21 seconds (Sampling)
-#> Chain 1:                1.222 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.082 seconds (Warm-up)
+#> Chain 1:                0.219 seconds (Sampling)
+#> Chain 1:                1.301 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -106,9 +106,9 @@ fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.821 seconds (Warm-up)
-#> Chain 2:                0.196 seconds (Sampling)
-#> Chain 2:                2.017 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.953 seconds (Warm-up)
+#> Chain 2:                0.203 seconds (Sampling)
+#> Chain 2:                2.156 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -131,9 +131,9 @@ fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.022 seconds (Warm-up)
-#> Chain 3:                0.214 seconds (Sampling)
-#> Chain 3:                1.236 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.092 seconds (Warm-up)
+#> Chain 3:                0.223 seconds (Sampling)
+#> Chain 3:                1.315 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -156,9 +156,9 @@ fit <- brm(x ~ ar(p = 2), data = LakeHuron)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.904 seconds (Warm-up)
-#> Chain 4:                0.207 seconds (Sampling)
-#> Chain 4:                1.111 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.965 seconds (Warm-up)
+#> Chain 4:                0.216 seconds (Sampling)
+#> Chain 4:                1.181 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 

@@ -42,8 +42,8 @@ fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.2e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+#> Chain 1: Gradient evaluation took 1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -60,15 +60,15 @@ fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.019 seconds (Warm-up)
-#> Chain 1:                0.012 seconds (Sampling)
-#> Chain 1:                0.031 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.014 seconds (Warm-up)
+#> Chain 1:                0.013 seconds (Sampling)
+#> Chain 1:                0.027 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 6e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
+#> Chain 2: Gradient evaluation took 5e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -117,8 +117,8 @@ fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 5e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
+#> Chain 4: Gradient evaluation took 9e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -135,9 +135,9 @@ fit <- brm(y ~ 1 + fcor(V), data = dat, data2 = list(V = V))
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.013 seconds (Warm-up)
+#> Chain 4:  Elapsed Time: 0.014 seconds (Warm-up)
 #> Chain 4:                0.013 seconds (Sampling)
-#> Chain 4:                0.026 seconds (Total)
+#> Chain 4:                0.027 seconds (Total)
 #> Chain 4: 
 # }
 ```
