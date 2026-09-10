@@ -18,6 +18,34 @@ test_that("brmsterms handles very long RE terms", {
   expect_equal(bterms$dpars$mu$re$group, "id")
 })
 
+test_that("brmsterms retains the sum-to-zero grouping option", {
+  default <- brmsterms(y ~ x + (1 + x | gr(g)))
+  s2z <- brmsterms(y ~ x + (1 + x | gr(g, s2z = TRUE)))
+
+  expect_false(default$dpars$mu$re$gcall[[1]]$s2z)
+  expect_true(s2z$dpars$mu$re$gcall[[1]]$s2z)
+
+  data <- data.frame(y = rnorm(6), x = rnorm(6), g = rep(1:3, each = 2))
+  reframe <- frame_re(s2z, data)
+  expect_true(all(reframe$s2z))
+  expect_equal(reframe$coef, c("Intercept", "x"))
+
+  mm_terms <- brmsterms(y ~ (1 | mm(g, h)))
+  mm_data <- transform(data, h = rep(3:1, each = 2))
+  expect_false(any(frame_re(mm_terms, mm_data)$s2z))
+})
+
+test_that("gr validates the sum-to-zero grouping option", {
+  expect_error(
+    gr(g, s2z = NA),
+    "Cannot coerce 's2z' to a single logical value"
+  )
+  expect_error(
+    gr(g, s2z = c(TRUE, FALSE)),
+    "Cannot coerce 's2z' to a single logical value"
+  )
+})
+
 test_that("brmsterms correctly handles auxiliary parameter 'mu'", {
   bterms1 <- brmsterms(y ~ x + (x|g))
   bterms2 <- brmsterms(bf(y ~ 1, mu ~ x + (x|g)))

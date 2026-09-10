@@ -61,6 +61,31 @@ test_that("autocorrelation matrices are computed correctly", {
   expect_equal(ident_mat[1, , ], expected_ident_mat)
 })
 
+test_that("covariance and correlation draw arrays are assembled correctly", {
+  sd <- matrix(c(1, 2, 3, 4), nrow = 2, byrow = TRUE)
+  cor <- matrix(c(0.25, -0.5), ncol = 1)
+
+  covariance <- brms:::get_cov_matrix(sd, cor)
+  expect_equal(dim(covariance), c(2L, 2L, 2L))
+  for (s in seq_len(nrow(sd))) {
+    expected <- outer(sd[s, ], sd[s, ])
+    expected[1, 2] <- expected[2, 1] <-
+      cor[s, 1] * sd[s, 1] * sd[s, 2]
+    expect_equal(covariance[s, , ], expected)
+  }
+
+  correlation <- brms:::get_cor_matrix(cor)
+  expect_equal(dim(correlation), c(2L, 2L, 2L))
+  expect_equal(correlation[, 1, 1], rep(1, 2))
+  expect_equal(correlation[, 2, 2], rep(1, 2))
+  expect_equal(correlation[, 1, 2], cor[, 1])
+  expect_equal(correlation[, 2, 1], cor[, 1])
+
+  identity <- brms:::get_cor_matrix(NULL, size = 3, ndraws = 2)
+  expect_equal(identity[1, , ], diag(3))
+  expect_equal(identity[2, , ], diag(3))
+})
+
 test_that("evidence_ratio returns expected results", {
   ps <- -4:10
   prs <- -2:12

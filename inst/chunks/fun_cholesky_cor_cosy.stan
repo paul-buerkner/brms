@@ -6,8 +6,7 @@
    *   A nrows x nrows covariance matrix
    */
    matrix cholesky_cor_cosy(real cosy, int nrows) {
-     matrix[nrows, nrows] mat;
-     mat = diag_matrix(rep_vector(1, nrows));
+     matrix[nrows, nrows] mat = identity_matrix(nrows);
      for (i in 2:nrows) {
        for (j in 1:(i - 1)) {
          mat[i, j] = cosy;

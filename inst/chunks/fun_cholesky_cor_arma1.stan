@@ -9,7 +9,9 @@
    matrix cholesky_cor_arma1(real ar, real ma, int nrows) {
      matrix[nrows, nrows] mat;
      vector[nrows] gamma;
-     mat = diag_matrix(rep_vector(1 + ma^2 + 2 * ar * ma, nrows));
+     for (i in 1:nrows) {
+       mat[i, i] = 1 + ma^2 + 2 * ar * ma;
+     }
      gamma[1] = (1 + ar * ma) * (ar + ma);
      for (i in 2:nrows) {
        gamma[i] = gamma[1] * pow(ar, i - 1);

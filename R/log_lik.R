@@ -291,12 +291,12 @@ log_lik_gaussian_lagsar <- function(i, prep) {
   mu <- get_dpar(prep, "mu")
   sigma <- get_dpar(prep, "sigma")
   Y <- as.numeric(prep$data$Y)
-  I <- diag(prep$nobs)
   stopifnot(i == 1)
   # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
-    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
-    Cinv <- t(IB) %*% IB / sigma[s]^2
+    IB <- with(prep$ac, -lagsar[s, ] * Msar)
+    diag(IB) <- diag(IB) + 1
+    Cinv <- crossprod(IB) / sigma[s]^2
     e <- Y - solve(IB, mu[s, ])
     g <- Cinv %*% e
     cbar <- diag(Cinv)
@@ -313,13 +313,13 @@ log_lik_student_lagsar <- function(i, prep) {
   mu <- get_dpar(prep, "mu")
   sigma <- get_dpar(prep, "sigma")
   Y <- as.numeric(prep$data$Y)
-  I <- diag(prep$nobs)
   stopifnot(i == 1)
   # see http://mc-stan.org/loo/articles/loo2-non-factorizable.html
   .log_lik <- function(s) {
     df <- nu[s]
-    IB <- I - with(prep$ac, lagsar[s, ] * Msar)
-    Cinv <- t(IB) %*% IB / sigma[s]^2
+    IB <- with(prep$ac, -lagsar[s, ] * Msar)
+    diag(IB) <- diag(IB) + 1
+    Cinv <- crossprod(IB) / sigma[s]^2
     e <- Y - solve(IB, mu[s, ])
     g <- Cinv %*% e
     cbar <- diag(Cinv)
@@ -337,10 +337,10 @@ log_lik_gaussian_errorsar <- function(i, prep) {
   mu <- get_dpar(prep, "mu")
   sigma <- get_dpar(prep, "sigma")
   Y <- as.numeric(prep$data$Y)
-  I <- diag(prep$nobs)
   .log_lik <- function(s) {
-    IB <- I - with(prep$ac, errorsar[s, ] * Msar)
-    Cinv <- t(IB) %*% IB / sigma[s]^2
+    IB <- with(prep$ac, -errorsar[s, ] * Msar)
+    diag(IB) <- diag(IB) + 1
+    Cinv <- crossprod(IB) / sigma[s]^2
     e <- Y - mu[s, ]
     g <- Cinv %*% e
     cbar <- diag(Cinv)
@@ -358,11 +358,11 @@ log_lik_student_errorsar <- function(i, prep) {
   mu <- get_dpar(prep, "mu")
   sigma <- get_dpar(prep, "sigma")
   Y <- as.numeric(prep$data$Y)
-  I <- diag(prep$nobs)
   .log_lik <- function(s) {
     df <- nu[s]
-    IB <- I - with(prep$ac, errorsar[s, ] * Msar)
-    Cinv <- t(IB) %*% IB / sigma[s]^2
+    IB <- with(prep$ac, -errorsar[s, ] * Msar)
+    diag(IB) <- diag(IB) + 1
+    Cinv <- crossprod(IB) / sigma[s]^2
     e <- Y - mu[s, ]
     g <- Cinv %*% e
     cbar <- diag(Cinv)

@@ -19,6 +19,7 @@ tests/local/models_1.2.0.Rda
 
 # Ignore folders or patterns
 ignore_*/
+for reference only/
 
 # Optional: temp and OS files
 *.tmp

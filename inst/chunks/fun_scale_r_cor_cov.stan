@@ -17,7 +17,7 @@
     // kronecker product of cholesky factors times a vector
     for (icov in 1:rows(Lcov)) {
       for (jcov in 1:icov) {
-        if (Lcov[icov, jcov] > 1e-10) {
+        if (Lcov[icov, jcov] != 0) {
           // avoid calculating products between unrelated individuals
           for (i in 1:rows_L) {
             for (j in 1:i) {
