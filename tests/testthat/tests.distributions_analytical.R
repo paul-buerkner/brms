@@ -50,6 +50,95 @@ test_that("com_poisson reduces to Poisson when shape = 1", {
   )
 })
 
+test_that("com_poisson uses the mode parameterization", {
+  # mu is the modal location: p(y + 1) / p(y) = (mu / (y + 1))^shape,
+  # so the pmf is maximized at floor(mu) for non-integer mu. This holds
+  # independently of the normalizing constant and pins down the meaning
+  # of mu away from shape == 1, where the mode and classical
+  # parameterizations coincide.
+  for (mu in c(3.4, 7.6)) {
+    for (shape in c(0.5, 1.5, 3)) {
+      d <- brms:::dcom_poisson(0:200, mu = mu, shape = shape)
+      expect_equal(which.max(d) - 1, floor(mu), info = paste(mu, shape))
+    }
+  }
+})
+
+test_that("dcom_poisson matches the mode-parameterized series", {
+  # brute force reference: p(y) proportional to (mu^y / y!)^shape.
+  # mu = 1.2 keeps log_Z_com_poisson on the exact series rather than the
+  # asymptotic approximation, so agreement should be to machine precision.
+  log_sum_exp_ref <- function(x) {
+    m <- max(x)
+    m + log(sum(exp(x - m)))
+  }
+  ref <- function(y, mu, shape, K = 2000) {
+    j <- 0:K
+    lterms <- shape * (j * log(mu) - lgamma(j + 1))
+    exp(shape * (y * log(mu) - lgamma(y + 1)) - log_sum_exp_ref(lterms))
+  }
+  y <- 0:8
+  for (shape in c(0.5, 0.8, 1.5, 3)) {
+    expect_equal(
+      brms:::dcom_poisson(y, mu = 1.2, shape = shape),
+      ref(y, mu = 1.2, shape = shape),
+      tolerance = 1e-12
+    )
+  }
+})
+
+test_that("com_poisson Stan functions match the R implementation", {
+  # Regression test for #1927. The Stan chunk and the R density must agree
+  # away from shape == 1, where the mode and classical parameterizations
+  # coincide. mu = 1.2 stays on the exact series, mu = 3.4 takes the
+  # asymptotic branch; y = 1 exercises the first numerator term of the CDF.
+  skip_if_not_installed("cmdstanr")
+  skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
+
+  chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
+  skip_if(!nzchar(chunk))
+
+  code <- c(
+    "functions {", readLines(chunk), "}",
+    "data {",
+    "  int<lower=1> N;",
+    "  array[N] int y;",
+    "  vector[N] mu;",
+    "  vector[N] nu;",
+    "}",
+    "generated quantities {",
+    "  vector[N] lpmf;",
+    "  vector[N] lcdf;",
+    "  for (n in 1:N) {",
+    "    lpmf[n] = com_poisson_lpmf(y[n] | mu[n], nu[n]);",
+    "    lcdf[n] = com_poisson_lcdf(y[n] | mu[n], nu[n]);",
+    "  }",
+    "}"
+  )
+  sf <- file.path(tempdir(), "test_com_poisson.stan")
+  writeLines(code, sf)
+  mod <- cmdstanr::cmdstan_model(sf)
+
+  d <- expand.grid(y = c(0L, 1L, 4L), mu = c(1.2, 3.4), nu = c(0.6, 1.5))
+  fit <- mod$sample(
+    data = list(N = nrow(d), y = d$y, mu = d$mu, nu = d$nu),
+    fixed_param = TRUE, iter_sampling = 1, chains = 1,
+    refresh = 0, show_messages = FALSE, sig_figs = 18
+  )
+  draws <- posterior::as_draws_matrix(fit$draws())
+
+  expect_equal(
+    as.numeric(draws[1, sprintf("lpmf[%d]", seq_len(nrow(d)))]),
+    brms:::dcom_poisson(d$y, mu = d$mu, shape = d$nu, log = TRUE),
+    tolerance = 1e-8
+  )
+  expect_equal(
+    as.numeric(draws[1, sprintf("lcdf[%d]", seq_len(nrow(d)))]),
+    log(mapply(brms:::pcom_poisson, d$y, d$mu, d$nu)),
+    tolerance = 1e-8
+  )
+})
+
 test_that("qexgaussian handles probabilities outside (0, 1)", {
   entry <- dist_registry_get("exgaussian")[[1]]
   res <- SW(call_dist(entry$q, c(-1, 0, 1, 1.5), entry$params))
