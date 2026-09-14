@@ -705,27 +705,26 @@ test_that("cdfs used for truncation accept 'lower.tail'", {
   expect_true("lower.tail" %in% names(formals(betareg::pxbeta)))
 })
 
-test_that("truncated log_lik is still Inf for cdfs that are not tail-safe", {
-  # These families compute the survival function as 1 - F and only then take
-  # the log, so log_prob_interval() receives -Inf and cannot recover the tail.
-  # The truncation fix does not reach them; see #1899. This test pins the
-  # current behaviour so that fixing the cdfs is a visible change.
-  naive_upper <- c(
-    "pasym_laplace", "pgen_extreme_value", "pinv_gaussian",
-    "pexgaussian", "pfrechet", "pdiscrete_weibull"
-  )
-  ns <- asNamespace("brms")
-  for (f in naive_upper) {
-    expect_true(exists(f, ns), info = f)
-  }
+test_that("truncated log_lik reaches the formerly naive cdfs", {
+  # These families used to form the survival function as 1 - F, or the cdf as
+  # 1 - exp(log_ccdf), and only then take the log, so log_prob_interval()
+  # received -Inf and could not recover the tail. They are now evaluated on
+  # the log scale; this test replaces the one that pinned the gap. See #1899
   expect_equal(
-    brms:::pinv_gaussian(20, 1, 50, lower.tail = FALSE, log.p = TRUE), -Inf
+    brms:::pinv_gaussian(20, 1, 50, lower.tail = FALSE, log.p = TRUE),
+    -457.925905, tolerance = 1e-6
   )
-  # the mirrored gap for zero-inflated and hurdle families, whose cdf is
-  # derived from a naive 1 - exp(log_ccdf) and so loses the lower tail
   expect_equal(
-    brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE), -Inf
+    brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE),
+    log(1e-300 + exp(-500))
   )
+
+  # the truncated log_lik that these feed is now finite
+  prep <- structure(list(ndraws = 1L, nobs = 1L), class = "brmsprep")
+  prep$dpars <- list(mu = matrix(1, ncol = 1), shape = 50)
+  prep$family <- brmsfamily("inverse.gaussian")
+  prep$data <- list(Y = 7, lb = 5, ub = 20)
+  expect_true(is.finite(brms:::log_lik_inverse.gaussian(1, prep)))
 })
 
 test_that("infinite log_lik values are warned about", {

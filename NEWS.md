@@ -27,6 +27,10 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Evaluate the cdf and survival function of `frechet`, `gen_extreme_value`,
+`discrete_weibull`, `asym_laplace`, `inverse.gaussian`, `exgaussian` and the
+zero-inflated and hurdle families on the log scale, so that truncated
+`log_lik` reaches them too. Thanks to Ahmed Eldeeb. (#1899)
 * Stop rounding `posterior_predict` output to integers for discrete models
 unless `output` is `"random"`, which collapsed probabilities and densities
 to 0 or 1. Thanks to Ahmed Eldeeb. (#1923)

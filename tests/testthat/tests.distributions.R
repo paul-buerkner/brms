@@ -659,3 +659,51 @@ test_that("link_categorical() inverts inv_link_categorical()", {
     }
   }
 })
+
+test_that("cdfs stay accurate in the tail on the log scale", {
+  # these all formed the survival function as 1 - F, or the cdf as
+  # 1 - exp(log_ccdf), and only then took the log, which loses the tail
+  # entirely once the complement rounds to 0 or 1. See #1899
+  expect_equal(
+    brms:::pfrechet(50, 0, 1, 20, lower.tail = FALSE, log.p = TRUE),
+    log(-expm1(-50^-20))
+  )
+  expect_equal(
+    brms:::pgen_extreme_value(60, 0, 1, 0, lower.tail = FALSE, log.p = TRUE),
+    log(-expm1(-exp(-60)))
+  )
+  expect_equal(
+    brms:::pdiscrete_weibull(40, 0.7, 1.2, lower.tail = FALSE, log.p = TRUE),
+    41^1.2 * log(0.7)
+  )
+  expect_equal(
+    brms:::pasym_laplace(80, 0, 1, 0.5, lower.tail = FALSE, log.p = TRUE),
+    log(0.5) - 0.5 * 80
+  )
+  # inverse gaussian and exgaussian have no single closed form, so they are
+  # checked against the natural-scale computation where it still resolves
+  ig_s <- function(q, mu, shape) {
+    a <- sqrt(shape / q) * (q / mu - 1)
+    b <- -sqrt(shape / q) * (q / mu + 1)
+    pnorm(-a) - exp(2 * shape / mu) * pnorm(b)
+  }
+  expect_equal(
+    brms:::pinv_gaussian(20, 1, 50, lower.tail = FALSE, log.p = TRUE),
+    log(ig_s(20, 1, 50))
+  )
+  expect_equal(
+    brms:::pexgaussian(40, 0, 1, 1, lower.tail = FALSE, log.p = TRUE),
+    -40.5, tolerance = 1e-8
+  )
+  # the zero-inflated and hurdle wrappers lose the lower tail instead
+  expect_equal(
+    brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE),
+    log(1e-300 + exp(-500))
+  )
+  # values far enough out that the natural scale underflows are still finite
+  expect_true(all(is.finite(c(
+    brms:::pinv_gaussian(200, 1, 50, lower.tail = FALSE, log.p = TRUE),
+    brms:::pexgaussian(120, 0, 1, 1, lower.tail = FALSE, log.p = TRUE),
+    brms:::pfrechet(1e4, 0, 1, 20, lower.tail = FALSE, log.p = TRUE)
+  ))))
+})
