@@ -707,3 +707,43 @@ test_that("cdfs stay accurate in the tail on the log scale", {
     brms:::pfrechet(1e4, 0, 1, 20, lower.tail = FALSE, log.p = TRUE)
   ))))
 })
+
+test_that("rewritten cdfs keep their boundary values", {
+  # a saturated probability is log(0) = -Inf, not NaN; these boundaries are
+  # reached routinely because one-sided trunc() stores the other bound as
+  # +/- Inf, and because zero-inflated cdfs are evaluated below their lower
+  # bound by the randomized PIT. See #1899
+  expect_equal(
+    brms:::pfrechet(Inf, 0, 1, 3, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  expect_equal(
+    brms:::pgen_extreme_value(Inf, 0, 1, 0.1, lower.tail = FALSE,
+                              log.p = TRUE), -Inf
+  )
+  expect_equal(
+    brms:::pexgaussian(Inf, 1, 2, 1, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  expect_equal(brms:::pinv_gaussian(0, 1, 2), 0)
+  expect_equal(
+    brms:::pinv_gaussian(1e10, 1, 1, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  # below the lower bound of a zero-inflated or hurdle family
+  expect_equal(brms:::pzero_inflated_poisson(-1, 2, zi = 0.3), 0)
+  expect_equal(brms:::phurdle_poisson(-1, 2, hu = 0.3), 0)
+  expect_equal(brms:::pzero_inflated_beta(-2, 2, 3, zi = 0.3), 0)
+  # at and beyond the upper endpoint of a bounded gen_extreme_value
+  expect_equal(
+    brms:::pgen_extreme_value(c(5, 5.1), 0, 1, -0.2, lower.tail = FALSE),
+    c(0, 0)
+  )
+  # the randomized PIT evaluates the cdf one step below the response
+  pit <- brms:::pp_cdf(
+    0, "zero_inflated_poisson", lb = NULL, ub = NULL, randomized = TRUE,
+    lambda = c(2, 3), zi = c(0.3, 0.4)
+  )
+  expect_true(all(is.finite(pit) & pit >= 0 & pit <= 1))
+  # empty input stays numeric
+  expect_type(
+    brms:::pasym_laplace(numeric(0), 0, 1, 0.5, log.p = TRUE), "double"
+  )
+})

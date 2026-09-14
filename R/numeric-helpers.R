@@ -169,7 +169,10 @@ log_diff_exp <- function(x, y) {
 
 log_sum_exp <- function(x, y) {
   max <- pmax(x, y)
-  max + log(exp(x - max) + exp(y - max))
+  out <- max + log(exp(x - max) + exp(y - max))
+  # as in Stan, two zero probabilities sum to zero rather than to NaN
+  out[!is.na(max) & max == -Inf] <- -Inf
+  out
 }
 
 log_mean_exp <- function(x) {

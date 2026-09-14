@@ -709,11 +709,8 @@ pexgaussian <- function(q, mu, sigma, beta,
   args$mu <- with(args, mu - beta)
   args$z <- with(args, q - mu - sigma^2 / beta)
 
-  # the cdf is a difference of two terms; taking it on the log scale keeps
-  # the upper tail, where the difference cancels in double precision
   # the cdf is a difference of two terms and the survival function is their
-  # sum, so each tail is taken on the log scale in the form that does not
-  # cancel
+  # sum, so each tail is taken in the form that does not cancel
   out <- with(args, {
     k <- ((mu + sigma^2 / beta)^2 - mu^2 - 2 * q * sigma^2 / beta) /
       (2 * sigma^2)
@@ -723,10 +720,14 @@ pexgaussian <- function(q, mu, sigma, beta,
         pnorm(z / sigma, log.p = TRUE) + k
       )
     } else {
-      log_sum_exp(
+      # sigma / beta far above 1 makes k large enough that the second term
+      # loses its leading digits; the sum can then exceed 1, which is not a
+      # probability, so fall back rather than return it
+      lS <- log_sum_exp(
         pnorm(-(q - mu) / sigma, log.p = TRUE),
         pnorm(z / sigma, log.p = TRUE) + k
       )
+      ifelse(lS > 0, NaN, lS)
     }
   })
   if (!log.p) {
@@ -833,6 +834,15 @@ dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
 
 #' @rdname Frechet
 #' @export
+# complement of a probability given on the log scale, log(1 - exp(lp)).
+# Unlike Stan's log1m_exp(), lp == 0 is a saturated probability here rather
+# than an out-of-domain argument, so it maps to log(0) = -Inf and not NaN
+log1m_prob <- function(lp) {
+  out <- log1m_exp(lp)
+  out[!is.na(lp) & lp >= 0] <- -Inf
+  out
+}
+
 pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
                      lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(scale <= 0))) {
@@ -844,7 +854,7 @@ pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
   q <- pmax((q - loc) / scale, 0)
   # log F(q) = -q^(-shape) is exact, so both tails stay on the log scale
   lcdf <- -q^(-shape)
-  out <- if (lower.tail) lcdf else log1m_exp(lcdf)
+  out <- if (lower.tail) lcdf else log1m_prob(lcdf)
   if (!log.p) {
     out <- exp(out)
   }
@@ -976,21 +986,25 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   }
   args <- nlist(q, mu, shape)
   args <- do_call(expand, args)
-  # mirrors inv_gaussian_lcdf() in inst/chunks/fun_inv_gaussian.stan: the
-  # sum is taken on the log scale, which also avoids overflow of
-  # exp(2 * shape / mu)
+  # mirrors inv_gaussian_lcdf() in inst/chunks/fun_inv_gaussian.stan; taking
+  # the sum on the log scale avoids overflow of exp(2 * shape / mu)
   if (lower.tail) {
     out <- with(args, log_sum_exp(
       pnorm(sqrt(shape / q) * (q / mu - 1), log.p = TRUE),
       2 * shape / mu + pnorm(-sqrt(shape / q) * (q / mu + 1), log.p = TRUE)
     ))
   } else {
-    # S(q) = Phi(-a) - exp(2 * shape / mu) * Phi(b) is exact, whereas
-    # log1m_exp() of the cdf loses the tail once F saturates at 1
-    out <- with(args, log_diff_exp(
-      pnorm(-sqrt(shape / q) * (q / mu - 1), log.p = TRUE),
-      2 * shape / mu + pnorm(-sqrt(shape / q) * (q / mu + 1), log.p = TRUE)
-    ))
+    # S(q) = Phi(-a) - exp(2 * shape / mu) * Phi(b), which stays accurate
+    # well past the point where log1m_exp() of the cdf does. The two terms
+    # are asymptotically equal, since 2 * shape / mu - b^2 / 2 equals
+    # -a^2 / 2 identically, so the far tail still cancels and saturates to
+    # -Inf; recovering it needs an asymptotic expansion
+    out <- with(args, {
+      lhs <- pnorm(-sqrt(shape / q) * (q / mu - 1), log.p = TRUE)
+      rhs <- 2 * shape / mu +
+        pnorm(-sqrt(shape / q) * (q / mu + 1), log.p = TRUE)
+      log_diff_exp(pmax(lhs, rhs), rhs)
+    })
   }
   if (!log.p) {
     out <- exp(out)
@@ -1190,7 +1204,7 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
     -exp(-q),
     -(1 + xi * q)^(-1 / xi)
   ))
-  out <- if (lower.tail) lcdf else log1m_exp(lcdf)
+  out <- if (lower.tail) lcdf else log1m_prob(lcdf)
   if (!log.p) {
     out <- exp(out)
   }
@@ -1272,10 +1286,12 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
   lcdf_lo <- log(quantile) + (1 - quantile) * (q - mu) / sigma
   lccdf_hi <- log1p(-quantile) - quantile * (q - mu) / sigma
   if (lower.tail) {
-    out <- ifelse(q < mu, lcdf_lo, log1m_exp(lccdf_hi))
+    out <- ifelse(q < mu, lcdf_lo, log1m_prob(lccdf_hi))
   } else {
-    out <- ifelse(q < mu, log1m_exp(lcdf_lo), lccdf_hi)
+    out <- ifelse(q < mu, log1m_prob(lcdf_lo), lccdf_hi)
   }
+  # ifelse() returns the type of its test, which is logical for empty input
+  out <- as.numeric(out)
   if (!log.p) {
     out <- exp(out)
   }
@@ -1349,7 +1365,7 @@ pdiscrete_weibull <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   # log scale
   lccdf <- (x + 1)^shape * log(mu)
   if (lower.tail) {
-    out <- log1m_exp(lccdf)
+    out <- log1m_prob(lccdf)
     out[x < 0] <- -Inf
   } else {
     out <- lccdf
@@ -2316,7 +2332,7 @@ qzero_one_inflated_beta <- function(p, shape1, shape2, zoi, coi,
   if (lower.tail) {
     # 'out' is the log survival function, so stay on the log scale rather
     # than forming 1 - exp(out), which cancels in the lower tail
-    out <- log1m_exp(out)
+    out <- log1m_prob(out)
   }
   if (!log.p) {
     out <- exp(out)
@@ -2659,7 +2675,7 @@ rhurdle_cumulative <- function(n, eta, thres, hu, disc = 1, link = "logit") {
   if (lower.tail) {
     # 'out' is the log survival function, so stay on the log scale rather
     # than forming 1 - exp(out), which cancels in the lower tail
-    out <- log1m_exp(out)
+    out <- log1m_prob(out)
   }
   if (!log.p) {
     out <- exp(out)
