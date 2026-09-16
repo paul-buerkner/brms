@@ -495,6 +495,9 @@ validate_newdata <- function(
     for (i in seq_along(factors)) {
       new_factor <- newdata[[factor_names[i]]]
       if (!is.null(new_factor)) {
+        # factor matrices (e.g. matrix predictors of 'mrf' smooths) lose their
+        # 'dim' attribute in factor(), hence store it for later restoration
+        new_dim <- dim(new_factor)
         if (!is.factor(new_factor)) {
           new_factor <- factor(new_factor)
         }
@@ -524,8 +527,9 @@ validate_newdata <- function(
             "\nLevels found: ", collapse_comma(used_new_levels)
           )
         }
-        newdata[[factor_names[i]]] <-
-          factor(new_factor, old_levels, ordered = old_ordered)
+        new_factor <- factor(new_factor, old_levels, ordered = old_ordered)
+        dim(new_factor) <- new_dim
+        newdata[[factor_names[i]]] <- new_factor
         # don't use contrasts(.) here to avoid dimension checks
         attr(newdata[[factor_names[i]]], "contrasts") <- old_contrasts
       }
