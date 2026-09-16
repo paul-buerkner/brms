@@ -565,7 +565,7 @@ test_that("foundation code contains no later S2Z APIs or state", {
   audit_files <- file.path(package_root, c(
     "R/brmsframe.R", "R/exclude_pars.R", "R/formula-re.R",
     "R/priors.R", "R/re-s2z.R", "R/stan-likelihood.R",
-    "R/stan-predictor.R", "R/stancode.R", "R/standata.R",
+    "R/stan-predictor.R", "R/stan-re-s2z.R", "R/stancode.R", "R/standata.R",
     "inst/chunks/fun_sum_to_zero.stan", "NEWS.md", "man/gr.Rd",
     "man/mm.Rd", "tests/testthat/tests.brmsterms.R",
     "tests/testthat/tests.s2z-code.R", "tests/testthat/tests.s2z.R",
