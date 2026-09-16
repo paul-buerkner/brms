@@ -19,6 +19,8 @@ Thanks to Sermet Pekin. (#1790)
 
 ### Bug Fixes
 
+* Preserve the matrix structure of factors in `newdata`, which is required for
+matrix predictors of smooth terms such as `mrf`. (#1935)
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 
