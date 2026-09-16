@@ -132,7 +132,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             coef_prior <- stan_constant_prior(
               coef_prior, par_ij, broadcast = broadcast
             )
-            str_add(out$tpar_prior_const) <- paste0(coef_prior, ";\n")
+            str_add(out[["tpar_prior_const"]]) <- paste0(coef_prior, ";\n")
           } else {
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast,
@@ -140,12 +140,14 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             )
             if (isTRUE(nzchar(lprior_tag))) {
               # add to a local lprior variable if specified
-              str_add(out$tpar_prior) <- paste0(
+              str_add(out[["tpar_prior"]]) <- paste0(
                 lpp(tag = lprior_tag), coef_prior, ";\n"
               )
             } else {
               # add to the global lprior variable directly
-              str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n")
+              str_add(out[["tpar_prior"]]) <- paste0(
+                lpp(), coef_prior, ";\n"
+              )
             }
           }
         }
@@ -153,9 +155,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     }
     # the base prior may be improper flat in which no Stan code is added
     # but we still have estimated coefficients if the base prior is used
-    has_estimated_priors <- isTRUE(nzchar(out$tpar_prior)) ||
+    has_estimated_priors <- isTRUE(nzchar(out[["tpar_prior"]])) ||
       used_base_prior && !stan_is_constant_prior(base_prior)
-    has_constant_priors <- isTRUE(nzchar(out$tpar_prior_const))
+    has_constant_priors <- isTRUE(nzchar(out[["tpar_prior_const"]]))
     if (has_estimated_priors && has_constant_priors) {
       # need to mix definition in the parameters and transformed parameters block
       if (!nzchar(coef_type)) {
@@ -169,7 +171,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           "  {coef_type} par_{par}_{iu};\n"
         )
         ib <- collapse("[", index, "]")
-        str_add(out$tpar_prior_const) <- cglue(
+        str_add(out[["tpar_prior_const"]]) <- cglue(
           "  {par}{ib} = par_{par}_{iu};\n"
         )
       }
@@ -182,7 +184,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       constant_base_prior <- stan_constant_prior(
         base_prior, par = par, ncoef = ncoef, broadcast = broadcast
       )
-      str_add(out$tpar_prior_const) <- paste0(constant_base_prior, ";\n")
+      str_add(out[["tpar_prior_const"]]) <- paste0(
+        constant_base_prior, ";\n"
+      )
     } else {
       target_base_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, bound = bound,
@@ -190,12 +194,14 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       )
       if (isTRUE(nzchar(base_lprior_tag))) {
         # add to a local lprior variable if specified
-        str_add(out$tpar_prior) <- paste0(
+        str_add(out[["tpar_prior"]]) <- paste0(
           lpp(tag = base_lprior_tag), target_base_prior, ";\n"
         )
       } else {
         # add to the global lprior variable directly
-        str_add(out$tpar_prior) <- paste0(lpp(), target_base_prior, ";\n")
+        str_add(out[["tpar_prior"]]) <- paste0(
+          lpp(), target_base_prior, ";\n"
+        )
       }
     }
   }
@@ -224,7 +230,8 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       stop2("Cannot fix parameter '", par, "' in this model.")
     }
   }
-  has_improper_prior <- !is.null(out$par) && is.null(out$tpar_prior)
+  has_improper_prior <- !is.null(out$par) &&
+    is.null(out[["tpar_prior"]])
   if (prior_only && has_improper_prior) {
     stop2("Sampling from priors is not possible as ",
           "some parameters have no proper priors. ",
