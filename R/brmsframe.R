@@ -22,6 +22,7 @@ brmsframe.mvbrmsterms <- function(x, data, basis = NULL, ...) {
     )
   }
   class(x) <- c("mvbrmsframe", class(x))
+  validate_re_s2z_ids(x)
   x
 }
 
@@ -52,7 +53,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
         s2z_response <- response_vars[1L]
       }
     }
-    x$frame$s2z_context <- list(
+    attr(x$frame$re, "s2z_context") <- list(
       response = s2z_response,
       family = x$family$family %||% ""
     )
@@ -70,6 +71,9 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     )
   }
   class(x) <- c("brmsframe", class(x))
+  if (is.null(frame)) {
+    validate_re_s2z_ids(x)
+  }
   x
 }
 
@@ -102,7 +106,7 @@ brmsframe.btl <- function(x, data, frame = list(), basis = NULL, ...) {
   class(x) <- c("bframel", class(x))
   if (has_re_s2z(x)) {
     validate_re_s2z_structure(x, data = data)
-    x$frame$re_s2z_plan <- .re_s2z_build_plan(x)
+    attr(x$frame$re, "s2z_plan") <- .re_s2z_build_plan(x)
     validate_re_s2z_design(x, data = data)
   }
   # these data_ functions may require the outputs of the corresponding
@@ -217,6 +221,20 @@ frame_cnl <- function(x, data, ...) {
     }
   }
   out
+}
+
+# Return all local linear predictor frames contained in a brms frame.
+all_bframel <- function(x) {
+  if (is.bframel(x)) {
+    return(list(x))
+  }
+  if (is.mvbrmsframe(x)) {
+    return(ulapply(x$terms, all_bframel, recursive = FALSE))
+  }
+  if (is.brmsframe(x)) {
+    return(ulapply(c(x$dpars, x$nlpars), all_bframel, recursive = FALSE))
+  }
+  list()
 }
 
 is.brmsframe <- function(x) {

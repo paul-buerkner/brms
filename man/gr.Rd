@@ -21,8 +21,7 @@ gr(
 \item{by}{An optional factor variable, specifying sub-populations of the
 groups. For each level of the \code{by} variable, a separate
 variance-covariance matrix will be fitted. Levels of the grouping factor
-must be nested in levels of the \code{by} variable. This argument is not
-currently supported with \code{s2z = TRUE}.}
+must be nested in levels of the \code{by} variable.}
 
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
@@ -33,24 +32,19 @@ sum-to-zero parameterization described in the section
 
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
-\code{TRUE}). With \code{s2z = TRUE}, this sharing is limited to terms in
-one linear predictor: an ID cannot span responses, categories, or
-distributional or nonlinear predictors. See \code{\link{brmsformula}}
-for more details.}
+\code{TRUE}). See \code{\link{brmsformula}} for more details.}
 
 \item{pw}{Optional numeric variable specifying prior weights. They weight the
 contribution of each group to the log-prior of the group-level
 coefficients. Should have one distinct value for each level of the
-grouping variable. This argument is not currently supported with
-\code{s2z = TRUE}.}
+grouping variable.}
 
 \item{cov}{An optional matrix which is proportional to the within-group
 covariance matrix of the group-level effects. All levels of the grouping
 factor should appear as rownames of the corresponding matrix. This argument
 can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
-of the same grouping factor are modeled as independent of each other.
-This argument is not currently supported with \code{s2z = TRUE}.}
+of the same grouping factor are modeled as independent of each other.}
 
 \item{dist}{Name of the distribution of the group-level effects. Supported
 options are \code{"gaussian"} and \code{"student"}.}
@@ -77,47 +71,11 @@ Each varying design column must match a population-level column in both
 coefficient name and numerical values, including factor contrasts and
 interactions. For example, \code{x * f} must appear on both sides of the
 grouping bar when all its expanded columns vary. At least two grouping
-levels must be observed.
-
-Gaussian and Student-t group effects, correlated or independent varying
-coefficients, and multiple S2Z blocks in one predictor are supported.
-Each block retains its own grouping factor, scales, and correlations.
-Separate S2Z IDs may be used in otherwise eligible response,
-distributional, nonlinear, categorical, multinomial, and simplex predictors.
-An ID cannot span predictors: \code{| q |} inside an \code{mvbind(...)}
-formula requests a shared cross-response block and is unsupported.
-Omit the ID to obtain separate response-local blocks, or give each predictor
-its own ID. These separate blocks do not model cross-response group-effect
-correlation. Residual response correlation is a separate model choice.
-
-Known covariance among grouping levels (\code{cov = A}), \code{by},
-\code{pw}, multi-membership, and special group coefficients are unsupported.
-In particular, \code{gr(phylo, s2z = TRUE)} without \code{cov = A} is an
-ordinary exchangeable grouping effect; it does not use the phylogenetic
-covariance matrix and is not a substitute for \code{gr(phylo, cov = A)}.
-
-Population coefficients involved in the omitted-mean reconstruction support
-flat, \code{normal}, \code{student_t}, \code{cauchy}, and \code{logistic}
-priors with numeric constant arguments. Logistic priors are handled exactly,
-including the default \code{logistic(0, 1)} intercept prior of auxiliary
-probability predictors. Bounds, prior tags, and special priors on these
-coefficients are unsupported. Other population coefficients retain ordinary
-\pkg{brms} prior handling.
-
-Usual priors on group-level scales, correlations, and Student-t degrees of
-freedom remain available. Scales may differ between varying coefficients
-but must be shared across grouping levels. For \code{dist = "student"},
-\code{sd} retains its existing Student-t scale interpretation and is not
-rescaled to a marginal standard deviation. Non-positive fixed group-level
-scales and priors on realized level-specific scales are unsupported.
-
-Ordinal location predictors, ordered mixture intercepts, sparse or QR
-population designs, and sampling from priors (\code{sample_prior = "yes"}
-or \code{"only"}) are unsupported. Centered, partially centered, and
-automatically centered S2Z modes are not available;
-there is no S2Z \code{center} argument. Custom Stan code must not use
-conventional population- or group-level coefficients before they are
-reconstructed in generated quantities.
+levels must be observed. Unsupported model structures and prior
+specifications give an error. Custom Stan code using population- or
+group-level coefficients must run after their reconstruction in generated
+quantities. Add such code with
+\code{stanvar(..., block = "genquant", position = "end")}.
 }
 \examples{
 \dontrun{
@@ -140,13 +98,9 @@ fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
 summary(fit4)
 
 # physical sum-to-zero varying intercepts, slopes, and interactions
-s2z_prior <- prior(exponential(2), class = "sd", group = "patient",
-                   coef = "Intercept") +
-  prior(exponential(3), class = "sd", group = "patient", coef = "zAge") +
-  prior(lkj(2), class = "cor", group = "patient")
 fit5 <- brm(count ~ zAge * Trt +
               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
-            data = epilepsy, family = poisson(), prior = s2z_prior)
+            data = epilepsy, family = poisson())
 }
 
 }

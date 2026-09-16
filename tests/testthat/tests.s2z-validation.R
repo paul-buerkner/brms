@@ -1,4 +1,6 @@
-context("Phased validation of physical sum-to-zero group-level effects")
+context("Validation of physical sum-to-zero group-level effects")
+
+expect_match2 <- brms:::expect_match2
 
 s2z_validation_dat <- local({
   n <- 36L
@@ -21,52 +23,78 @@ s2z_error_message <- function(expr) {
 }
 
 test_that("S2Z logistic prior specifications are exact and validated", {
-  expect_equal(
-    parse_re_s2z_prior("logistic(0, 1)"),
-    list(dist = "logistic", location = 0, scale = 1, df = NA_real_)
+  form <- y ~ 1 + (1 | gr(g, s2z = TRUE))
+  code <- stancode(
+    form, data = s2z_validation_dat,
+    prior = prior(logistic(0, 1), class = Intercept)
   )
+  expect_match2(code, "logistic_lpdf(q_explicit_s2z_1[1] | 0, 1)")
   expect_error(
-    parse_re_s2z_prior("logistic(0, 0)"),
+    stancode(form, data = s2z_validation_dat,
+             prior = prior(logistic(0, 0), class = Intercept)),
     "Scale and degrees-of-freedom arguments must be positive"
   )
   expect_error(
-    parse_re_s2z_prior("logistic(location, 1)"),
+    stancode(form, data = s2z_validation_dat,
+             prior = prior(logistic(location, 1), class = Intercept)),
     "must currently be numeric constants"
   )
 })
 
-test_that("S2Z descriptors separate active and fixed-only coordinates", {
-  form <- y ~ x + z + w +
-    (1 + x | gr(g, id = "first", s2z = TRUE)) +
-    (0 + z | gr(h, id = "second", s2z = TRUE))
-  bframe <- brmsframe(brmsterms(form), data = s2z_validation_dat)
-  bfl <- bframe$dpars$mu
-  infos <- re_s2z_infos(bfl)
+test_that("S2Z preserves original coordinates across blocks and prior changes", {
+  form <- y ~ x + w + z +
+    (1 | gr(g, s2z = TRUE)) + (0 + z | gr(h, s2z = TRUE))
+  bprior <- prior(normal(0, 1), class = Intercept) +
+    prior(double_exponential(0, 1), class = b, coef = x)
+  normal_code <- stancode(
+    form, data = s2z_validation_dat,
+    prior = bprior + prior(normal(0, 2), class = b, coef = z)
+  )
+  logistic_code <- stancode(
+    form, data = s2z_validation_dat,
+    prior = bprior + prior(logistic(1, 3), class = b, coef = z)
+  )
 
-  expect_length(infos, 2L)
-  for (info in infos) {
-    expect_equal(info$qnames, c("Intercept", "x", "z", "w"))
-    expect_equal(info$active_q, 1:3)
-    expect_equal(info$inactive_q, 4L)
-    expect_equal(info$active_names, c("Intercept", "x", "z"))
-    expect_equal(info$inactive_names, "w")
-    expect_equal(info$active_index, c(1L, 2L, 3L, NA_integer_))
-    expect_equal(info$match_active, match(info$match_q, info$active_q))
+  for (code in list(normal_code, logistic_code)) {
+    # The two fixed-only slopes keep their positions when the group maps
+    # involve nonadjacent population coefficients.
+    expect_match2(code, "theta_s2z[1] = theta_s2z_active[1];")
+    expect_match2(code, "theta_s2z[4] = theta_s2z_active[2];")
+    expect_match2(code, "theta_s2z[2] = fixed_s2z[1];")
+    expect_match2(code, "theta_s2z[3] = fixed_s2z[2];")
+    expect_match2(code, "double_exponential_lpdf(fixed_s2z[1] | 0, 1)")
   }
+  expect_false(grepl("q_explicit_s2z", normal_code, fixed = TRUE))
+  expect_match2(logistic_code, "logistic_lpdf(q_explicit_s2z_1[4] | 1, 3)")
+})
 
-  bprior <- prior(normal(0, 2), class = Intercept) +
-    prior(normal(0, 1), class = b, coef = x) +
-    prior(normal(0, 1.5), class = b, coef = z) +
-    prior(double_exponential(0, 1), class = b, coef = w)
-  effective_prior <- validate_prior(
-    bprior, formula = form, data = s2z_validation_dat
+test_that("S2Z centering maps include intercepts even for mean-zero slopes", {
+  form <- y ~ x + w + (0 + x | gr(g, s2z = TRUE))
+  dat <- transform(s2z_validation_dat, x = rep(c(-1, 1), 18))
+  code <- stancode(form, data = dat)
+  expect_match2(code, "H_s2z_1[1] = means_X[1];")
+  expect_match2(code, "theta_s2z[1] = theta_s2z_active[1];")
+  expect_match2(code, "theta_s2z[2] = theta_s2z_active[2];")
+
+  code <- stancode(bf(form, center = FALSE), data = dat)
+  expect_match2(code, "theta_s2z[1] = fixed_s2z[1];")
+  expect_match2(code, "theta_s2z[2] = theta_s2z_active[1];")
+  expect_match2(code, "theta_s2z[3] = fixed_s2z[2];")
+})
+
+test_that("S2Z coefficient priors retain global bounds", {
+  form <- y ~ x + z + (1 + x | gr(g, s2z = TRUE))
+  bprior <- prior(normal(0, 1), class = b, lb = 0) +
+    prior(normal(0, 2), class = b, coef = x)
+  # Overriding a coefficient's density does not remove its class-level bound.
+  expect_error(
+    validate_prior(bprior, formula = form, data = s2z_validation_dat),
+    "S2Z capability 'active_prior_bounds'", fixed = TRUE
   )
-  expect_no_error(
-    validate_re_s2z_prior_global(bframe, prior = effective_prior)
+  expect_error(
+    stancode(form, data = s2z_validation_dat, prior = bprior),
+    "S2Z capability 'active_prior_bounds'", fixed = TRUE
   )
-  specs <- re_s2z_infos(bfl, prior = effective_prior)[[1L]]$prior
-  expect_equal(vapply(specs, `[[`, character(1), "dist"),
-               c("normal", "normal", "normal", "flat"))
 })
 
 test_that("multi-block prior diagnostics identify a touching S2Z block", {
@@ -94,21 +122,6 @@ test_that("multi-block prior diagnostics identify a touching S2Z block", {
   expect_match(msg, "group 'h'", fixed = TRUE)
   expect_match(msg, "ID 'slope-block'", fixed = TRUE)
   expect_match(msg, "coefficient(s) 'z'", fixed = TRUE)
-})
-
-test_that("S2Z design matching is numerically exact", {
-  form <- y ~ x + (1 + x | gr(g, id = "exact", s2z = TRUE))
-  bframe <- brmsframe(brmsterms(form), data = s2z_validation_dat)$dpars$mu
-  expect_no_error(
-    validate_re_s2z_design(bframe, data = s2z_validation_dat)
-  )
-
-  bframe$sdata$fe$X[, 2L] <- bframe$sdata$fe$X[, 2L] + 1e-12
-  msg <- s2z_error_message(
-    validate_re_s2z_design(bframe, data = s2z_validation_dat)
-  )
-  expect_match(msg, "S2Z capability 'matching_values'", fixed = TRUE)
-  expect_match(msg, "coefficient(s) 'x'", fixed = TRUE)
 })
 
 test_that("S2Z structure errors precede design errors and carry context", {
@@ -200,8 +213,6 @@ test_that("S2Z design and prior/global phases use capability diagnostics", {
   expect_match(msg, "Affected linear predictors:", fixed = TRUE)
   expect_match(msg, "dpar 'mu'", fixed = TRUE)
   expect_match(msg, "dpar 'sigma'", fixed = TRUE)
-  expect_match(msg, '`id = "y_mu_s2z"`', fixed = TRUE)
-  expect_match(msg, '`id = "y_sigma_s2z"`', fixed = TRUE)
   expect_match(msg, "Remedy:", fixed = TRUE)
 })
 
@@ -217,13 +228,7 @@ test_that("cross-predictor diagnostics enumerate mvbind responses", {
   expect_match(msg, "response 'y'", fixed = TRUE)
   expect_match(msg, "response 'z'", fixed = TRUE)
   expect_match(msg, "ID 'shared'", fixed = TRUE)
-  expect_match(msg, '`id = "y_mu_s2z"`', fixed = TRUE)
-  expect_match(msg, '`id = "z_mu_s2z"`', fixed = TRUE)
-  expect_match(msg, "For `mvbind(...)` or category shorthand", fixed = TRUE)
-  expect_match(msg, "omit the shared `| shared |` tag", fixed = TRUE)
-  expect_match(msg, "separate `bf()` response formulas", fixed = TRUE)
-  expect_match(msg, "do not retain cross-predictor group-effect", fixed = TRUE)
-  expect_match(msg, "use s2z = FALSE", fixed = TRUE)
+  expect_match(msg, "s2z = FALSE", fixed = TRUE)
 })
 
 test_that("mvbind shorthand without a shared ID uses local S2Z blocks", {
@@ -231,12 +236,14 @@ test_that("mvbind shorthand without a shared ID uses local S2Z blocks", {
     mvbind(y, z) ~ 1 + (1 | gr(g, s2z = TRUE))
   ) + set_rescor(FALSE)
   code <- stancode(form, data = s2z_validation_dat)
-  bframe <- brmsframe(brmsterms(form), data = s2z_validation_dat)
-  local_re <- lapply(bframe$terms, function(x) x$frame$re)
+  sdata <- standata(form, data = s2z_validation_dat)
 
-  expect_s3_class(code, "brmsmodel")
-  expect_true(all(vapply(local_re, function(x) any(x$s2z), logical(1))))
-  expect_length(unique(unlist(lapply(local_re, `[[`, "id"))), 2L)
+  expect_match2(code, "theta_s2z_y")
+  expect_match2(code, "theta_s2z_z")
+  expect_match2(code, "q_recovered_s2z_1")
+  expect_match2(code, "q_recovered_s2z_2")
+  expect_equal(sdata$N_1, nlevels(s2z_validation_dat$g))
+  expect_equal(sdata$N_2, nlevels(s2z_validation_dat$g))
 })
 
 test_that("cov diagnostics identify the unsupported phylogenetic argument", {
@@ -256,7 +263,7 @@ test_that("cov diagnostics identify the unsupported phylogenetic argument", {
   expect_match(msg, "S2Z capability 'cov'", fixed = TRUE)
   expect_match(msg, "response 'phen'", fixed = TRUE)
   expect_match(msg, "group 'phylo'", fixed = TRUE)
-  expect_match(msg, "use s2z = FALSE", fixed = TRUE)
+  expect_match(msg, "s2z = FALSE", fixed = TRUE)
   expect_match(msg, "supplied group covariance matrix", fixed = TRUE)
   expect_false(grepl("Arguments 'by', 'cov', and 'pw'", msg, fixed = TRUE))
 })

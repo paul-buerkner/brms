@@ -486,107 +486,102 @@ test_that("additional S2Z gates reject in the intended phase with context", {
   expect_match(msg, "drop_unused_levels = TRUE", fixed = TRUE)
 })
 
-test_that("fixed-only global prior vectors retain original slope indices", {
-  bprior <- prior(normal(prior_mu, prior_scale), class = b) +
-    prior(normal(0, 1), class = b, coef = x)
+test_that("fixed-only S2Z priors preserve ordinary coefficient fallback", {
+  ordinary_form <- y ~ x + z + w + (0 + x | g)
+  s2z_form <- y ~ x + z + w + (0 + x | gr(g, s2z = TRUE))
   vars <- stanvar(c(0.1, 0.2, 0.3), "prior_mu") +
     stanvar(c(1.1, 1.2, 1.3), "prior_scale")
-  form <- y ~ x + z + w + (0 + x | gr(g, s2z = TRUE))
-  code <- stancode(form, s2z_cap_dat, prior = bprior, stanvars = vars)
-  for (i in 1:2) {
-    expect_match2(code, paste0(
-      "normal_lpdf(fixed_s2z[", i, "] | ",
-      "s2z_prior_coordinate_brms(prior_mu, ", i + 1L, ", 3), ",
-      "s2z_prior_coordinate_brms(prior_scale, ", i + 1L, ", 3))"
-    ))
+  active_prior <- prior(normal(0, 1), class = b, coef = x)
+  cases <- list(
+    normal = list(prior = prior(
+      normal(prior_mu + rep_vector(0.5, 3), prior_scale), class = b
+    )),
+    skew_normal = list(prior = prior(skew_normal(prior_mu, 1, 3), class = b)),
+    double_exponential = list(prior = prior(
+      double_exponential(prior_mu, 1), class = b
+    )),
+    scalar = list(prior = prior(normal(2, 3), class = b)),
+    override = list(
+      prior = prior(normal(prior_mu, prior_scale), class = b, tag = "global") +
+        prior(skew_normal(-2, 4, 1), class = b, coef = z, tag = "override"),
+      normalize = FALSE
+    )
+  )
+  for (name in names(cases)) {
+    case <- cases[[name]]
+    normalize <- !identical(case$normalize, FALSE)
+    ordinary <- stancode(
+      ordinary_form, s2z_cap_dat, prior = case$prior + active_prior,
+      stanvars = vars, normalize = normalize
+    )
+    s2z <- stancode(
+      s2z_form, s2z_cap_dat, prior = case$prior + active_prior,
+      stanvars = vars, normalize = normalize
+    )
+    # Ordinary brms scores each inherited scalar coefficient against the
+    # entire prior expression, including any vector-valued arguments.
+    expected <- grep(
+      "lprior.*_lu?pdf\\(b\\[[23]\\] \\|",
+      strsplit(ordinary, "\n", fixed = TRUE)[[1]], value = TRUE
+    )
+    actual <- grep(
+      "lprior.*_lu?pdf\\(fixed_s2z\\[[12]\\] \\|",
+      strsplit(s2z, "\n", fixed = TRUE)[[1]], value = TRUE
+    )
+    expected <- gsub("b[2]", "fixed_s2z[1]", expected, fixed = TRUE)
+    expected <- gsub("b[3]", "fixed_s2z[2]", expected, fixed = TRUE)
+    expect_equal(length(expected), 2L, info = name)
+    expect_identical(actual, expected, info = name)
   }
-  expect_false(grepl("normal_lpdf(fixed_s2z |", code, fixed = TRUE))
 
-  override <- stancode(
-    form, s2z_cap_dat, prior = bprior + prior(normal(-2, 4), class = b, coef = z),
-    stanvars = vars, normalize = FALSE
-  )
-  expect_match2(override, "normal_lupdf(fixed_s2z[1] | -2, 4)")
-  expect_match2(override, "s2z_prior_coordinate_brms(prior_mu, 3, 3)")
-  expect_false(grepl("s2z_prior_coordinate_brms(prior_mu, 2, 3)",
-                     override, fixed = TRUE))
-
-  # Scalar global priors retain their existing vectorized target.
-  scalar <- stancode(
-    form, s2z_cap_dat,
-    prior = prior(normal(2, 3), class = b) +
-      prior(normal(0, 1), class = b, coef = x)
-  )
-  expect_match2(scalar, "normal_lpdf(fixed_s2z | 2, 3)")
-  # Active-coordinate arguments still obey the foundation's numeric-only gate.
   expect_error(stancode(
-    form, s2z_cap_dat, prior = prior(normal(prior_mu, prior_scale), class = b),
-    stanvars = vars
+    s2z_form, s2z_cap_dat,
+    prior = prior(normal(prior_mu, prior_scale), class = b), stanvars = vars
   ), "numeric constants")
 })
 
-test_that("foundation code contains no later S2Z APIs or state", {
-  public_arguments <- names(formals(gr))
-  expect_false("center" %in% public_arguments)
-  expect_false("scale" %in% public_arguments)
-  expect_error(
-    gr(g, s2z = TRUE, center = "auto"),
-    "expects only a single grouping term"
+test_that("all fixed-only S2Z slopes retain global prior vectorization", {
+  bprior <- prior(normal(prior_mu, 1), class = b, tag = "fixedonly")
+  vars <- stanvar(c(0.1, 0.2, 0.3), "prior_mu")
+  ordinary <- stancode(
+    y ~ x + z + w + (1 | g), s2z_cap_dat,
+    prior = bprior, stanvars = vars, normalize = FALSE
   )
-  expect_error(
-    gr(g, s2z = TRUE, scale = "varying"),
-    "expects only a single grouping term"
+  s2z <- stancode(
+    y ~ x + z + w + (1 | gr(g, s2z = TRUE)), s2z_cap_dat,
+    prior = bprior, stanvars = vars, normalize = FALSE
   )
+  expected <- grep(
+    "normal_lupdf(b |", strsplit(ordinary, "\n", fixed = TRUE)[[1]],
+    fixed = TRUE, value = TRUE
+  )
+  actual <- grep(
+    "normal_lupdf(fixed_s2z |", strsplit(s2z, "\n", fixed = TRUE)[[1]],
+    fixed = TRUE, value = TRUE
+  )
+  expect_length(expected, 1L)
+  expect_identical(actual, sub("(b |", "(fixed_s2z |", expected, fixed = TRUE))
+})
 
+test_that("custom generated quantities can use reconstructed S2Z coefficients", {
+  custom <- stanvar(
+    scode = paste0(
+      "real copied_slope = b[1];\n",
+      "real copied_group = r_1_2[1];"
+    ),
+    block = "genquant", position = "end"
+  )
   code <- stancode(
-    y ~ x + (1 + x | gr(g, s2z = TRUE)),
-    data = s2z_cap_dat, parse = FALSE
+    y ~ x + (1 + x | gr(g, s2z = TRUE)), data = s2z_cap_dat,
+    stanvars = custom, parse = TRUE
   )
-  forbidden <- c(
-    "s2z_center", "s2z_center_auto", "rho_s2z", "mean_rho_s2z",
-    "sdlog_s2z", "sd_level", "z_sd_s2z"
-  )
-  for (term in forbidden) {
-    expect_false(grepl(term, code, fixed = TRUE), info = term)
-  }
-
-  # Audit the production and user-facing files that define this feature, not
-  # only one representative Stan program. Construct the symbol names in
-  # pieces so this test does not satisfy its own forbidden patterns.
-  test_root <- normalizePath(
-    file.path(testthat::test_path(), "..", ".."), mustWork = TRUE
-  )
-  root_candidates <- c(
-    test_root, file.path(test_root, "00_pkg_src", "brms")
-  )
-  is_source_root <- file.exists(file.path(root_candidates, "R/re-s2z.R"))
-  expect_true(any(is_source_root))
-  package_root <- root_candidates[which(is_source_root)[1L]]
-  audit_files <- file.path(package_root, c(
-    "R/brmsframe.R", "R/exclude_pars.R", "R/formula-re.R",
-    "R/priors.R", "R/re-s2z.R", "R/stan-likelihood.R",
-    "R/stan-predictor.R", "R/stan-re-s2z.R", "R/stancode.R", "R/standata.R",
-    "inst/chunks/fun_sum_to_zero.stan", "NEWS.md", "man/gr.Rd",
-    "man/mm.Rd", "tests/testthat/tests.brmsterms.R",
-    "tests/testthat/tests.s2z-code.R", "tests/testthat/tests.s2z.R",
-    "tests/testthat/tests.s2z-optimizations.R",
-    "tests/testthat/tests.s2z-validation.R"
-  ))
-  audit_text <- unlist(lapply(audit_files, readLines, warn = FALSE))
-  forbidden_patterns <- c(
-    paste0("s2z", "_center"),
-    paste0("s2z", "_center_auto"),
-    paste0("rho", "_s2z"),
-    paste0("mean_rho", "_s2z"),
-    paste0("sdlog", "_s2z"),
-    paste0("sd", "_level"),
-    paste0("z_sd", "_s2z"),
-    paste0("relative_sd", "_s2z"),
-    paste0("reference_sd", "_s2z"),
-    "center[[:space:]]*=[[:space:]]*['\"](auto|fisher)['\"]",
-    "scale[[:space:]]*=[[:space:]]*['\"]varying['\"]"
-  )
-  for (pattern in forbidden_patterns) {
-    expect_false(any(grepl(pattern, audit_text)), info = pattern)
+  copied <- regexpr("real copied_slope = b[1];", code, fixed = TRUE)[1]
+  expect_gt(copied, 0L)
+  for (statement in c(
+    "b = tail(q_recovered_s2z_1, Kc);", "r_1_2 = r_1[, 2];"
+  )) {
+    recovered <- regexpr(statement, code, fixed = TRUE)[1]
+    expect_gt(recovered, 0L)
+    expect_lt(recovered, copied)
   }
 })

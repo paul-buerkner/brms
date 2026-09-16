@@ -80,8 +80,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   }
   bound <- convert_bounds2stan(base_bounds)
 
-  # generate stan prior statements
-  out <- list()
+  # Initialize both names so $tpar_prior cannot partially match
+  # $tpar_prior_const when fixed and estimated coefficients are mixed.
+  out <- list(tpar_prior = NULL, tpar_prior_const = NULL)
   par <- paste0(prefix, class, suffix)
   has_constant_priors <- FALSE
   has_coef_prior <- any(with(prior, nzchar(coef) & nzchar(prior)))
@@ -132,7 +133,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             coef_prior <- stan_constant_prior(
               coef_prior, par_ij, broadcast = broadcast
             )
-            str_add(out[["tpar_prior_const"]]) <- paste0(coef_prior, ";\n")
+            str_add(out$tpar_prior_const) <- paste0(coef_prior, ";\n")
           } else {
             coef_prior <- stan_target_prior(
               coef_prior, par_ij, broadcast = broadcast,
@@ -140,14 +141,12 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
             )
             if (isTRUE(nzchar(lprior_tag))) {
               # add to a local lprior variable if specified
-              str_add(out[["tpar_prior"]]) <- paste0(
+              str_add(out$tpar_prior) <- paste0(
                 lpp(tag = lprior_tag), coef_prior, ";\n"
               )
             } else {
               # add to the global lprior variable directly
-              str_add(out[["tpar_prior"]]) <- paste0(
-                lpp(), coef_prior, ";\n"
-              )
+              str_add(out$tpar_prior) <- paste0(lpp(), coef_prior, ";\n")
             }
           }
         }
@@ -155,9 +154,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
     }
     # the base prior may be improper flat in which no Stan code is added
     # but we still have estimated coefficients if the base prior is used
-    has_estimated_priors <- isTRUE(nzchar(out[["tpar_prior"]])) ||
+    has_estimated_priors <- isTRUE(nzchar(out$tpar_prior)) ||
       used_base_prior && !stan_is_constant_prior(base_prior)
-    has_constant_priors <- isTRUE(nzchar(out[["tpar_prior_const"]]))
+    has_constant_priors <- isTRUE(nzchar(out$tpar_prior_const))
     if (has_estimated_priors && has_constant_priors) {
       # need to mix definition in the parameters and transformed parameters block
       if (!nzchar(coef_type)) {
@@ -171,7 +170,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
           "  {coef_type} par_{par}_{iu};\n"
         )
         ib <- collapse("[", index, "]")
-        str_add(out[["tpar_prior_const"]]) <- cglue(
+        str_add(out$tpar_prior_const) <- cglue(
           "  {par}{ib} = par_{par}_{iu};\n"
         )
       }
@@ -184,9 +183,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       constant_base_prior <- stan_constant_prior(
         base_prior, par = par, ncoef = ncoef, broadcast = broadcast
       )
-      str_add(out[["tpar_prior_const"]]) <- paste0(
-        constant_base_prior, ";\n"
-      )
+      str_add(out$tpar_prior_const) <- paste0(constant_base_prior, ";\n")
     } else {
       target_base_prior <- stan_target_prior(
         base_prior, par = par, ncoef = ncoef, bound = bound,
@@ -194,14 +191,12 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       )
       if (isTRUE(nzchar(base_lprior_tag))) {
         # add to a local lprior variable if specified
-        str_add(out[["tpar_prior"]]) <- paste0(
+        str_add(out$tpar_prior) <- paste0(
           lpp(tag = base_lprior_tag), target_base_prior, ";\n"
         )
       } else {
         # add to the global lprior variable directly
-        str_add(out[["tpar_prior"]]) <- paste0(
-          lpp(), target_base_prior, ";\n"
-        )
+        str_add(out$tpar_prior) <- paste0(lpp(), target_base_prior, ";\n")
       }
     }
   }
@@ -230,8 +225,7 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
       stop2("Cannot fix parameter '", par, "' in this model.")
     }
   }
-  has_improper_prior <- !is.null(out$par) &&
-    is.null(out[["tpar_prior"]])
+  has_improper_prior <- !is.null(out$par) && is.null(out$tpar_prior)
   if (prior_only && has_improper_prior) {
     stop2("Sampling from priors is not possible as ",
           "some parameters have no proper priors. ",
@@ -735,4 +729,48 @@ lpp <- function(wsp = 2, tag = NULL) {
   } else {
     paste0(wsp, "lprior_", tag, " += ")
   }
+}
+
+# Preserve stan_prior()'s coefficient-specific fallback before removing active
+# coefficients. In particular, inherited vector arguments must retain ordinary
+# Stan broadcasting, rather than being indexed or applied to a shorter vector.
+stan_re_s2z_inactive_priors <- function(prior, coef, fixef, px) {
+  local_prior <- subset2(
+    prior, class = "b", coef = c(fixef, ""), group = "", ls = px
+  )
+  if (!any(nzchar(local_prior$coef) & nzchar(local_prior$prior))) {
+    return(prior)
+  }
+  # The validated prior table already contains each fixed-only coefficient.
+  # Copy inherited priors and tags unchanged; keep explicit overrides intact.
+  take <- find_rows(prior, class = "b", coef = coef, group = "", ls = px) &
+    !nzchar(prior$prior)
+  prior$prior[take] <- stan_base_prior(local_prior)
+  prior$tag[take] <- stan_base_prior(local_prior, col = "tag")
+  prior
+}
+
+# Exact scalar population-prior statement for the explicit-mean path.
+stan_re_s2z_prior_target <- function(spec, par, normalize) {
+  stopifnot(is.list(spec), is.character(par), length(par) == 1L)
+  if (identical(spec$dist, "flat")) {
+    return("")
+  }
+  dist <- spec$dist
+  args <- c(spec$location, spec$scale)
+  if (dist == "student") {
+    dist <- "student_t"
+    args <- c(spec$df, args)
+  }
+  stopifnot(dist %in% c("normal", "student_t", "logistic"))
+  args <- vapply(args, stan_s2z_number, character(1))
+  prior <- glue("{dist}({sargs(args)})")
+  target <- stan_target_prior(prior, par, normalize = normalize)
+  paste0(lpp(), target, ";\n")
+}
+
+# Stable formatting for numeric constants inserted into generated Stan code.
+stan_s2z_number <- function(x) {
+  stopifnot(length(x) == 1L, is.finite(x))
+  trimws(formatC(x, digits = 17, format = "g"))
 }

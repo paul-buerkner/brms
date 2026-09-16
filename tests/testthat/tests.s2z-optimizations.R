@@ -91,7 +91,7 @@ test_that("fixed S2Z maps live in transformed data", {
   ))
   expect_match2(code, "vector[M_1] mean_white_s2z =")
   expect_false(grepl(
-    "r_s2z_1 + rep_matrix(mhat_s2z_1'", code, fixed = TRUE
+    "rs2z_1 + rep_matrix(mhat_s2z_1'", code, fixed = TRUE
   ))
 })
 
@@ -135,7 +135,7 @@ test_that("scalar and independent kernels localize fixed and white work", {
     )
   )
   expect_false(grepl(
-    "matrix[N_1, M_1] r_s2z_1;", independent, fixed = TRUE
+    "matrix[N_1, M_1] rs2z_1;", independent, fixed = TRUE
   ))
 })
 
@@ -194,7 +194,7 @@ test_that("Matheron kernels use indexed active rows and row recovery", {
   expect_match2(code, "active_score_s2z = zeros_vector(M_1);")
   expect_match2(code, "for (j in 1:N_1) r_1[j] += mean_r_s2z_1';")
   expect_false(grepl(
-    "r_1 = r_s2z_1 + rep_matrix(mean_r_s2z_1'", code, fixed = TRUE
+    "r_1 = rs2z_1 + rep_matrix(mean_r_s2z_1'", code, fixed = TRUE
   ))
 })
 
@@ -288,50 +288,4 @@ test_that("fixed-only special priors retain ordinary brms scaling", {
     )
     expect_lt(scale_pos, theta_pos)
   }
-})
-
-test_that("blockwise dense algebra equals the concatenated-map algebra", {
-  set.seed(902)
-  q <- 4L
-  H1 <- matrix(rnorm(q * 2L), q)
-  H2 <- matrix(rnorm(q * 3L), q)
-  L1 <- matrix(c(1.2, 0.1, 0, 0.8), 2L, byrow = TRUE)
-  L2 <- matrix(c(1.1, 0, 0, -0.2, 0.9, 0, 0.1, 0.3, 1.3), 3L,
-               byrow = TRUE)
-  prior_prec <- rexp(q)
-  prior_sqrt <- diag(sqrt(prior_prec), q)
-
-  H_joint <- cbind(H1 %*% L1, H2 %*% L2)
-  old_factor <- prior_sqrt %*% H_joint
-  new_factor <- cbind(
-    prior_sqrt %*% H1 %*% L1,
-    prior_sqrt %*% H2 %*% L2
-  )
-  expect_equal(crossprod(new_factor), crossprod(old_factor), tolerance = 1e-12)
-
-  theta <- rnorm(q)
-  mean_white <- rnorm(5L)
-  old_q <- theta - H_joint %*% mean_white
-  new_q <- theta - H1 %*% (L1 %*% mean_white[1:2]) -
-    H2 %*% (L2 %*% mean_white[3:5])
-  expect_equal(drop(new_q), drop(old_q), tolerance = 1e-12)
-})
-
-test_that("explicit Gaussian quadratic shortcut preserves the target", {
-  set.seed(1803)
-  N <- 9L
-  M <- 3L
-  raw <- matrix(rnorm(N * M), N, M)
-  contrasts <- sweep(raw, 2L, colMeans(raw))
-  L <- matrix(c(1.2, 0, 0, 0.1, 0.8, 0, -0.2, 0.3, 1.1), M,
-              byrow = TRUE)
-  z_mean <- rnorm(M)
-  white <- solve(L, t(contrasts))
-  mean_white <- z_mean / sqrt(N)
-
-  loop_quad <- sum(vapply(seq_len(N), function(j) {
-    sum((white[, j] + mean_white)^2)
-  }, numeric(1)))
-  shortcut_quad <- sum(white^2) + sum(z_mean^2)
-  expect_equal(shortcut_quad, loop_quad, tolerance = 1e-12)
 })

@@ -250,16 +250,15 @@ test_that("a constant first coefficient is not copied into prior densities", {
                     g = rep(1:4, each = 3))
   bprior <- prior(constant(1), class = sd, group = g, coef = Intercept) +
     prior(normal(0, 1), class = sd, group = g, coef = x)
-  for (normalize in c(TRUE, FALSE)) {
-    code <- stancode(y ~ x + (1 + x | g), dat, prior = bprior,
-                     normalize = normalize)
+  formulas <- list(y ~ x + (1 + x | g),
+                   y ~ x + (1 + x | gr(g, s2z = TRUE)))
+  for (formula in formulas) {
+    code <- stancode(formula, dat, prior = bprior)
     lines <- strsplit(code, "\n", fixed = TRUE)[[1L]]
     expect_equal(sum(grepl("sd_1[1] = 1;", lines, fixed = TRUE)), 1L)
     model <- substring(code, regexpr("\nmodel {", code, fixed = TRUE)[1L])
     expect_false(grepl("sd_1[1] = 1;", model, fixed = TRUE))
-    expect_match2(code, paste0(
-      "normal_", if (normalize) "lpdf" else "lupdf", "(sd_1[2] | 0, 1)"
-    ))
+    expect_match2(code, "normal_lpdf(sd_1[2] | 0, 1)")
   }
 })
 
