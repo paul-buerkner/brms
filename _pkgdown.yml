@@ -1,0 +1,52 @@
+url: https://paulbuerkner.com/brms/
+
+destination: "."
+
+development:
+  mode: auto
+
+template:
+  package: pkgdownconfig
+
+navbar:
+  title: "brms"
+
+  structure:
+    left: [home, vignettes, functions, news, pkgs, stan]
+    right: [search, bluesky, forum, github, lightswitch]
+
+  components:
+    pkgs:
+      text: Other Packages
+      menu:
+        - text: bayesplot
+          href: https://mc-stan.org/bayesplot
+        - text: cmdstanr
+          href: https://mc-stan.org/cmdstanr
+        - text: posterior
+          href: https://mc-stan.org/posterior
+        - text: projpred
+          href: https://mc-stan.org/projpred
+        - text: rstan
+          href: https://mc-stan.org/rstan
+        - text: rstanarm
+          href: https://mc-stan.org/rstanarm
+        - text: rstantools
+          href: https://mc-stan.org/rstantools
+        - text: shinystan
+          href: https://mc-stan.org/shinystan
+
+articles:
+  - title: "Getting Started"
+    desc: >
+       These vignettes demonstrate how to use various features of the **brms** package.
+    contents:
+      - brms_customfamilies
+      - brms_distreg
+      - brms_families
+      - brms_missings
+      - brms_monotonic
+      - brms_multivariate
+      - brms_nonlinear
+      - brms_phylogenetics
+      - brms_threading

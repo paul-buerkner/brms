@@ -469,7 +469,17 @@ data_bhaz <- function(bframe, data, data2, prior) {
   }
   y <- bframe$frame$resp$values
   bhaz <- family_info(bframe, "bhaz")
-  bs <- bframe$basis$bhaz$basis_matrix
+  bs <- bframe$frame$basis$bhaz$basis_matrix
+  if (is.null(bs)) {
+    # models fitted with brms 2.23.0 stored the basis with the predictor terms
+    bs <- bframe$basis$bhaz$basis_matrix
+  }
+  if (is.null(bs)) {
+    # no basis was passed in, that is, we are on the original data and thus
+    # define the basis (and its knots) here; on the newdata path, the stored
+    # basis is passed in via 'brmsframe' and only evaluated below
+    bs <- bhaz_basis(bframe, data, args = bhaz$args)
+  }
   out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
   out$Kbhaz <- NCOL(out$Zbhaz)
@@ -499,14 +509,58 @@ data_bhaz <- function(bframe, data, data2, prior) {
   out
 }
 
+# Construct the basis matrix of the baseline hazard of the Cox model
+# This function is the single place where the knots of the baseline hazard are
+# defined. It is called by 'data_bhaz' on the original data (that is, when no
+# basis was passed into 'brmsframe') and by 'frame_basis_bhaz' when storing the
+# basis in the fitted model object. Both calls use the same data and arguments
+# and hence yield the same basis.
+# @param bframe a btl or btnl object containing the response formula
+# @param data data.frame containing the response and censoring variables
+# @param args arguments passed to the spline generating functions
+# @param warn emit a warning if no exact events are available?
+# @return the M-spline basis matrix of the baseline hazard function
+bhaz_basis <- function(bframe, data, args = list(), warn = TRUE) {
+  y <- model.response(model.frame(bframe$respform, data, na.action = na.pass))
+  # by default, only the event times are used to define the knots; older
+  # models used both event and censoring times, which is generally not sensible
+  y_knots <- y
+  if (!require_old_default("2.23.2")) {
+    cens <- get_cens(bframe, data)
+    if (!is.null(cens)) {
+      y_events <- y[cens == 0]
+      # fall back to all times if there are no exact events, since the knots
+      # cannot be defined from an empty set of event times (e.g. fully
+      # interval- or left-censored data)
+      if (length(y_events)) {
+        y_knots <- y_events
+      } else if (warn) {
+        warning2(
+          "No exact events were found to define the baseline hazard knots. ",
+          "Placing the knots at quantiles of all (censored) times instead. ",
+          "Consider setting a smaller 'df' in 'bhaz()' if the baseline ",
+          "hazard is poorly identified."
+        )
+      }
+    }
+  }
+  # boundary knots still span all times so the basis can be evaluated at
+  # censoring times beyond the last event (#1143)
+  bhaz_basis_matrix(y_knots, args = args, y_boundary = y)
+}
+
 # Basis matrices for baseline hazard functions of the Cox model
 # @param y vector of response values
 # @param args arguments passed to the spline generating functions
 # @param integrate compute the I-spline instead of the M-spline basis?
 # @param basis optional precomputed basis matrix
+# @param y_boundary values used to compute the default boundary knots;
+#   defaults to 'y' but may differ from it, for instance when the internal
+#   knots are based on event times only but the boundary knots should still
+#   span all observation times
 # @return the design matrix of the baseline hazard function
 bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
-                              basis = NULL) {
+                              basis = NULL, y_boundary = y) {
   # version check is required due to class name changes #1580
   require_package("splines2", version = "0.5.0")
   if (!is.null(basis)) {
@@ -525,8 +579,8 @@ bhaz_basis_matrix <- function(y, args = list(), integrate = FALSE,
     # avoid 'knots' outside 'Boundary.knots' error (#1143)
     # we also need a smaller lower boundary knot to avoid lp = -Inf
     # the below choices are ad-hoc and may need further thought
-    min_y <- min(y, na.rm = TRUE)
-    max_y <- max(y, na.rm = TRUE)
+    min_y <- min(y_boundary, na.rm = TRUE)
+    max_y <- max(y_boundary, na.rm = TRUE)
     diff_y <- max_y - min_y
     lower_knot <- max(min_y - diff_y / 50, 0)
     upper_knot <- max_y + diff_y / 50

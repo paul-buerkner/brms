@@ -16,12 +16,49 @@ function thanks to Daniel Sabanes Bove. (#1734)
 * Add a new global option `brms.cache_folder`, which allows users to define a 
 default directory for saving and loading cached brmsfit objects.
 Thanks to Sermet Pekin. (#1790)
+* Extend `posterior_predict` beyond random draws via argument `output`,
+which can be `"random"` (the default), `"probability"`, `"pit"`,
+`"density"`, or `"quantile"`, with supporting arguments `q`, `p`,
+`lower.tail`, `log.p`, and `log` thanks to Aki Vehtari and
+Florence Bockting. (#1857)
+* Predict all mixing proportions of a `mixture` family without a reference
+category via `refcat = NA`, analogous to `refcat = NA` in categorical models.
+Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
 * Preserve the matrix structure of factors in `newdata`, which is required for
 matrix predictors of smooth terms such as `mrf`. Thanks to Sebastian
 Weber. (#1935)
+* Stop rounding `posterior_predict` output to integers for discrete models
+unless `output` is `"random"`, which collapsed probabilities and densities
+to 0 or 1. Thanks to Ahmed Eldeeb. (#1923)
+* Include the lower bound in `posterior_predict` outputs `"probability"`,
+`"pit"`, `"density"` and `"quantile"` for truncated discrete models,
+matching the other post-processing methods. Thanks to Ahmed Eldeeb. (#1923)
+* Include the lower bound when computing `posterior_epred` for truncated
+discrete models, matching the generated Stan code and `log_lik`.
+Thanks to Ahmed Eldeeb. (#1923)
+* Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
+responses, matching the generated Stan code, so that `loo` and `waic`
+agree with the model that was fitted. Thanks to Ahmed Eldeeb. (#1903)
+* Improve the numerical stability of `log_lik` for truncated and 
+interval-censored models, which previously returned `Inf` or `NaN` whenever 
+both bounds fell far into the same tail. Families whose CDF is not itself 
+accurate on the log scale are not yet covered. 
+Thanks to Ahmed Eldeeb. (#1899)
+* Warn when `log_lik` returns infinite values, which the existing check for 
+`NA` values did not catch. (#1899)
+* Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
+definitions in Stan. (#1899)
+* Cox models now place the knots of the baseline hazard based on the event
+times only instead of both event and censoring times. Models fitted with
+brms 2.23.1 or earlier keep using their original knots in post-processing.
+Thanks to Sebastian Weber. (#1898)
+* The basis of the baseline hazard of Cox models is now stored with the
+response instead of with the predictor terms. As a result, `log_lik`, `loo`
+and `kfold` applied to new data reuse the knots chosen at fitting time also
+for non-linear formulas. Thanks to Sebastian Weber. (#1898)
 * `kfold_predict()` supports now families whose predictions are not draws x 
 observations matrices (e.g. categorical models). (#1889)
 * `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 
@@ -39,6 +76,15 @@ such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 * Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
 `$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
 * Enable updating argument `data2` for `brmsfit_multiple` objects. (#1776)
+* Restore the mode parameterization of the `com_poisson` family on the Stan
+side, which had switched to the classical parameterization in #1765 while the
+R-side density functions did not, so that R-side post-processing no longer
+disagrees with the sampled density whenever `shape != 1`. Also correct the
+condition selecting the asymptotic normalizing constant, which was left
+unchanged by that switch and so no longer described the intended region.
+Models fitted with `com_poisson` and `shape != 1` using affected versions
+were sampled under the classical parameterization and should be
+refitted. (#1927)
 * Fix several other minor bugs.
 
 ### Other Changes

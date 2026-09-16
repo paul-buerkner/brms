@@ -304,7 +304,7 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         "  // sparse matrix representation of X{p}\n",
         "  vector[rows(csr_extract_w(X{p}))] wX{p}",
         " = csr_extract_w(X{p});\n",
-        "  int vX{p}[size(csr_extract_v(X{p}))]",
+        "  array[size(csr_extract_v(X{p}))] int vX{p}",
         " = csr_extract_v(X{p});\n",
         "  int uX{p}[size(csr_extract_u(X{p}))]",
         " = csr_extract_u(X{p});\n"

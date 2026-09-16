@@ -455,8 +455,9 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 
 #' The von Mises Distribution
 #'
-#' Density, distribution function, and random generation for the
-#' von Mises distribution with location \code{mu}, and precision \code{kappa}.
+#' Density, distribution function, quantile function and random generation
+#' for the von Mises distribution with location \code{mu}, and precision
+#' \code{kappa}.
 #'
 #' @name VonMises
 #'
@@ -464,6 +465,8 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
 #' @param x,q Vector of quantiles between \code{-pi} and \code{pi}.
 #' @param kappa Vector of precision values.
 #' @param acc Accuracy of numerical approximations.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -552,6 +555,45 @@ pvon_mises <- function(q, mu, kappa, lower.tail = TRUE,
 
 #' @rdname VonMises
 #' @export
+qvon_mises <- function(p, mu, kappa, lower.tail = TRUE, log.p = FALSE,
+                       acc = 1e-20, tol = 1e-8) {
+  if (isTRUE(any(kappa < 0))) {
+    stop2("kappa must be non-negative")
+  }
+  pi <- base::pi
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, kappa))
+  eps <- 1e-10
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(-pi)
+    }
+    if (p_i >= 1) {
+      return(pi)
+    }
+    if (args$kappa[i] == 0) {
+      return(-pi + 2 * pi * p_i)
+    }
+    f <- function(q) {
+      pvon_mises(q, mu = args$mu[i], kappa = args$kappa[i], acc = acc) - p_i
+    }
+    lo <- -pi + eps
+    hi <- pi - eps
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname VonMises
+#' @export
 rvon_mises <- function(n, mu, kappa) {
   if (isTRUE(any(kappa < 0))) {
     stop2("kappa must be non-negative")
@@ -610,7 +652,7 @@ rvon_mises <- function(n, mu, kappa) {
 
 #' The Exponentially Modified Gaussian Distribution
 #'
-#' Density, distribution function, and random generation
+#' Density, distribution function, quantile function, and random generation
 #' for the exponentially modified Gaussian distribution with
 #' mean \code{mu} and standard deviation \code{sigma} of the gaussian
 #' component, as well as scale \code{beta} of the exponential
@@ -623,6 +665,8 @@ rvon_mises <- function(n, mu, kappa) {
 #' @param mu Vector of means of the combined distribution.
 #' @param sigma Vector of standard deviations of the gaussian component.
 #' @param beta Vector of scales of the exponential component.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function. Default 1e-8.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -676,6 +720,52 @@ pexgaussian <- function(q, mu, sigma, beta,
   if (log.p) {
     out <- log(out)
   }
+  out
+}
+
+#' @rdname ExGaussian
+#' @export
+qexgaussian <- function(p, mu, sigma, beta, lower.tail = TRUE, log.p = FALSE,
+                        tol = 1e-8) {
+  if (isTRUE(any(sigma < 0))) {
+    stop2("sigma must be non-negative.")
+  }
+  if (isTRUE(any(beta < 0))) {
+    stop2("beta must be non-negative.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, sigma, beta))
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(-Inf)
+    }
+    if (p_i >= 1) {
+      return(Inf)
+    }
+    f <- function(x) {
+      pexgaussian(x, mu = args$mu[i], sigma = args$sigma[i],
+                  beta = args$beta[i]) - p_i
+    }
+    sd <- sqrt(args$sigma[i]^2 + args$beta[i]^2)
+    center <- qnorm(p_i, mean = args$mu[i], sd = sd)
+    lo <- center - sd
+    hi <- center + sd
+    while (f(lo) > 0 && lo > -1e12) {
+      lo <- lo - sd
+    }
+    while (f(hi) < 0 && hi < 1e12) {
+      hi <- hi + sd
+    }
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
   out
 }
 
@@ -824,9 +914,12 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
 
 #' The Inverse Gaussian Distribution
 #'
-#' Density, distribution function, and random generation
+#' Density, distribution function, quantile function and random generation
 #' for the inverse Gaussian distribution with location \code{mu},
 #' and shape \code{shape}.
+#'
+#' The quantile function has no known closed form and is therefore computed
+#' numerically via inversion of the cumulative distribution function.
 #'
 #' @name InvGaussian
 #'
@@ -834,6 +927,8 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
 #' @param x,q Vector of quantiles.
 #' @param mu Vector of locations.
 #' @param shape Vector of shapes.
+#' @param tol Tolerance of the approximation used in the
+#'   quantile function. Default 1e-8.
 #'
 #' @details See \code{vignette("brms_families")} for details
 #' on the parameterization.
@@ -885,6 +980,46 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
 
 #' @rdname InvGaussian
 #' @export
+qinv_gaussian <- function(p, mu = 1, shape = 1, lower.tail = TRUE,
+                          log.p = FALSE, tol = 1e-8) {
+  if (isTRUE(any(mu <= 0))) {
+    stop2("Argument 'mu' must be positive.")
+  }
+  if (isTRUE(any(shape <= 0))) {
+    stop2("Argument 'shape' must be positive.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, mu, shape))
+  out <- vapply(seq_along(args$p), function(i) {
+    p_i <- args$p[i]
+    if (!is.finite(p_i)) {
+      return(p_i)
+    }
+    if (p_i <= 0) {
+      return(0)
+    }
+    if (p_i >= 1) {
+      return(Inf)
+    }
+    f <- function(x) {
+      pinv_gaussian(x, mu = args$mu[i], shape = args$shape[i]) - p_i
+    }
+    lo <- .Machine$double.eps
+    hi <- args$mu[i]
+    while (f(hi) < 0 && hi < 1e12) {
+      hi <- hi * 2
+    }
+    if (f(lo) * f(hi) > 0) {
+      return(NA_real_)
+    }
+    uniroot(f, c(lo, hi), tol = tol)$root
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname InvGaussian
+#' @export
 rinv_gaussian <- function(n, mu = 1, shape = 1) {
   # create random numbers for the inverse gaussian distribution
   # Args:
@@ -918,6 +1053,10 @@ rinv_gaussian <- function(n, mu = 1, shape = 1) {
 #'  \item{\code{phi = (1 - mu) * beta}} precision or over-dispersion, component.
 #' }
 #'
+#' The quantile function has no known closed form for this parameterization and
+#' is therefore computed numerically via inversion of the cumulative
+#' distribution function over the finite support \code{0:size}.
+#'
 #' @name BetaBinomial
 #'
 #' @inheritParams StudentT
@@ -942,6 +1081,31 @@ pbeta_binomial <- function(q, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
   beta <- (1 - mu) * phi
   extraDistr::pbbinom(q, size, alpha = alpha, beta = beta,
                       lower.tail = lower.tail, log.p = log.p)
+}
+
+#' @rdname BetaBinomial
+#' @export
+qbeta_binomial <- function(p, size, mu, phi, lower.tail = TRUE, log.p = FALSE) {
+  require_package("extraDistr")
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- do_call(expand, nlist(p, size, mu, phi))
+  out <- vapply(seq_along(args$p), function(i) {
+    if (!is.finite(args$p[i])) {
+      return(args$p[i])
+    }
+    alpha <- args$mu[i] * args$phi[i]
+    beta <- (1 - args$mu[i]) * args$phi[i]
+    x <- 0:args$size[i]
+    cdf <- cumsum(extraDistr::dbbinom(x, args$size[i], alpha = alpha, beta = beta))
+    ind <- which(cdf >= args$p[i])[1]
+    if (is.na(ind)) {
+      args$size[i]
+    } else {
+      x[ind]
+    }
+  }, numeric(1))
+  dim(out) <- attributes(args)$max_dim
+  out
 }
 
 #' @rdname BetaBinomial
@@ -1234,32 +1398,7 @@ dcom_poisson <- function(x, mu, shape, log = FALSE) {
 # random numbers from the COM-Poisson distribution
 rcom_poisson <- function(n, mu, shape, M = 10000) {
   n <- check_n_rdist(n, mu, shape)
-  M <- as.integer(as_one_numeric(M))
-  log_mu <- log(mu)
-  # approximating log_Z may yield too large random draws
-  log_Z <- log_Z_com_poisson(log_mu, shape, approx = FALSE)
-  u <- runif(n, 0, 1)
-  cdf <- exp(-log_Z)
-  lfac <- 0
-  y <- 0
-  out <- rep(0, n)
-  not_found <- cdf < u
-  while (any(not_found) && y <= M) {
-    y <- y + 1
-    out[not_found] <- y
-    lfac <- lfac + log(y)
-    cdf <- cdf + exp(shape * (y * log_mu - lfac) - log_Z)
-    not_found <- cdf < u
-  }
-  if (any(not_found)) {
-    out[not_found] <- NA
-    nfailed <- sum(not_found)
-    warning2(
-      "Drawing random numbers from the 'com_poisson' ",
-      "distribution failed in ", nfailed, " cases."
-    )
-  }
-  out
+  qcom_poisson(runif(n), mu, shape, M = M)
 }
 
 # CDF of the COM-Poisson distribution
@@ -1291,6 +1430,67 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   if (!log.p) {
     out <- exp(out)
   }
+  out
+}
+
+# quantile function of the COM-Poisson distribution
+qcom_poisson <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE,
+                         M = 10000) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(p = p, mu = mu, shape = shape)
+  p <- args$p
+  mu <- args$mu
+  shape <- args$shape
+  M <- as.integer(as_one_numeric(M))
+
+  out <- rep(NA_real_, length(p))
+  dim(out) <- attributes(args)$max_dim
+  out[!is.finite(p)] <- p[!is.finite(p)]
+
+  use_poisson <- is.finite(p) & shape == 1
+  if (any(use_poisson)) {
+    out[use_poisson] <- qpois(p[use_poisson], lambda = mu[use_poisson])
+  }
+
+  use_inf <- is.finite(p) & p == 1 & shape != 1
+  if (any(use_inf)) {
+    out[use_inf] <- Inf
+  }
+
+  search_mask <- is.finite(p) & p < 1 & shape != 1
+  if (!any(search_mask)) {
+    return(out)
+  }
+
+  log_mu <- log(mu[search_mask])
+  shape_t <- shape[search_mask]
+  p_t <- p[search_mask]
+  log_Z <- log_Z_com_poisson(log_mu, shape_t, approx = FALSE)
+
+  cdf <- exp(-log_Z)
+  out_t <- rep(0, sum(search_mask))
+  not_found <- cdf < p_t
+
+  y <- 0
+  lfac <- 0
+  while (any(not_found) && y <= M) {
+    y <- y + 1
+    out_t[not_found] <- y
+    lfac <- lfac + log(y)
+    cdf <- cdf + exp(shape_t * (y * log_mu - lfac) - log_Z)
+    not_found <- cdf < p_t
+  }
+
+  if (any(not_found)) {
+    out_t[not_found] <- NA
+    nfailed <- sum(not_found)
+    warning2(
+      "Computing quantiles of the 'com_poisson' ",
+      "distribution failed in ", nfailed, " cases."
+    )
+  }
+
+  out[search_mask] <- out_t
   out
 }
 
@@ -1761,6 +1961,8 @@ rxbeta <- function(...) {
 #' If \eqn{x = 0} set \eqn{f(x) = \theta + (1 - \theta) * g(0)}.
 #' Else set \eqn{f(x) = (1 - \theta) * g(x)},
 #' where \eqn{g(x)} is the density of the non-zero-inflated part.
+#' For the zero-inflated negative binomial distribution, the quantile function
+#' has no known closed form and is therefore computed numerically.
 NULL
 
 #' @rdname ZeroInflated
@@ -1780,6 +1982,14 @@ pzero_inflated_poisson <- function(q, lambda, zi, lower.tail = TRUE,
 
 #' @rdname ZeroInflated
 #' @export
+qzero_inflated_poisson <- function(p, lambda, zi, lower.tail = TRUE,
+                                   log.p = FALSE) {
+  pars <- nlist(lambda)
+  .qzero_inflated(p, "pois", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
 dzero_inflated_negbinomial <- function(x, mu, shape, zi, log = FALSE) {
   pars <- nlist(mu, size = shape)
   .dzero_inflated(x, "nbinom", zi, pars, log)
@@ -1791,6 +2001,14 @@ pzero_inflated_negbinomial <- function(q, mu, shape, zi, lower.tail = TRUE,
                                        log.p = FALSE) {
   pars <- nlist(mu, size = shape)
   .pzero_inflated(q, "nbinom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_negbinomial <- function(p, mu, shape, zi, lower.tail = TRUE,
+                                       log.p = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .qzero_inflated(p, "nbinom", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -1810,6 +2028,14 @@ pzero_inflated_binomial <- function(q, size, prob, zi, lower.tail = TRUE,
 
 #' @rdname ZeroInflated
 #' @export
+qzero_inflated_binomial <- function(p, size, prob, zi, lower.tail = TRUE,
+                                    log.p = FALSE) {
+  pars <- nlist(size, prob)
+  .qzero_inflated(p, "binom", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
 dzero_inflated_beta_binomial <- function(x, size, mu, phi, zi, log = FALSE) {
   pars <- nlist(size, mu, phi)
   .dzero_inflated(x, "beta_binomial", zi, pars, log)
@@ -1821,6 +2047,14 @@ pzero_inflated_beta_binomial <- function(q, size, mu, phi, zi,
                                          lower.tail = TRUE, log.p = FALSE) {
   pars <- nlist(size, mu, phi)
   .pzero_inflated(q, "beta_binomial", zi, pars, lower.tail, log.p)
+}
+
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_beta_binomial <- function(p, size, mu, phi, zi,
+                                         lower.tail = TRUE, log.p = FALSE) {
+  pars <- nlist(size, mu, phi)
+  .qzero_inflated(p, "beta_binomial", zi, pars, lower.tail, log.p)
 }
 
 #' @rdname ZeroInflated
@@ -1840,6 +2074,15 @@ pzero_inflated_beta <- function(q, shape1, shape2, zi, lower.tail = TRUE,
   .phurdle(q, "beta", zi, pars, lower.tail, log.p, type = "real")
 }
 
+#' @rdname ZeroInflated
+#' @export
+qzero_inflated_beta <- function(p, shape1, shape2, zi, lower.tail = TRUE,
+                                log.p = FALSE) {
+  pars <- nlist(shape1, shape2)
+  # zi_beta is technically a hurdle model
+  .qzero_inflated(p, "beta", zi, pars, lower.tail, log.p)
+}
+
 # @rdname ZeroInflated
 # @export
 dzero_inflated_asym_laplace <- function(x, mu, sigma, quantile, zi,
@@ -1857,6 +2100,145 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
   # zi_asym_laplace is technically a hurdle model
   .phurdle(q, "asym_laplace", zi, pars, lower.tail, log.p,
            type = "real", lb = -Inf, ub = Inf)
+}
+
+# @rdname ZeroInflated
+# @export
+qzero_inflated_asym_laplace <- function(p, mu, sigma, quantile, zi,
+                                        lower.tail = TRUE, log.p = FALSE) {
+  # mixture: zi at 0 and (1 - zi) * asym_laplace on (-Inf, Inf)
+  # so the quantile is not a standard positive-support hurdle quantile
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = nlist(p, mu, sigma, quantile, zi))
+  p <- args$p
+  mu <- args$mu
+  sigma <- args$sigma
+  quantile <- args$quantile
+  zi <- args$zi
+  F0_base <- pasym_laplace(0, mu = mu, sigma = sigma, quantile = quantile)
+  F0_minus <- (1 - zi) * F0_base
+  F0 <- zi + (1 - zi) * F0_base
+  out <- rep(0, length(p))
+  idx_lo <- which(p < F0_minus & zi < 1)
+  idx_hi <- which(p > F0 & zi < 1)
+  if (length(idx_lo)) {
+    out[idx_lo] <- qasym_laplace(
+      p[idx_lo] / (1 - zi[idx_lo]),
+      mu = mu[idx_lo], sigma = sigma[idx_lo], quantile = quantile[idx_lo]
+    )
+  }
+  if (length(idx_hi)) {
+    out[idx_hi] <- qasym_laplace(
+      (p[idx_hi] - zi[idx_hi]) / (1 - zi[idx_hi]),
+      mu = mu[idx_hi], sigma = sigma[idx_hi], quantile = quantile[idx_hi]
+    )
+  }
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' Zero-One-Inflated Beta Distribution
+#'
+#' Density, distribution function and quantile function for the
+#' zero-one-inflated beta distribution.
+#'
+#' @name ZeroOneInflated
+#'
+#' @inheritParams StudentT
+#' @param shape1,shape2 shape parameters of the beta component
+#' @param zoi zero-one-inflation probability
+#' @param coi conditional one-inflation probability
+#'
+#' @details
+#' With probability \eqn{\zeta}{zoi} the response is 0 or 1, and conditionally
+#' on inflation it is 1 with probability \eqn{\gamma}{coi}. With probability
+#' \eqn{1 - \zeta}{1 - zoi} the response follows a beta distribution.
+NULL
+
+#' @rdname ZeroOneInflated
+#' @export
+dzero_one_inflated_beta <- function(x, shape1, shape2, zoi, coi, log = FALSE) {
+  log <- as_one_logical(log)
+  args <- expand(dots = nlist(x, shape1, shape2, zoi, coi))
+  x <- args$x
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  out <- ifelse(
+    x == 0,
+    dbinom(1, size = 1, prob = zoi, log = TRUE) +
+      dbinom(0, size = 1, prob = coi, log = TRUE),
+    ifelse(
+      x == 1,
+      dbinom(1, size = 1, prob = zoi, log = TRUE) +
+        dbinom(1, size = 1, prob = coi, log = TRUE),
+      dbinom(0, size = 1, prob = zoi, log = TRUE) +
+        dbeta(x, shape1 = shape1, shape2 = shape2, log = TRUE)
+    )
+  )
+  out[x < 0 | x > 1] <- -Inf
+  if (!log) {
+    out <- exp(out)
+  }
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname ZeroOneInflated
+#' @export
+pzero_one_inflated_beta <- function(q, shape1, shape2, zoi, coi,
+                                    lower.tail = TRUE, log.p = FALSE) {
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  args <- expand(dots = nlist(q, shape1, shape2, zoi, coi))
+  q <- args$q
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  # F(q) = zoi * (1 - coi) + (1 - zoi) * F_beta(q) for q in [0, 1)
+  # and F(q) = 1 for q >= 1
+  out <- zoi * (1 - coi) + (1 - zoi) * pbeta(q, shape1 = shape1, shape2 = shape2)
+  out[q < 0] <- 0
+  out[q >= 1] <- 1
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
+#' @rdname ZeroOneInflated
+#' @export
+qzero_one_inflated_beta <- function(p, shape1, shape2, zoi, coi,
+                                    lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = nlist(p, shape1, shape2, zoi, coi))
+  p <- args$p
+  shape1 <- args$shape1
+  shape2 <- args$shape2
+  zoi <- args$zoi
+  coi <- args$coi
+  p0 <- zoi * (1 - coi)
+  p1 <- zoi * coi
+  out <- rep(0, length(p))
+  idx_mid <- which(p > p0 & p < (1 - p1) & zoi < 1)
+  idx_one <- which(p >= (1 - p1))
+  if (length(idx_mid)) {
+    out[idx_mid] <- qbeta(
+      (p[idx_mid] - p0[idx_mid]) / (1 - zoi[idx_mid]),
+      shape1 = shape1[idx_mid], shape2 = shape2[idx_mid]
+    )
+  }
+  out[idx_one] <- 1
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
+  out
 }
 
 # density of a zero-inflated distribution
@@ -1920,9 +2302,33 @@ pzero_inflated_asym_laplace <- function(q, mu, sigma, quantile, zi,
   out
 }
 
+# quantile function of a zero-inflated distribution
+# @param dist name of the distribution
+# @param zi bernoulli zero-inflated parameter
+# @param pars list of parameters passed to qfun
+.qzero_inflated <- function(p, dist, zi, pars, lower.tail, log.p) {
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = c(nlist(p, zi), pars))
+  p <- args$p
+  zi <- args$zi
+  pars <- args[names(pars)]
+  qfun <- paste0("q", dist)
+  p_dist <- ifelse(zi == 1, 0, (p - zi) / (1 - zi))
+  p_dist <- pmin(1, pmax(0, p_dist))
+  out <- do_call(qfun, c(list(p_dist), pars))
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
+  out
+}
+
 #' Hurdle Distributions
 #'
-#' Density and distribution functions for hurdle distributions.
+#' Density, distribution function, quantile function and random generation
+#' for hurdle distributions.
 #'
 #' @name Hurdle
 #'
@@ -1957,6 +2363,21 @@ phurdle_poisson <- function(q, lambda, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+qhurdle_poisson <- function(p, lambda, hu, lower.tail = TRUE,
+                            log.p = FALSE) {
+  pars <- nlist(lambda)
+  .qhurdle(p, "pois", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_poisson <- function(n, lambda, hu) {
+  n <- check_n_rdist(n, lambda, hu)
+  qhurdle_poisson(runif(n), lambda = lambda, hu = hu)
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_negbinomial <- function(x, mu, shape, hu, log = FALSE) {
   pars <- nlist(mu, size = shape)
   .dhurdle(x, "nbinom", hu, pars, log, type = "int")
@@ -1968,6 +2389,21 @@ phurdle_negbinomial <- function(q, mu, shape, hu, lower.tail = TRUE,
                                 log.p = FALSE) {
   pars <- nlist(mu, size = shape)
   .phurdle(q, "nbinom", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+qhurdle_negbinomial <- function(p, mu, shape, hu, lower.tail = TRUE,
+                                log.p = FALSE) {
+  pars <- nlist(mu, size = shape)
+  .qhurdle(p, "nbinom", hu, pars, lower.tail, log.p, type = "int")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_negbinomial <- function(n, mu, shape, hu) {
+  n <- check_n_rdist(n, mu, shape, hu)
+  qhurdle_negbinomial(runif(n), mu = mu, shape = shape, hu = hu)
 }
 
 #' @rdname Hurdle
@@ -1987,6 +2423,21 @@ phurdle_gamma <- function(q, shape, scale, hu, lower.tail = TRUE,
 
 #' @rdname Hurdle
 #' @export
+qhurdle_gamma <- function(p, shape, scale, hu, lower.tail = TRUE,
+                          log.p = FALSE) {
+  pars <- nlist(shape, scale)
+  .qhurdle(p, "gamma", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_gamma <- function(n, shape, scale, hu) {
+  n <- check_n_rdist(n, shape, scale, hu)
+  qhurdle_gamma(runif(n), shape = shape, scale = scale, hu = hu)
+}
+
+#' @rdname Hurdle
+#' @export
 dhurdle_lognormal <- function(x, mu, sigma, hu, log = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .dhurdle(x, "lnorm", hu, pars, log, type = "real")
@@ -1998,6 +2449,127 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
                               log.p = FALSE) {
   pars <- list(meanlog = mu, sdlog = sigma)
   .phurdle(q, "lnorm", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+qhurdle_lognormal <- function(p, mu, sigma, hu, lower.tail = TRUE,
+                              log.p = FALSE) {
+  pars <- list(meanlog = mu, sdlog = sigma)
+  .qhurdle(p, "lnorm", hu, pars, lower.tail, log.p, type = "real")
+}
+
+#' @rdname Hurdle
+#' @export
+rhurdle_lognormal <- function(n, mu, sigma, hu) {
+  n <- check_n_rdist(n, mu, sigma, hu)
+  qhurdle_lognormal(runif(n), mu = mu, sigma = sigma, hu = hu)
+}
+
+# density of the hurdle-cumulative distribution
+# categories: 0 = hurdle, 1..ncat = cumulative ordinal categories
+# @param x category indices
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param hu hurdle probability
+# @param disc discrimination parameter
+# @param link link function of the ordinal part
+# @param log return values on the log scale?
+dhurdle_cumulative <- function(x, eta, thres, hu, disc = 1, link = "logit",
+                               log = FALSE) {
+  log <- as_one_logical(log)
+  link <- as_one_character(link)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  out <- matrix(0, nrow = ndraws, ncol = length(x))
+  for (j in seq_along(x)) {
+    xj <- x[j]
+    if (xj == 0) {
+      out[, j] <- hu
+    } else if (xj >= 1 && xj <= ncat) {
+      out[, j] <- (1 - hu) * as.vector(
+        dcumulative(xj, eta = eta, thres = thres, disc = disc, link = link)
+      )
+    }
+  }
+  if (length(x) == 1L) {
+    out <- as.vector(out)
+  }
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
+# CDF of the hurdle-cumulative distribution
+# @return a vector (if length(q) == 1) or matrix of probabilities P(X <= q)
+phurdle_cumulative <- function(q, eta, thres, hu, disc = 1, link = "logit") {
+  link <- as_one_character(link)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  .fun <- function(j) {
+    if (j < 0) {
+      return(rep(0, ndraws))
+    }
+    if (j == 0) {
+      return(hu)
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    F_ord <- pordinal(
+      j, eta = eta, thres = thres, disc = disc,
+      family = "cumulative", link = link
+    )
+    hu + (1 - hu) * F_ord
+  }
+  out <- cblapply(q, .fun)
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
+  out
+}
+
+# quantile function of the hurdle-cumulative distribution
+qhurdle_cumulative <- function(p, eta, thres, hu, disc = 1, link = "logit",
+                               lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  link <- as_one_character(link)
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  if (length(hu) == 1L) {
+    hu <- rep(hu, ndraws)
+  }
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  if (length(disc) == 1L) {
+    disc <- rep(disc, ndraws)
+  }
+  out <- rep(0L, ndraws)
+  idx <- which(p > hu & hu < 1)
+  if (length(idx)) {
+    out[idx] <- qordinal(
+      (p[idx] - hu[idx]) / (1 - hu[idx]),
+      eta = eta[idx], thres = thres[idx, , drop = FALSE], disc = disc[idx],
+      family = "cumulative", link = link
+    )
+  }
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  out
+}
+
+# random generation for the hurdle-cumulative distribution
+rhurdle_cumulative <- function(n, eta, thres, hu, disc = 1, link = "logit") {
+  n <- check_n_rdist(n, eta, thres, hu, disc)
+  qhurdle_cumulative(
+    runif(n), eta = eta, thres = thres, hu = hu, disc = disc, link = link
+  )
 }
 
 # density of a hurdle distribution
@@ -2072,6 +2644,40 @@ phurdle_lognormal <- function(q, mu, sigma, hu, lower.tail = TRUE,
       out <- exp(out)
     }
   }
+  out
+}
+
+# quantile function of a hurdle distribution
+# @param dist name of the distribution
+# @param hu bernoulli hurdle parameter
+# @param pars list of parameters passed to qfun
+# @param type support of distribution (int or real)
+.qhurdle <- function(p, dist, hu, pars, lower.tail, log.p, type) {
+  stopifnot(is.list(pars))
+  dist <- as_one_character(dist)
+  lower.tail <- as_one_logical(lower.tail)
+  log.p <- as_one_logical(log.p)
+  type <- match.arg(type, c("int", "real"))
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(dots = c(nlist(p, hu), pars))
+  p <- args$p
+  hu <- args$hu
+  pars <- args[names(pars)]
+  qfun <- paste0("q", dist)
+  if (type == "int") {
+    pdf <- paste0("d", dist)
+    cdf0 <- do_call(pdf, c(0, pars))
+    p_dist <- cdf0 + (p - hu) / (1 - hu) * (1 - cdf0)
+  } else {
+    p_dist <- (p - hu) / (1 - hu)
+  }
+  p_dist <- ifelse(hu == 1, 0, p_dist)
+  p_dist <- pmin(1, pmax(0, p_dist))
+  out <- do_call(qfun, c(list(p_dist), pars))
+  # point mass at zero for p in [0, hu]
+  out[p <= hu] <- 0
+  out[!is.finite(p)] <- p[!is.finite(p)]
+  dim(out) <- attributes(args)$max_dim
   out
 }
 
@@ -2155,13 +2761,72 @@ link_categorical <- function(x, refcat = 1, return_refcat = FALSE) {
 # @param q positive integers not greater than ncat
 # @param eta the linear predictor (of length or ncol ncat)
 # @param log.p return values on the log scale?
+# @return a vector (if length(q) == 1) or matrix of probabilities P(X <= q)
 pcategorical <- function(q, eta, log.p = FALSE) {
-  p <- dcategorical(seq_len(max(q)), eta = eta)
-  out <- cblapply(q, function(j) rowSums(p[, 1:j, drop = FALSE]))
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  if (length(dim(eta)) != 2L) {
+    stop2("eta must be a numeric vector or matrix.")
+  }
+  ncat <- NCOL(eta)
+  ndraws <- NROW(eta)
+  q_max <- max(q)
+  if (q_max > 0) {
+    p <- dcategorical(seq_len(min(q_max, ncat)), eta = eta)
+  } else {
+    p <- matrix(0, nrow = ndraws, ncol = 0)
+  }
+  .fun <- function(j) {
+    if (j <= 0) {
+      return(rep(0, ndraws))
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    rowSums(as.matrix(p[, 1:j, drop = FALSE]))
+  }
+  out <- cblapply(q, .fun)
   if (log.p) {
     out <- log(out)
   }
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
   out
+}
+
+# quantile function of the categorical distribution
+# @param p vector of probabilities
+# @param eta the linear predictor (of length or ncol ncat)
+# @return a vector of category indices
+qcategorical <- function(p, eta, lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  ncat <- NCOL(eta)
+  F_all <- pcategorical(seq_len(ncat), eta = eta)
+  ndraws <- NROW(F_all)
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  first_greater(F_all, target = p)
+}
+
+# random generation for the categorical distribution
+# @param n number of observations
+# @param eta the linear predictor (of length or ncol ncat)
+# @return a vector of category indices
+rcategorical <- function(n, eta) {
+  if (is.null(dim(eta))) {
+    eta <- matrix(eta, nrow = 1)
+  }
+  n <- as.integer(as_one_numeric(n))
+  if (!n %in% c(1L, NROW(eta))) {
+    stop2("'n' must match the number of rows of 'eta'.")
+  }
+  qcategorical(runif(NROW(eta)), eta = eta)
 }
 
 # density of the multinomial distribution with the softmax transform
@@ -2548,6 +3213,33 @@ link_acat <- function(x, link) {
   out
 }
 
+# density for ordinal distributions
+# @param x positive integers not greater than ncat
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @param log return values on the log scale?
+# @return a vector (if length(x) == 1) or matrix of probabilities P(X = x)
+dordinal <- function(x, eta, thres, disc = 1, family = NULL, link = "logit",
+                     log = FALSE) {
+  family <- as_one_character(family)
+  link <- as_one_character(link)
+  log <- as_one_logical(log)
+  out <- do_call(
+    paste0("d", family),
+    nlist(x, eta, thres, disc, link)
+  )
+  if (length(x) == 1L) {
+    out <- as.vector(out)
+  }
+  if (log) {
+    out <- log(out)
+  }
+  out
+}
+
 # CDF for ordinal distributions
 # @param q positive integers not greater than ncat
 # @param eta draws of the linear predictor
@@ -2555,14 +3247,72 @@ link_acat <- function(x, link) {
 # @param disc draws of the discrimination parameter
 # @param family a character string naming the family
 # @param link a character string naming the link
-# @return a matrix of probabilities P(x <= q)
+# @return a vector (if length(q) == 1) or matrix of probabilities P(x <= q)
 pordinal <- function(q, eta, thres, disc = 1, family = NULL, link = "logit") {
   family <- as_one_character(family)
   link <- as_one_character(link)
-  args <- nlist(x = seq_len(max(q)), eta, thres, disc, link)
-  p <- do_call(paste0("d", family), args)
-  .fun <- function(j) rowSums(as.matrix(p[, 1:j, drop = FALSE]))
-  cblapply(q, .fun)
+  ncat <- NCOL(thres) + 1L
+  ndraws <- if (!is.null(dim(eta))) NROW(eta) else length(eta)
+  q_max <- max(q)
+  if (q_max > 0) {
+    args <- nlist(x = seq_len(min(q_max, ncat)), eta, thres, disc, link)
+    p <- do_call(paste0("d", family), args)
+  } else {
+    p <- matrix(0, nrow = ndraws, ncol = 0)
+  }
+  .fun <- function(j) {
+    if (j <= 0) {
+      return(rep(0, ndraws))
+    }
+    if (j >= ncat) {
+      return(rep(1, ndraws))
+    }
+    rowSums(as.matrix(p[, 1:j, drop = FALSE]))
+  }
+  out <- cblapply(q, .fun)
+  if (length(q) == 1L) {
+    out <- as.vector(out)
+  }
+  out
+}
+
+# quantile function for ordinal distributions
+# @param p vector of probabilities
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @return a vector of category indices
+qordinal <- function(p, eta, thres, disc = 1, family = NULL, link = "logit",
+                     lower.tail = TRUE, log.p = FALSE) {
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  ncat <- NCOL(thres) + 1L
+  F_all <- pordinal(
+    seq_len(ncat), eta = eta, thres = thres, disc = disc,
+    family = family, link = link
+  )
+  ndraws <- NROW(F_all)
+  if (length(p) == 1L) {
+    p <- rep(p, ndraws)
+  }
+  first_greater(F_all, target = p)
+}
+
+# random generation for ordinal distributions
+# @param n number of observations
+# @param eta draws of the linear predictor
+# @param thres draws of threshold parameters
+# @param disc draws of the discrimination parameter
+# @param family a character string naming the family
+# @param link a character string naming the link
+# @return a vector of category indices
+rordinal <- function(n, eta, thres, disc = 1, family = NULL, link = "logit") {
+  n <- check_n_rdist(n, eta, thres, disc)
+  qordinal(
+    runif(n), eta = eta, thres = thres, disc = disc,
+    family = family, link = link
+  )
 }
 
 # helper functions to shift arbitrary distributions
@@ -2599,11 +3349,14 @@ validate_p_dist <- function(p, lower.tail = TRUE, log.p = FALSE) {
 
 # check if 'n' in r<dist> functions is valid
 # @param n number of desired random draws
-# @param .. parameter vectors
+# @param .. parameter vectors or matrices (draws in rows)
 # @return validated 'n'
 check_n_rdist <- function(n, ...) {
   n <- as.integer(as_one_numeric(n))
-  max_len <- max(lengths(list(...)))
+  # matrices use NROW (number of draws), not length (nrow * ncol)
+  max_len <- max(vapply(list(...), function(x) {
+    if (!is.null(dim(x))) NROW(x) else length(x)
+  }, integer(1)))
   if (max_len > 1L) {
     if (!n %in% c(1, max_len)) {
       stop2("'n' must match the maximum length of the parameter vectors.")

@@ -7,12 +7,6 @@
 \alias{niterations}
 \alias{nchains}
 \alias{ndraws}
-\alias{Index}
-\alias{variables,}
-\alias{iterations,}
-\alias{chains,}
-\alias{and}
-\alias{draws.}
 \alias{variables.brmsfit}
 \alias{nvariables.brmsfit}
 \alias{niterations.brmsfit}
@@ -37,5 +31,5 @@ the methods are defined.}
 \item{...}{Arguments passed to individual methods (if applicable).}
 }
 \description{
-Index \code{brmsfit} objects
+Index variables, iterations, chains, and draws.
 }

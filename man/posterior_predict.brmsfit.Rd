@@ -17,7 +17,13 @@
   draw_ids = NULL,
   sort = FALSE,
   ntrys = 5,
+  output = "random",
+  q = NULL,
+  p = NULL,
   cores = NULL,
+  lower.tail = TRUE,
+  log.p = FALSE,
+  log = FALSE,
   ...
 )
 }
@@ -66,15 +72,42 @@ time series (\code{TRUE}).}
 for truncated discrete models only
 (defaults to \code{5}). See Details for more information.}
 
+\item{output}{Type of predictive quantity to return. Either
+\code{"random"} (the default), \code{"probability"}, \code{"pit"},
+\code{"density"}, or \code{"quantile"}. See Details for more
+information.}
+
+\item{q}{Optional values at which to evaluate probabilities, PIT
+values, or densities. Only used if \code{output} is
+\code{"probability"}, \code{"pit"}, or \code{"density"}.
+Defaults to the observed responses. See Details.}
+
+\item{p}{Probabilities at which to evaluate quantiles. Only used
+and required if \code{output = "quantile"}.}
+
 \item{cores}{Number of cores (defaults to \code{1}). On non-Windows systems,
 this argument can be set globally via the \code{mc.cores} option.}
+
+\item{lower.tail}{Logical; If \code{TRUE} (default), return
+\eqn{P(X \le x)} or the corresponding lower-tail quantiles.
+Else, return \eqn{P(X > x)} or upper-tail quantiles.
+Only used if \code{output} is \code{"probability"}, \code{"pit"},
+or \code{"quantile"}.}
+
+\item{log.p}{Logical; If \code{TRUE}, probabilities are given and
+returned on the log scale. Only used if \code{output} is
+\code{"probability"}, \code{"pit"}, or \code{"quantile"}.}
+
+\item{log}{Logical; If \code{TRUE}, densities are returned on the
+log scale. Only used if \code{output = "density"}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
 \value{
-An \code{array} of draws. In univariate models,
-  the output is as an S x N matrix, where S is the number of posterior
+An \code{array} of posterior predictive draws or related
+  quantities (see argument \code{output}). In univariate models,
+  the output is an S x N matrix, where S is the number of posterior
   draws and N is the number of observations. In multivariate models, an
   additional dimension is added to the output which indexes along the
   different response variables.
@@ -89,6 +122,46 @@ is incorporated in \code{posterior_predict}. However, the estimated means of
 both methods averaged across draws should be very similar.
 }
 \details{
+Besides random draws, related quantities such as CDF or PIT
+  values, densities, or quantiles can be returned via argument
+  \code{output}. This argument controls which predictive quantity is
+  returned for each posterior draw and observation:
+  \itemize{
+  \item \code{"random"}: Draws from the posterior predictive
+    distribution. This is the default and reproduces the historical
+    behavior of \code{posterior_predict}.
+  \item \code{"probability"}: Values of the posterior predictive CDF
+    evaluated at \code{q}.
+  \item \code{"pit"}: Probability integral transform (PIT) values
+    evaluated at \code{q}. For continuous distributions, this is
+    identical to \code{"probability"}. For discrete distributions, a
+    randomized PIT is used to avoid point masses at the CDF jumps
+    (Czado et al., 2009). See Säilynoja et al. (2022) and
+    Tesso and Vehtari (2026) for using PIT values in predictive
+    model checking.
+  \item \code{"density"}: Values of the posterior predictive density
+    or probability mass function evaluated at \code{q}.
+  \item \code{"quantile"}: Quantiles of the posterior predictive
+    distribution at probabilities \code{p}.
+  }
+
+  If \code{q} is \code{NULL}, the observed response values are used.
+  Argument \code{p} must be supplied when
+  \code{output = "quantile"}. Not all response families support
+  outputs other than \code{"random"} yet; requesting an unsupported
+  combination raises an error.
+
+  For truncated discrete models only: In the absence of any general
+  algorithm to sample from truncated discrete distributions, rejection
+  sampling is applied in this special case. This means that values are
+  sampled until a value lies within the defined truncation boundaries. In
+  practice, this procedure may be rather slow (especially in \R). Thus, we
+  try to do approximate rejection sampling by sampling each value
+  \code{ntrys} times and then select a valid value. If all values are
+  invalid, the closest boundary is used, instead. If there are more than a
+  few of these pathological cases, a warning will occur suggesting to
+  increase argument \code{ntrys}.
+
 \code{NA} values within factors in \code{newdata},
   are interpreted as if all dummy variables of this factor are
   zero. This allows, for instance, to make predictions of the grand mean
@@ -101,17 +174,6 @@ New levels can be sampled in multiple ways, which can be controlled
 via argument \code{sample_new_levels}. Both of these arguments are
 documented in \code{\link{prepare_predictions}} along with several
 other useful arguments to control specific aspects of the predictions.
-
-For truncated discrete models only: In the absence of any general
-  algorithm to sample from truncated discrete distributions, rejection
-  sampling is applied in this special case. This means that values are
-  sampled until a value lies within the defined truncation boundaries. In
-  practice, this procedure may be rather slow (especially in \R). Thus, we
-  try to do approximate rejection sampling by sampling each value
-  \code{ntrys} times and then select a valid value. If all values are
-  invalid, the closest boundary is used, instead. If there are more than a
-  few of these pathological cases, a warning will occur suggesting to
-  increase argument \code{ntrys}.
 }
 \examples{
 \dontrun{
@@ -137,4 +199,18 @@ pp <- posterior_predict(fit, newdata = newdata)
 str(pp)
 }
 
+}
+\references{
+Czado, C., Gneiting, T., & Held, L. (2009). Predictive model
+assessment for count data. \emph{Biometrics}, 65(4), 1254-1261.
+\doi{10.1111/j.1541-0420.2009.01191.x}
+
+Säilynoja, T., Bürkner, P.-C., & Vehtari, A. (2022). Graphical
+test for discrete uniformity and its applications in
+goodness-of-fit evaluation and multiple sample comparison.
+\emph{Statistics and Computing}, 32, 32.
+\doi{10.1007/s11222-022-10090-6}
+
+Tesso, H., & Vehtari, A. (2026). LOO-PIT predictive model checking.
+\emph{arXiv preprint}. \doi{10.48550/arXiv.2603.02928}
 }

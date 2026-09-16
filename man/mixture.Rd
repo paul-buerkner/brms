@@ -4,7 +4,7 @@
 \alias{mixture}
 \title{Finite Mixture Families in \pkg{brms}}
 \usage{
-mixture(..., flist = NULL, nmix = 1, order = NULL)
+mixture(..., flist = NULL, nmix = 1, order = NULL, refcat = NULL)
 }
 \arguments{
 \item{...}{One or more objects providing a description of the
@@ -28,6 +28,17 @@ If \code{'none'} or \code{FALSE}, no ordering constraint is applied.
 If \code{NULL} (the default), \code{order} is set to \code{'mu'}
 if all families are the same and \code{'none'} otherwise.
 Other ordering constraints may be implemented in the future.}
+
+\item{refcat}{Optional reference category for the mixing proportions.
+By default (\code{NULL}), when the mixing proportions are predicted,
+all but one of them have to be modeled while the remaining one serves
+as the reference category (its linear predictor is fixed to zero) to
+identify the model. If \code{refcat = NA}, no reference category is used
+and all mixing proportions are predicted via a 'softmax' transformation.
+This is analogous to \code{refcat = NA} in \code{\link{categorical}}
+models. As the resulting model is only weakly identified, informative
+priors on the \code{theta} parameters are strongly recommended (see the
+examples in \code{\link{brmsformula}}).}
 }
 \value{
 An object of class \code{mixfamily}.
@@ -95,6 +106,17 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
             init = 0, chains = 2)
 summary(fit4)
 pp_check(fit4)
+
+## predict all mixing proportions without a reference category
+## (requires informative priors on the theta parameters)
+mix_na <- mixture(gaussian, gaussian, refcat = NA)
+theta_prior <- c(prior, prior(normal(0, 1), Intercept, dpar = theta1),
+                  prior(normal(0, 1), Intercept, dpar = theta2))
+fit5 <- brm(bf(y ~ x + z, theta1 ~ x, theta2 ~ x),
+            dat, family = mix_na, prior = theta_prior,
+            init = 0, chains = 2)
+summary(fit5)
+pp_check(fit5)
 
 ## compare model fit
 loo(fit1, fit2, fit3, fit4)

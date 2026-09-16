@@ -559,7 +559,12 @@ models for all parameters of the assumed response distribution.
   one of the them has to be predicted, while the remaining one is used
   as the reference category to identify the model. The so-called 'softmax'
   transformation is applied on the linear predictor terms to form a
-  probability vector.
+  probability vector. Alternatively, by setting \code{refcat = NA} in
+  \code{\link{mixture}}, all mixing proportions can be predicted without a
+  reference category. In this case, the 'softmax' transformation is applied
+  to all linear predictor terms. As the resulting model is only weakly
+  identified, informative priors on the \code{theta} parameters are strongly
+  recommended.
 
   For more information on mixture models, see
   the documentation of \code{\link{mixture}}.

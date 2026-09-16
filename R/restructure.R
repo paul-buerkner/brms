@@ -279,6 +279,10 @@ restructure_v2 <- function(x) {
     # additionally models with gp terms used not to store L but now need to in
     # order for post-processing functions to work correctly (#1740)
 
+    # ensure that version-dependent defaults (e.g. the knots of the Cox
+    # baseline hazard) are computed as they were at fitting time
+    old_options <- options(.brmsfit_version = x$version$brms)
+    on.exit(options(old_options), add = TRUE)
     bframe <- brmsframe(x$formula, data = x$data)
     x$basis <- frame_basis(bframe, data = x$data)
   }

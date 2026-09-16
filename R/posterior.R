@@ -1,8 +1,8 @@
 #' Index \code{brmsfit} objects
 #'
-#' @aliases variables nvariables niterations nchains ndraws
-#'
 #' Index variables, iterations, chains, and draws.
+#'
+#' @aliases variables nvariables niterations nchains ndraws
 #'
 #' @param x A \code{brmsfit} object or another \R object for which
 #' the methods are defined.

@@ -33,8 +33,8 @@
    *   log(P(Y <= y))
    */
    real inv_gaussian_lcdf(real y, real mu, real shape) {
-     return log(Phi(sqrt(shape) / sqrt(y) * (y / mu - 1)) +
-              exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt(y) * (y / mu + 1)));
+     return log_sum_exp(std_normal_lcdf((sqrt(shape) / sqrt(y)) * (y / mu - 1)),
+              (2 * shape / mu) + std_normal_lcdf(-(sqrt(shape) / sqrt(y)) * (y / mu + 1)));
    }
   /* inverse Gaussian log-CCDF for a single quantile
    * Args:
@@ -45,6 +45,5 @@
    *   log(P(Y > y))
    */
    real inv_gaussian_lccdf(real y, real mu, real shape) {
-     return log1m(Phi(sqrt(shape) / sqrt(y) * (y / mu - 1)) -
-              exp(2 * shape / mu) * Phi(-sqrt(shape) / sqrt(y) * (y / mu + 1)));
+     return log1m_exp(inv_gaussian_lcdf(y | mu, shape));
    }
