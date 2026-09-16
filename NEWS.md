@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Preserve the matrix structure of factors in `newdata`, which is required for
+matrix predictors of smooth terms such as `mrf`. Thanks to Sebastian
+Weber. (#1935)
 * Stop rounding `posterior_predict` output to integers for discrete models
 unless `output` is `"random"`, which collapsed probabilities and densities
 to 0 or 1. Thanks to Ahmed Eldeeb. (#1923)
