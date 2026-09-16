@@ -282,6 +282,11 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   p <- usc(combine_prefix(px))
   resp <- usc(px$resp)
   lpdf <- stan_lpdf_name(normalize)
+  s2z <- has_re_s2z(bframe)
+
+  if (s2z) {
+    str_add_list(out) <- stan_fe_s2z(bframe, prior, normalize)
+  }
 
   if (length(fixef)) {
     str_add(out$data) <- glue(
@@ -310,41 +315,43 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         " = csr_extract_u(X{p});\n"
       )
     }
-    # prepare population-level coefficients
-    b_type <- glue("vector[K{ct}{p}]")
-    has_special_prior <- has_special_prior(prior, bframe, class = "b")
-    if (decomp == "none") {
-      if (has_special_prior) {
-        str_add_list(out) <- stan_prior_non_centered(
-          suffix = p, suffix_K = ct, normalize = normalize
-        )
+    if (!s2z) {
+      # prepare population-level coefficients
+      b_type <- glue("vector[K{ct}{p}]")
+      has_special_prior <- has_special_prior(prior, bframe, class = "b")
+      if (decomp == "none") {
+        if (has_special_prior) {
+          str_add_list(out) <- stan_prior_non_centered(
+            suffix = p, suffix_K = ct, normalize = normalize
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "b", coef = fixef, type = b_type,
+            px = px, suffix = p, header_type = "vector",
+            comment = "regression coefficients", normalize = normalize
+          )
+        }
       } else {
-        str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = p, header_type = "vector",
-          comment = "regression coefficients", normalize = normalize
+        stopifnot(decomp == "QR")
+        stopif_prior_bound(prior, class = "b", ls = px)
+        if (has_special_prior) {
+          str_add_list(out) <- stan_prior_non_centered(
+            suffix = p, suffix_class = "Q", suffix_K = ct,
+            normalize = normalize
+          )
+        } else {
+          str_add_list(out) <- stan_prior(
+            prior, class = "b", coef = fixef, type = b_type,
+            px = px, suffix = glue("Q{p}"), header_type = "vector",
+            comment = "regression coefficients on QR scale",
+            normalize = normalize
+          )
+        }
+        str_add(out$gen_def) <- glue(
+          "  // obtain the actual coefficients\n",
+          "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
         )
       }
-    } else {
-      stopifnot(decomp == "QR")
-      stopif_prior_bound(prior, class = "b", ls = px)
-      if (has_special_prior) {
-        str_add_list(out) <- stan_prior_non_centered(
-          suffix = p, suffix_class = "Q", suffix_K = ct,
-          normalize = normalize
-        )
-      } else {
-        str_add_list(out) <- stan_prior(
-          prior, class = "b", coef = fixef, type = b_type,
-          px = px, suffix = glue("Q{p}"), header_type = "vector",
-          comment = "regression coefficients on QR scale",
-          normalize = normalize
-        )
-      }
-      str_add(out$gen_def) <- glue(
-        "  // obtain the actual coefficients\n",
-        "  vector[K{ct}{p}] b{p} = XR{p}_inv * bQ{p};\n"
-      )
     }
   }
 
@@ -393,7 +400,9 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         )
       }
     }
-    if (!is_ordinal(family)) {
+    if (!is_ordinal(family) && s2z) {
+      str_add(out$eta) <- glue(" + theta_s2z{p}[1]")
+    } else if (!is_ordinal(family)) {
       # intercepts of ordinal models are handled in 'stan_thres'
       intercept_type <- "real"
       if (order_intercepts) {
@@ -440,7 +449,11 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
   }
   if (length(fixef) && !primitive) {
     # added in the end such that the intercept comes first in out$eta
-    if (sparse) {
+    if (s2z) {
+      slice <- stan_slice(threads)
+      beta <- stan_re_s2z_coef(bframe)
+      eta_fe <- glue(" + X{ct}{p}{slice} * {beta}")
+    } else if (sparse) {
       stopifnot(!center && decomp == "none")
       csr_args <- sargs(
         paste0(c("rows", "cols"), "(X", p, ")"),
@@ -469,6 +482,9 @@ stan_re <- function(bframe, prior, normalize, ...) {
   stopifnot(is.reframe(reframe))
   IDs <- unique(reframe$id)
   out <- list()
+  # Every S2Z predictor owns one system, including singleton blocks.
+  s2z_systems <- stan_re_s2z_systems(bframe, prior)
+  s2z_by_id <- stan_re_s2z_by_id(s2z_systems)
   # special handling of student-t group effects as their 'df' parameters
   # are defined on a per-group basis instead of a per-ID basis
   reframe_t <- subset_reframe_dist(reframe, "student")
@@ -498,17 +514,26 @@ stan_re <- function(bframe, prior, normalize, ...) {
     }
   }
   # the ID syntax requires group-level effects to be evaluated separately
-  tmp <- lapply(
-    IDs, .stan_re, bframe = bframe, prior = prior,
-    normalize = normalize, ...
-  )
-  out <- collapse_lists(ls = c(list(out), tmp))
+  tmp <- lapply(IDs, function(id) {
+    .stan_re(
+      id, bframe = bframe, prior = prior, normalize = normalize,
+      s2z_system = s2z_by_id[[as.character(id)]], ...
+    )
+  })
+  systems <- lapply(s2z_systems, function(system) {
+    stan_re_s2z_system(system, prior = prior, normalize = normalize, ...)
+  })
+  out <- collapse_lists(ls = c(list(out), tmp, systems))
+  if (any(vapply(s2z_systems, function(x) x$small_matrix, logical(1)))) {
+    out$fun <- paste0("  #include 'fun_small_matrix.stan'\n", out$fun)
+  }
   out
 }
 
 # Stan code for group-level effects per ID
 # @param id the ID of the grouping factor
-.stan_re <- function(id, bframe, prior, threads, normalize, ...) {
+.stan_re <- function(id, bframe, prior, threads, normalize,
+                     s2z_system = NULL, ...) {
   lpdf <- ifelse(normalize, "lpdf", "lupdf")
   out <- list()
   r <- subset2(bframe$frame$re, id = id)
@@ -622,6 +647,13 @@ stan_re <- function(bframe, prior, normalize, ...) {
         normalize = normalize
       )
     }
+  }
+
+  if (isTRUE(r$s2z[1])) {
+    return(stan_re_s2z_block(
+      id, system = s2z_system, bframe = bframe, prior = prior,
+      threads = threads, normalize = normalize, out = out
+    ))
   }
 
   # define group-level coefficients
@@ -2092,18 +2124,19 @@ stan_eta_re <- function(bframe, threads) {
     rpx <- check_prefix(r)
     idp <- paste0(r$id, usc(combine_prefix(rpx)))
     idresp <- paste0(r$id, usc(rpx$resp))
+    rprefix <- str_if(isTRUE(r$s2z[1]), "r_s2z_", "r_")
     if (r$gtype[1] == "mm") {
       ng <- seq_along(r$gcall[[1]]$groups)
       for (i in seq_rows(r)) {
         str_add(eta_re) <- cglue(
           " + W_{idresp[i]}_{ng}{n}",
-          " * r_{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}{n}]",
+          " * {rprefix}{idp[i]}_{r$cn[i]}[J_{idresp[i]}_{ng}{n}]",
           " * Z_{idp[i]}_{r$cn[i]}_{ng}{n}"
         )
       }
     } else {
       str_add(eta_re) <- cglue(
-        " + r_{idp}_{r$cn}[J_{idresp}{n}] * Z_{idp}_{r$cn}{n}"
+        " + {rprefix}{idp}_{r$cn}[J_{idresp}{n}] * Z_{idp}_{r$cn}{n}"
       )
     }
   }

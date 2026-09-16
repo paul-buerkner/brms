@@ -1367,6 +1367,9 @@ args_glm_primitive <- function(bterms, threads = NULL, ...) {
   }
   x <- glue("X{sfx_X}{resp}{slice}")
   beta <- glue("b{sfx_b}{resp}")
+  if (has_re_s2z(bterms)) {
+    beta <- stan_re_s2z_coef(bterms, prefix = resp)
+  }
   if (has_special_terms(bterms)) {
     # the intercept vector will contain all the remaining terms
     alpha <- glue("mu{resp}")

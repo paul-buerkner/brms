@@ -80,6 +80,9 @@ exclude_pars.bframel <- function(x, save_pars, ...) {
       "scales", "merged_Intercept", "zcar", "nszcar", "zerr"
     )
     c(out) <- paste0(par_classes, p)
+    if (has_re_s2z(x)) {
+      c(out) <- re_s2z_internal_fe(re_s2z_plan(x))
+    }
     smframe <- x$frame$sm
     for (i in seq_rows(smframe)) {
       nb <- seq_len(smframe$nbases[i])
@@ -100,6 +103,10 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
   rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
   for (id in unique(reframe$id)) {
     c(out) <- paste0(rm_re_pars, "_", id)
+    r <- subset2(reframe, id = id)
+    if (!save_pars$all && isTRUE(r$s2z[1])) {
+      c(out) <- re_s2z_internal_re(r)
+    }
   }
   if (isFALSE(save_pars$group)) {
     p <- usc(combine_prefix(reframe))

@@ -2,6 +2,16 @@
 
 ### New Features
 
+* Add an experimental physical sum-to-zero parameterization via
+`gr(..., s2z = TRUE)` for matched varying intercepts, slopes, factors, and
+interactions. Gaussian and Student-t group effects, coefficient correlations,
+and multiple predictor-local blocks are supported. Conventional population
+and group effects are reconstructed for public output and prediction.
+Population coefficients involved in the reconstruction support flat, normal,
+Student-t, Cauchy, and logistic priors with numeric constant arguments;
+other population coefficients retain ordinary prior handling. Known level
+covariance (`cov`), cross-predictor IDs, and other structural extensions are
+not yet supported. See `?gr` for the full support boundaries. (#1916)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
