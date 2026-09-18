@@ -724,9 +724,14 @@ test_that("rewritten cdfs keep their boundary values", {
     brms:::pexgaussian(Inf, 1, 2, 1, lower.tail = FALSE, log.p = TRUE), -Inf
   )
   expect_equal(brms:::pinv_gaussian(0, 1, 2), 0)
-  expect_equal(
-    brms:::pinv_gaussian(1e10, 1, 1, lower.tail = FALSE, log.p = TRUE), -Inf
-  )
+  # the survival function is monotone and finite far past the point where
+  # the natural scale underflows; it does saturate eventually, which is why
+  # this checks the shape rather than a value at one extreme point
+  ig <- sapply(c(2, 5, 10, 20, 50, 100, 1e3, 1e6), function(q) {
+    brms:::pinv_gaussian(q, 1, 50, lower.tail = FALSE, log.p = TRUE)
+  })
+  expect_true(all(is.finite(ig)))
+  expect_false(is.unsorted(rev(ig)))
   # below the lower bound of a zero-inflated or hurdle family
   expect_equal(brms:::pzero_inflated_poisson(-1, 2, zi = 0.3), 0)
   expect_equal(brms:::phurdle_poisson(-1, 2, hu = 0.3), 0)
@@ -742,6 +747,27 @@ test_that("rewritten cdfs keep their boundary values", {
     lambda = c(2, 3), zi = c(0.3, 0.4)
   )
   expect_true(all(is.finite(pit) & pit >= 0 & pit <= 1))
+  # a survival "probability" above one is not returned; beta negligible
+  # against sigma makes the leading term the answer
+  expect_equal(
+    brms:::pexgaussian(0, 0, 1000, 1e-6, lower.tail = FALSE, log.p = TRUE),
+    pnorm(0, log.p = TRUE)
+  )
+  expect_true(
+    brms:::pexgaussian(500, 0, 1000, 1e-6, lower.tail = FALSE) <= 1
+  )
+  # a probability above one is a caller error, not a saturated probability,
+  # so it stays NaN rather than becoming a valid-looking bound
+  expect_true(is.nan(brms:::log1m_prob(1)))
+  expect_equal(brms:::log1m_prob(0), -Inf)
+  # outside a bounded gen_extreme_value support the endpoints are exact:
+  # below it when xi > 0 the survival is 1, above it when xi < 0 it is 0
+  expect_equal(brms:::pgen_extreme_value(-2, 0, 1, 1, lower.tail = FALSE), 1)
+  expect_equal(
+    brms:::pgen_extreme_value(c(5, 5.1), 0, 1, -0.2, lower.tail = FALSE),
+    c(0, 0)
+  )
+
   # empty input stays numeric
   expect_type(
     brms:::pasym_laplace(numeric(0), 0, 1, 0.5, log.p = TRUE), "double"

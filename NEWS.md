@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
+are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
+Thanks to Ahmed Eldeeb. (#1899)
 * Evaluate the cdf and survival function of `frechet`, `gen_extreme_value`,
 `discrete_weibull`, `asym_laplace`, `inverse.gaussian`, `exgaussian` and the
 zero-inflated and hurdle families on the log scale, so that truncated

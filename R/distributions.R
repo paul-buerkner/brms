@@ -720,14 +720,15 @@ pexgaussian <- function(q, mu, sigma, beta,
         pnorm(z / sigma, log.p = TRUE) + k
       )
     } else {
-      # sigma / beta far above 1 makes k large enough that the second term
-      # loses its leading digits; the sum can then exceed 1, which is not a
-      # probability, so fall back rather than return it
-      lS <- log_sum_exp(
-        pnorm(-(q - mu) / sigma, log.p = TRUE),
-        pnorm(z / sigma, log.p = TRUE) + k
-      )
-      ifelse(lS > 0, NaN, lS)
+      # sigma^2 / beta far above 1 makes k large enough that the second term
+      # loses its leading digits and the sum can exceed 1. beta is then
+      # negligible against sigma, so the leading term alone is the answer
+      lead <- pnorm(-(q - mu) / sigma, log.p = TRUE)
+      lS <- log_sum_exp(lead, pnorm(z / sigma, log.p = TRUE) + k)
+      # subset assignment rather than ifelse, which turns NaN into NA and
+      # returns a logical vector for empty input
+      lS[!is.na(lS) & lS > 0] <- lead[!is.na(lS) & lS > 0]
+      lS
     }
   })
   if (!log.p) {
@@ -834,15 +835,6 @@ dfrechet <- function(x, loc = 0, scale = 1, shape = 1, log = FALSE) {
 
 #' @rdname Frechet
 #' @export
-# complement of a probability given on the log scale, log(1 - exp(lp)).
-# Unlike Stan's log1m_exp(), lp == 0 is a saturated probability here rather
-# than an out-of-domain argument, so it maps to log(0) = -Inf and not NaN
-log1m_prob <- function(lp) {
-  out <- log1m_exp(lp)
-  out[!is.na(lp) & lp >= 0] <- -Inf
-  out
-}
-
 pfrechet <- function(q, loc = 0, scale = 1, shape = 1,
                      lower.tail = TRUE, log.p = FALSE) {
   if (isTRUE(any(scale <= 0))) {
@@ -1198,11 +1190,18 @@ pgen_extreme_value <- function(q, mu = 0, sigma = 1, xi = 0,
   q <- (q - mu) / sigma
   args <- nlist(q, mu, sigma, xi)
   args <- do_call(expand, args)
-  # log F(q) = -t is exact, so both tails stay on the log scale
+  # log F(q) = -t is exact, so both tails stay on the log scale. Outside the
+  # support 1 + xi * q turns negative and the power is meaningless, so the
+  # two endpoints are set directly: F = 0 below the support when xi > 0 and
+  # F = 1 above it when xi < 0
   lcdf <- with(args, ifelse(
     xi == 0,
     -exp(-q),
-    -(1 + xi * q)^(-1 / xi)
+    ifelse(
+      1 + xi * q > 0,
+      -(1 + xi * q)^(-1 / xi),
+      ifelse(xi > 0, -Inf, 0)
+    )
   ))
   out <- if (lower.tail) lcdf else log1m_prob(lcdf)
   if (!log.p) {
@@ -1290,8 +1289,9 @@ pasym_laplace <- function(q, mu = 0, sigma = 1, quantile = 0.5,
   } else {
     out <- ifelse(q < mu, log1m_prob(lcdf_lo), lccdf_hi)
   }
-  # ifelse() returns the type of its test, which is logical for empty input
-  out <- as.numeric(out)
+  # ifelse() returns the type of its test, which is logical for empty input;
+  # set the type without dropping dim or names
+  storage.mode(out) <- "double"
   if (!log.p) {
     out <- exp(out)
   }

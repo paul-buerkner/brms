@@ -156,6 +156,17 @@ log1m_exp <- function(x) {
   out
 }
 
+# complement of a probability given on the log scale, log(1 - exp(lp)).
+# Stan's log1m_exp() returns NaN for lp >= 0, which is right for a generic
+# argument; lp == 0 is a saturated probability rather than an out-of-domain
+# one, so it maps to log(0) = -Inf here. lp > 0 is not a probability at all
+# and is left as NaN
+log1m_prob <- function(lp) {
+  out <- log1m_exp(lp)
+  out[!is.na(lp) & lp == 0] <- -Inf
+  out
+}
+
 # log(exp(x) - exp(y)) for x >= y, following Stan's log_diff_exp
 # Factoring out the larger term keeps the result usable when exp(x) and
 # exp(y) both underflow, as they do for bounds far in the same tail (#1899)
@@ -170,7 +181,8 @@ log_diff_exp <- function(x, y) {
 log_sum_exp <- function(x, y) {
   max <- pmax(x, y)
   out <- max + log(exp(x - max) + exp(y - max))
-  # as in Stan, two zero probabilities sum to zero rather than to NaN
+  # two zero probabilities sum to zero rather than to NaN, as in Stan. The
+  # infinite cases still differ from Stan, which returns Inf for them
   out[!is.na(max) & max == -Inf] <- -Inf
   out
 }
