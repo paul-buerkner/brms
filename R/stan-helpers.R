@@ -118,16 +118,49 @@ stan_slice <- function(threads) {
   str_if(use_threading(threads), "[start:end]")
 }
 
-stan_nn <- function(threads) {
-  str_if(use_threading(threads), "[nn]", "[n]")
+stan_nn <- function(threads, subsample = NULL) {
+  if (use_threading(threads)) return("[nn]")
+  if (use_subsampling(subsample)) return("[nn]")
+  "[n]"
 }
 
-stan_nn_def <- function(threads) {
-  str_if(use_threading(threads), "    int nn = n + start - 1;\n")
+stan_nn_def <- function(threads, subsample = NULL) {
+  if (use_threading(threads)) return("    int nn = n + start - 1;\n")
+  if (use_subsampling(subsample)) {
+    return(glue("    int nn = {subsample$index_fn}(n);\n"))
+  }
+  ""
 }
 
 stan_nn_regex <- function() {
   "\\[((n)|(nn))\\]"
+}
+
+# expression for the number of observations, subsample-aware
+# @param resp response suffix (possibly empty)
+# @param subsample a brmssubsample object or NULL
+stan_N_expr <- function(resp = "", subsample = NULL) {
+  if (use_subsampling(subsample)) {
+    glue("{subsample$size_fn}()")
+  } else {
+    glue("N{resp}")
+  }
+}
+
+# wrap a Stan variable with a subsample getter function
+# @param var_expr Stan variable expression (e.g. "Xc", "Y")
+# @param subsample a brmssubsample object or NULL
+# @return wrapped expression if a matching wrap entry exists, else unchanged
+stan_subsample_wrap <- function(var_expr, subsample = NULL) {
+  if (!use_subsampling(subsample) || length(subsample$wrap) == 0) {
+    return(var_expr)
+  }
+  for (var_name in names(subsample$wrap)) {
+    if (grepl(paste0("^", var_name, "(\\b|$)"), var_expr)) {
+      return(glue("{subsample$wrap[[var_name]]}({var_expr})"))
+    }
+  }
+  var_expr
 }
 
 # clean up arguments for partial_log_lik

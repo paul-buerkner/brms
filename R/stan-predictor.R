@@ -269,7 +269,7 @@ stan_predictor.mvbrmsframe <- function(x, prior, threads, normalize, ...) {
 
 # Stan code for population-level effects
 stan_fe <- function(bframe, prior, stanvars, threads, primitive,
-                    normalize, ...) {
+                    normalize, subsample = NULL, ...) {
   stopifnot(is.bframel(bframe))
   out <- list()
   family <- bframe$family
@@ -455,7 +455,8 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         sfx_X <- "c"
       }
       slice <- stan_slice(threads)
-      eta_fe <- glue(" + X{sfx_X}{p}{slice} * b{sfx_b}{p}")
+      x_ref <- stan_subsample_wrap(glue("X{sfx_X}{p}{slice}"), subsample)
+      eta_fe <- glue(" + {x_ref} * b{sfx_b}{p}")
     }
     str_add(out$eta) <- eta_fe
   }
@@ -874,7 +875,8 @@ stan_sm <- function(bframe, prior, threads, normalize, ...) {
 
 # Stan code for category specific effects
 # @note not implemented for non-linear models
-stan_cs <- function(bframe, prior, threads, normalize, ...) {
+stan_cs <- function(bframe, prior, threads, normalize, subsample = NULL,
+                    ...) {
   stopifnot(is.bframel(bframe))
   out <- list()
   csef <- bframe$frame$cs$vars
@@ -911,7 +913,7 @@ stan_cs <- function(bframe, prior, threads, normalize, ...) {
         " = rep_matrix(0, N{resp}, nthres{resp});\n"
       )
     }
-    n <- stan_nn(threads)
+    n <- stan_nn(threads, subsample)
     thres_regex <- "(?<=\\[)[[:digit:]]+(?=\\]$)"
     thres <- get_matches(thres_regex, reframe$coef, perl = TRUE)
     nthres <- max(as.numeric(thres))
@@ -932,9 +934,10 @@ stan_cs <- function(bframe, prior, threads, normalize, ...) {
       }
       str_add(mucs_loop) <- ";\n"
     }
+    N_expr <- stan_N_expr(resp, subsample)
     str_add(out$model_comp_eta_loop) <- glue(
-      "  for (n in 1:N{resp}) {{\n",
-      stan_nn_def(threads), mucs_loop,
+      "  for (n in 1:{N_expr}) {{\n",
+      stan_nn_def(threads, subsample), mucs_loop,
       "  }\n"
     )
   }
@@ -2032,7 +2035,8 @@ stan_Xme <- function(bframe, prior, threads, normalize) {
 # @param primitive use Stan's GLM likelihood primitives?
 # @param ... currently unused
 # @return list of character strings containing Stan code
-stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
+stan_eta_combine <- function(bframe, out, threads, primitive,
+                             subsample = NULL, ...) {
   stopifnot(is.btl(bframe), is.list(out))
   if (primitive && !has_special_terms(bframe)) {
     # only overall effects and perhaps an intercept are present
@@ -2043,22 +2047,25 @@ stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
   resp <- usc(bframe$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
+  N_expr <- stan_N_expr(resp, subsample)
   str_add(out$model_def) <- glue(
     "  // initialize linear predictor term\n",
-    "  vector[N{resp}] {eta} = rep_vector(0.0, N{resp});\n"
+    "  vector[{N_expr}] {eta} = rep_vector(0.0, {N_expr});\n"
   )
   if (isTRUE(nzchar(out$eta))) {
     str_add(out$model_comp_eta_basic) <- glue("  {eta} +={out$eta};\n")
   }
   out$eta <- NULL
-  str_add(out$loopeta) <- stan_eta_re(bframe, threads = threads)
+  str_add(out$loopeta) <- stan_eta_re(
+    bframe, threads = threads, subsample = subsample
+  )
   if (isTRUE(nzchar(out$loopeta))) {
     # parts of eta are computed in a loop over observations
     out$loopeta <- sub("^[ \t\r\n]+\\+", "", out$loopeta, perl = TRUE)
     str_add(out$model_comp_eta_loop) <- glue(
-      "  for (n in 1:N{resp}) {{\n",
+      "  for (n in 1:{N_expr}) {{\n",
       "    // add more terms to the linear predictor\n",
-      stan_nn_def(threads),
+      stan_nn_def(threads, subsample),
       "    {eta}[n] +={out$loopeta};\n",
       "  }}\n"
     )
@@ -2083,9 +2090,9 @@ stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
 
 # write the group-level part of the linear predictor
 # @return a single character string
-stan_eta_re <- function(bframe, threads) {
+stan_eta_re <- function(bframe, threads, subsample = NULL) {
   eta_re <- ""
-  n <- stan_nn(threads)
+  n <- stan_nn(threads, subsample)
   reframe <- subset2(bframe$frame$re, type = c("", "mmc"))
   for (id in unique(reframe$id)) {
     r <- subset2(reframe, id = id)
