@@ -24,7 +24,6 @@
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Go to homepage"><span class="fa fa-home fa-lg"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../articles/index.html">Vignettes</a></li>
 <li class="nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
 <li class="active nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
 <li class="nav-item dropdown">
@@ -77,7 +76,10 @@
 </ul></div>
 <div class="section level4">
 <h4 id="bug-fixes-2-23">Bug Fixes<a class="anchor" aria-label="anchor" href="#bug-fixes-2-23"></a></h4>
-<ul><li>Stop rounding <code>posterior_predict</code> output to integers for discrete models unless <code>output</code> is <code>"random"</code>, which collapsed probabilities and densities to 0 or 1. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1923" class="external-link">#1923</a>)</li>
+<ul><li>Return <code>-Inf</code> rather than <code>NaN</code> from <code>log_sum_exp()</code> when both arguments are <code>-Inf</code>, matching Stan. This also affects <code><a href="../reference/brmsformula-helpers.html">nlf()</a></code> formulas that call it. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1899" class="external-link">#1899</a>)</li>
+<li>Evaluate the cdf and survival function of <code>frechet</code>, <code>gen_extreme_value</code>, <code>discrete_weibull</code>, <code>asym_laplace</code>, <code>inverse.gaussian</code>, <code>exgaussian</code> and the zero-inflated and hurdle families on the log scale, so that truncated <code>log_lik</code> reaches them too. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1899" class="external-link">#1899</a>)</li>
+<li>Preserve the matrix structure of factors in <code>newdata</code>, which is required for matrix predictors of smooth terms such as <code>mrf</code>. Thanks to Sebastian Weber. (<a href="https://github.com/paul-buerkner/brms/issues/1935" class="external-link">#1935</a>)</li>
+<li>Stop rounding <code>posterior_predict</code> output to integers for discrete models unless <code>output</code> is <code>"random"</code>, which collapsed probabilities and densities to 0 or 1. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1923" class="external-link">#1923</a>)</li>
 <li>Include the lower bound in <code>posterior_predict</code> outputs <code>"probability"</code>, <code>"pit"</code>, <code>"density"</code> and <code>"quantile"</code> for truncated discrete models, matching the other post-processing methods. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1923" class="external-link">#1923</a>)</li>
 <li>Include the lower bound when computing <code>posterior_epred</code> for truncated discrete models, matching the generated Stan code and <code>log_lik</code>. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1923" class="external-link">#1923</a>)</li>
 <li>Normalize truncated <code>log_lik</code> by <code>P(lb &lt;= Y &lt;= ub)</code> for integer responses, matching the generated Stan code, so that <code>loo</code> and <code>waic</code> agree with the model that was fitted. Thanks to Ahmed Eldeeb. (<a href="https://github.com/paul-buerkner/brms/issues/1903" class="external-link">#1903</a>)</li>

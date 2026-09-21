@@ -36,7 +36,6 @@ ways of specifying autocorrelation terms, see cor_brms."><meta property="og:imag
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Go to homepage"><span class="fa fa-home fa-lg"></span></a></li>
-<li class="nav-item"><a class="nav-link" href="../articles/index.html">Vignettes</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
 <li class="nav-item dropdown">
@@ -105,7 +104,7 @@ terms.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># specify autocor terms within the formula</span></span></span>
 <span class="r-in"><span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y ~ x + arma(p = 1, q = 1) + car(M)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x5654f7f758d0&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x5565879921b0&gt;</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># specify autocor terms in the 'autocor' argument</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="brmsformula.html">bf</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, autocor <span class="op">=</span> <span class="op">~</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span><span class="op">)</span></span></span>

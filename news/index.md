@@ -38,6 +38,21 @@
 
 #### Bug Fixes
 
+- Return `-Inf` rather than `NaN` from `log_sum_exp()` when both
+  arguments are `-Inf`, matching Stan. This also affects
+  [`nlf()`](https://paulbuerkner.com/brms/reference/brmsformula-helpers.md)
+  formulas that call it. Thanks to Ahmed Eldeeb.
+  ([\#1899](https://github.com/paul-buerkner/brms/issues/1899))
+- Evaluate the cdf and survival function of `frechet`,
+  `gen_extreme_value`, `discrete_weibull`, `asym_laplace`,
+  `inverse.gaussian`, `exgaussian` and the zero-inflated and hurdle
+  families on the log scale, so that truncated `log_lik` reaches them
+  too. Thanks to Ahmed Eldeeb.
+  ([\#1899](https://github.com/paul-buerkner/brms/issues/1899))
+- Preserve the matrix structure of factors in `newdata`, which is
+  required for matrix predictors of smooth terms such as `mrf`. Thanks
+  to Sebastian Weber.
+  ([\#1935](https://github.com/paul-buerkner/brms/issues/1935))
 - Stop rounding `posterior_predict` output to integers for discrete
   models unless `output` is `"random"`, which collapsed probabilities
   and densities to 0 or 1. Thanks to Ahmed Eldeeb.

@@ -4,7 +4,7 @@ The `create_priorsense_data.brmsfit` method can be used to create the
 data structure needed by the priorsense package for performing
 power-scaling sensitivity analysis. This method is called automatically
 when performing powerscaling via
-[`powerscale`](https://n-kall.github.io/priorsense/reference/powerscale-overview.html)
+[`powerscale`](https://rdrr.io/pkg/priorsense/man/powerscale-overview.html)
 or other related functions, so you will rarely need to call it manually
 yourself.
 
@@ -44,8 +44,8 @@ fit <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.001003 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 10.03 seconds.
+#> Chain 1: Gradient evaluation took 0.000372 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 3.72 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -62,15 +62,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.279 seconds (Warm-up)
-#> Chain 1:                1.209 seconds (Sampling)
-#> Chain 1:                2.488 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.676 seconds (Warm-up)
+#> Chain 1:                0.643 seconds (Sampling)
+#> Chain 1:                1.319 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000156 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.56 seconds.
+#> Chain 2: Gradient evaluation took 8.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.85 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -87,15 +87,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.316 seconds (Warm-up)
-#> Chain 2:                1.331 seconds (Sampling)
-#> Chain 2:                2.647 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.693 seconds (Warm-up)
+#> Chain 2:                0.701 seconds (Sampling)
+#> Chain 2:                1.394 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 0.000157 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.57 seconds.
+#> Chain 3: Gradient evaluation took 8.4e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.84 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -112,15 +112,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.347 seconds (Warm-up)
-#> Chain 3:                1.299 seconds (Sampling)
-#> Chain 3:                2.646 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.706 seconds (Warm-up)
+#> Chain 3:                0.686 seconds (Sampling)
+#> Chain 3:                1.392 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000155 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.55 seconds.
+#> Chain 4: Gradient evaluation took 8.5e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.85 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -137,9 +137,9 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.376 seconds (Warm-up)
-#> Chain 4:                1.245 seconds (Sampling)
-#> Chain 4:                2.621 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.809 seconds (Warm-up)
+#> Chain 4:                0.655 seconds (Sampling)
+#> Chain 4:                1.464 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: sratio 
