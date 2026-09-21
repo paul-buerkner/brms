@@ -170,12 +170,18 @@
 #'   values. Can be set globally for the current \R session via the
 #'   \code{"brms.algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
-#'   fitting the Stan model. Options are \code{"rstan"} (the default) or
-#'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
-#'   \code{"brms.backend"} option (see \code{\link{options}}). Details on the
-#'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
-#'   \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-#'   respectively. Additionally a \code{"mock"} backend is available to make
+#'   fitting the Stan model. Options are \code{"rstan"} (the default),
+#'   \code{"cmdstanr"}, \code{"stanr"}, or \code{"stanli"}. Can be set globally
+#'   for the current \R session via the \code{"brms.backend"} option (see
+#'   \code{\link{options}}). Details on the \pkg{rstan} and \pkg{cmdstanr}
+#'   packages are available at \url{https://mc-stan.org/rstan/} and
+#'   \url{https://mc-stan.org/cmdstanr/}, respectively. The \pkg{stanr} package
+#'   provides a third, self-contained backend that compiles Stan programs
+#'   in-process rather than shelling out to an external CmdStan installation;
+#'   \code{"stanli"} uses the same \pkg{stanr} package but interprets the Stan
+#'   program instead of compiling it to a native shared library, trading
+#'   sampling speed for near-instant startup (and it does not support
+#'   \code{opencl}). Additionally a \code{"mock"} backend is available to make
 #'   testing \pkg{brms} and packages that depend on it easier.
 #'   The \code{"mock"} backend does not actually do any fitting, it only checks
 #'   the generated Stan code for correctness and then returns whatever is passed
@@ -240,13 +246,16 @@
 #' @param rename For internal use only.
 #' @param stan_model_args A \code{list} of further arguments passed to
 #'   \code{\link[rstan:stan_model]{rstan::stan_model}} for \code{backend =
-#'   "rstan"} or to \code{cmdstanr::cmdstan_model} for \code{backend =
-#'   "cmdstanr"}, which allows to change how models are compiled.
+#'   "rstan"}, to \code{cmdstanr::cmdstan_model} for \code{backend =
+#'   "cmdstanr"}, or to \code{stanr::stan_model} for \code{backend = "stanr"},
+#'   which allows to change how models are compiled.
 #' @param ... Further arguments passed to Stan.
 #'   For \code{backend = "rstan"} the arguments are passed to
 #'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 #'   For \code{backend = "cmdstanr"} the arguments are passed to the
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
+#'   For \code{backend = "stanr"} the arguments are passed to the
+#'   \code{stanr::stan_model} \code{$sample()} or \code{$variational()} method.
 #'
 #' @return An object of class \code{brmsfit}, which contains the posterior
 #'   draws along with many other useful information about the model. Use
