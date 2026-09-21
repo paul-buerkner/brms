@@ -659,3 +659,117 @@ test_that("link_categorical() inverts inv_link_categorical()", {
     }
   }
 })
+
+test_that("cdfs stay accurate in the tail on the log scale", {
+  # these all formed the survival function as 1 - F, or the cdf as
+  # 1 - exp(log_ccdf), and only then took the log, which loses the tail
+  # entirely once the complement rounds to 0 or 1. See #1899
+  expect_equal(
+    brms:::pfrechet(50, 0, 1, 20, lower.tail = FALSE, log.p = TRUE),
+    log(-expm1(-50^-20))
+  )
+  expect_equal(
+    brms:::pgen_extreme_value(60, 0, 1, 0, lower.tail = FALSE, log.p = TRUE),
+    log(-expm1(-exp(-60)))
+  )
+  expect_equal(
+    brms:::pdiscrete_weibull(40, 0.7, 1.2, lower.tail = FALSE, log.p = TRUE),
+    41^1.2 * log(0.7)
+  )
+  expect_equal(
+    brms:::pasym_laplace(80, 0, 1, 0.5, lower.tail = FALSE, log.p = TRUE),
+    log(0.5) - 0.5 * 80
+  )
+  # inverse gaussian and exgaussian have no single closed form, so they are
+  # checked against the natural-scale computation where it still resolves
+  ig_s <- function(q, mu, shape) {
+    a <- sqrt(shape / q) * (q / mu - 1)
+    b <- -sqrt(shape / q) * (q / mu + 1)
+    pnorm(-a) - exp(2 * shape / mu) * pnorm(b)
+  }
+  expect_equal(
+    brms:::pinv_gaussian(20, 1, 50, lower.tail = FALSE, log.p = TRUE),
+    log(ig_s(20, 1, 50))
+  )
+  expect_equal(
+    brms:::pexgaussian(40, 0, 1, 1, lower.tail = FALSE, log.p = TRUE),
+    -40.5, tolerance = 1e-8
+  )
+  # the zero-inflated and hurdle wrappers lose the lower tail instead
+  expect_equal(
+    brms:::pzero_inflated_poisson(0, 500, 1e-300, log.p = TRUE),
+    log(1e-300 + exp(-500))
+  )
+  # values far enough out that the natural scale underflows are still finite
+  expect_true(all(is.finite(c(
+    brms:::pinv_gaussian(200, 1, 50, lower.tail = FALSE, log.p = TRUE),
+    brms:::pexgaussian(120, 0, 1, 1, lower.tail = FALSE, log.p = TRUE),
+    brms:::pfrechet(1e4, 0, 1, 20, lower.tail = FALSE, log.p = TRUE)
+  ))))
+})
+
+test_that("rewritten cdfs keep their boundary values", {
+  # a saturated probability is log(0) = -Inf, not NaN; these boundaries are
+  # reached routinely because one-sided trunc() stores the other bound as
+  # +/- Inf, and because zero-inflated cdfs are evaluated below their lower
+  # bound by the randomized PIT. See #1899
+  expect_equal(
+    brms:::pfrechet(Inf, 0, 1, 3, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  expect_equal(
+    brms:::pgen_extreme_value(Inf, 0, 1, 0.1, lower.tail = FALSE,
+                              log.p = TRUE), -Inf
+  )
+  expect_equal(
+    brms:::pexgaussian(Inf, 1, 2, 1, lower.tail = FALSE, log.p = TRUE), -Inf
+  )
+  expect_equal(brms:::pinv_gaussian(0, 1, 2), 0)
+  # the survival function is monotone and finite far past the point where
+  # the natural scale underflows; it does saturate eventually, which is why
+  # this checks the shape rather than a value at one extreme point
+  ig <- sapply(c(2, 5, 10, 20, 50, 100, 1e3, 1e6), function(q) {
+    brms:::pinv_gaussian(q, 1, 50, lower.tail = FALSE, log.p = TRUE)
+  })
+  expect_true(all(is.finite(ig)))
+  expect_false(is.unsorted(rev(ig)))
+  # below the lower bound of a zero-inflated or hurdle family
+  expect_equal(brms:::pzero_inflated_poisson(-1, 2, zi = 0.3), 0)
+  expect_equal(brms:::phurdle_poisson(-1, 2, hu = 0.3), 0)
+  expect_equal(brms:::pzero_inflated_beta(-2, 2, 3, zi = 0.3), 0)
+  # at and beyond the upper endpoint of a bounded gen_extreme_value
+  expect_equal(
+    brms:::pgen_extreme_value(c(5, 5.1), 0, 1, -0.2, lower.tail = FALSE),
+    c(0, 0)
+  )
+  # the randomized PIT evaluates the cdf one step below the response
+  pit <- brms:::pp_cdf(
+    0, "zero_inflated_poisson", lb = NULL, ub = NULL, randomized = TRUE,
+    lambda = c(2, 3), zi = c(0.3, 0.4)
+  )
+  expect_true(all(is.finite(pit) & pit >= 0 & pit <= 1))
+  # a survival "probability" above one is not returned; beta negligible
+  # against sigma makes the leading term the answer
+  expect_equal(
+    brms:::pexgaussian(0, 0, 1000, 1e-6, lower.tail = FALSE, log.p = TRUE),
+    pnorm(0, log.p = TRUE)
+  )
+  expect_true(
+    brms:::pexgaussian(500, 0, 1000, 1e-6, lower.tail = FALSE) <= 1
+  )
+  # a probability above one is a caller error, not a saturated probability,
+  # so it stays NaN rather than becoming a valid-looking bound
+  expect_true(is.nan(brms:::log1m_prob(1)))
+  expect_equal(brms:::log1m_prob(0), -Inf)
+  # outside a bounded gen_extreme_value support the endpoints are exact:
+  # below it when xi > 0 the survival is 1, above it when xi < 0 it is 0
+  expect_equal(brms:::pgen_extreme_value(-2, 0, 1, 1, lower.tail = FALSE), 1)
+  expect_equal(
+    brms:::pgen_extreme_value(c(5, 5.1), 0, 1, -0.2, lower.tail = FALSE),
+    c(0, 0)
+  )
+
+  # empty input stays numeric
+  expect_type(
+    brms:::pasym_laplace(numeric(0), 0, 1, 0.5, log.p = TRUE), "double"
+  )
+})
