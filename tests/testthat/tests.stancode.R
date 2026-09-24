@@ -388,6 +388,8 @@ test_that("customized covariances appear in the Stan code", {
                          data = inhaler, data2 = dat2)
   expect_match2(scode, "r_1 = scale_r_cor_cov(z_1, sd_1, L_1, Lcov_1);")
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
+  # test issue #1939: negative entries of Lcov must not be skipped
+  expect_match2(scode, "if (abs(Lcov[icov, jcov]) > 1e-10) {")
 
   scode <- stancode(rating ~ (1 + treat | gr(subject, cor = FALSE, cov = M)),
                          data = inhaler, data2 = dat2)
@@ -398,6 +400,7 @@ test_that("customized covariances appear in the Stan code", {
   scode <- stancode(rating ~ (1 + treat | gr(subject, by = by, cov = M)),
                          data = inhaler, data2 = dat2)
   expect_match2(scode, "r_1 = scale_r_cor_by_cov(z_1, sd_1, L_1, Jby_1, Lcov_1);")
+  expect_match2(scode, "if (abs(Lcov[icov, jcov]) > 1e-10) {")
 
   expect_warning(
     scode <- stancode(rating ~ treat + period + carry + (1|subject),
