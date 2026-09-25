@@ -129,6 +129,12 @@
   using affected versions were sampled under the classical
   parameterization and should be refitted.
   ([\#1927](https://github.com/paul-buerkner/brms/issues/1927))
+- Compare magnitudes when skipping unrelated levels in
+  `gr(..., cov = M)` terms with correlated coefficients, so that
+  negative entries of the covariance matrix’s Cholesky factor are no
+  longer silently discarded. This affected multivariate and random-slope
+  models using genomic or pedigree relationship matrices.
+  ([\#1939](https://github.com/paul-buerkner/brms/issues/1939))
 - Fix several other minor bugs.
 
 #### Other Changes

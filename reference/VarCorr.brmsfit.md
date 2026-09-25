@@ -69,8 +69,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.43 seconds.
+#> Chain 1: Gradient evaluation took 5.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.53 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -87,15 +87,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.303 seconds (Warm-up)
-#> Chain 1:                0.194 seconds (Sampling)
-#> Chain 1:                0.497 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.712 seconds (Warm-up)
+#> Chain 1:                0.434 seconds (Sampling)
+#> Chain 1:                1.146 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.1e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.31 seconds.
+#> Chain 2: Gradient evaluation took 3.9e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -112,9 +112,9 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.332 seconds (Warm-up)
-#> Chain 2:                0.19 seconds (Sampling)
-#> Chain 2:                0.522 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.742 seconds (Warm-up)
+#> Chain 2:                0.424 seconds (Sampling)
+#> Chain 2:                1.166 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 44 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup

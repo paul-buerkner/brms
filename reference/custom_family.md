@@ -195,8 +195,8 @@ fit <- brm(y | vint(ntrials) ~ z, data = dat,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.7 seconds.
+#> Chain 1: Gradient evaluation took 0.000138 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.38 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -213,15 +213,15 @@ fit <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.309 seconds (Warm-up)
-#> Chain 1:                0.314 seconds (Sampling)
-#> Chain 1:                0.623 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.72 seconds (Warm-up)
+#> Chain 1:                0.735 seconds (Sampling)
+#> Chain 1:                1.455 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 6.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.65 seconds.
+#> Chain 2: Gradient evaluation took 0.000133 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.33 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -238,15 +238,15 @@ fit <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.303 seconds (Warm-up)
-#> Chain 2:                0.249 seconds (Sampling)
-#> Chain 2:                0.552 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.705 seconds (Warm-up)
+#> Chain 2:                0.585 seconds (Sampling)
+#> Chain 2:                1.29 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 5.7e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.57 seconds.
+#> Chain 3: Gradient evaluation took 0.000152 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.52 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -263,15 +263,15 @@ fit <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.302 seconds (Warm-up)
-#> Chain 3:                0.245 seconds (Sampling)
-#> Chain 3:                0.547 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.688 seconds (Warm-up)
+#> Chain 3:                0.573 seconds (Sampling)
+#> Chain 3:                1.261 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 6.4e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.64 seconds.
+#> Chain 4: Gradient evaluation took 0.000136 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.36 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -288,9 +288,9 @@ fit <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.307 seconds (Warm-up)
-#> Chain 4:                0.318 seconds (Sampling)
-#> Chain 4:                0.625 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.708 seconds (Warm-up)
+#> Chain 4:                0.729 seconds (Sampling)
+#> Chain 4:                1.437 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: beta_binomial2 
@@ -339,8 +339,8 @@ fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7.7e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.77 seconds.
+#> Chain 1: Gradient evaluation took 0.000136 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.36 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -357,15 +357,15 @@ fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.25 seconds (Warm-up)
-#> Chain 1:                0.252 seconds (Sampling)
-#> Chain 1:                0.502 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.514 seconds (Warm-up)
+#> Chain 1:                0.517 seconds (Sampling)
+#> Chain 1:                1.031 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 5.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.52 seconds.
+#> Chain 2: Gradient evaluation took 0.0001 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -382,15 +382,15 @@ fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.26 seconds (Warm-up)
-#> Chain 2:                0.212 seconds (Sampling)
-#> Chain 2:                0.472 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.533 seconds (Warm-up)
+#> Chain 2:                0.437 seconds (Sampling)
+#> Chain 2:                0.97 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 5.3e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.53 seconds.
+#> Chain 3: Gradient evaluation took 0.0001 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -407,15 +407,15 @@ fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.258 seconds (Warm-up)
-#> Chain 3:                0.259 seconds (Sampling)
-#> Chain 3:                0.517 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.529 seconds (Warm-up)
+#> Chain 3:                0.533 seconds (Sampling)
+#> Chain 3:                1.062 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 6.2e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.62 seconds.
+#> Chain 4: Gradient evaluation took 0.000106 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.06 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -432,9 +432,9 @@ fit_vec <- brm(y | vint(ntrials) ~ z, data = dat,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.252 seconds (Warm-up)
-#> Chain 4:                0.268 seconds (Sampling)
-#> Chain 4:                0.52 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.519 seconds (Warm-up)
+#> Chain 4:                0.539 seconds (Sampling)
+#> Chain 4:                1.058 seconds (Total)
 #> Chain 4: 
 summary(fit_vec)
 #>  Family: beta_binomial2 

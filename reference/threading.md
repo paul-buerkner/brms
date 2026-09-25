@@ -93,7 +93,7 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 1 finished in 1.0 seconds.
+#> Chain 1 finished in 1.8 seconds.
 summary(fit)
 #>  Family: negbinomial 
 #>   Links: mu = log 
