@@ -245,6 +245,23 @@ test_that("special shrinkage priors appear in the Stan code", {
   )
 })
 
+test_that("a constant first coefficient is not copied into prior densities", {
+  dat <- data.frame(y = 1:12, x = seq(-1, 1, length.out = 12),
+                    g = rep(1:4, each = 3))
+  bprior <- prior(constant(1), class = sd, group = g, coef = Intercept) +
+    prior(normal(0, 1), class = sd, group = g, coef = x)
+  formulas <- list(y ~ x + (1 + x | g),
+                   y ~ x + (1 + x | gr(g, s2z = TRUE)))
+  for (formula in formulas) {
+    code <- stancode(formula, dat, prior = bprior)
+    lines <- strsplit(code, "\n", fixed = TRUE)[[1L]]
+    expect_equal(sum(grepl("sd_1[1] = 1;", lines, fixed = TRUE)), 1L)
+    model <- substring(code, regexpr("\nmodel {", code, fixed = TRUE)[1L])
+    expect_false(grepl("sd_1[1] = 1;", model, fixed = TRUE))
+    expect_match2(code, "normal_lpdf(sd_1[2] | 0, 1)")
+  }
+})
+
 test_that("priors can be fixed to constants", {
   dat <- data.frame(y = 1:12, x1 = rnorm(12), x2 = rnorm(12),
                     g = rep(1:6, each = 2), h = factor(rep(1:2, each = 6)))

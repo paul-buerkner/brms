@@ -16,6 +16,9 @@
 #'   must be nested in levels of the \code{by} variable.
 #' @param cor Logical. If \code{TRUE} (the default), group-level terms will be
 #'   modelled as correlated.
+#' @param s2z Logical. If \code{TRUE}, use the experimental physical
+#'   sum-to-zero parameterization described in the section
+#'   \dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.
 #' @param id Optional character string. All group-level terms across the model
 #'   with the same \code{id} will be modeled as correlated (if \code{cor} is
 #'   \code{TRUE}). See \code{\link{brmsformula}} for more details.
@@ -29,8 +32,28 @@
 #'   can be used, among others, to model pedigrees and phylogenetic effects. See
 #'   \code{vignette("brms_phylogenetics")} for more details. By default, levels
 #'   of the same grouping factor are modeled as independent of each other.
-#' @param dist Name of the distribution of the group-level effects.
-#' Currently \code{"gaussian"} is the only option.
+#' @param dist Name of the distribution of the group-level effects. Supported
+#'   options are \code{"gaussian"} and \code{"student"}.
+#'
+#' @section Physical sum-to-zero effects:
+#' With \code{s2z = TRUE}, \pkg{brms} samples varying coefficients as
+#' zero-sum deviations over the grouping levels observed in the model data.
+#' For \code{1 + x + (1 + x | gr(g, s2z = TRUE))}, this constraint applies
+#' separately to the varying intercepts and \code{x} slopes. Omitted group-effect
+#' means are handled jointly with the population coefficients, and conventional
+#' population and group effects are reconstructed. Thus \code{fixef},
+#' \code{ranef}, \code{coef}, and prediction retain their usual interpretation;
+#' the reported group effects need not sum to zero.
+#'
+#' Each varying design column must match a population-level column in both
+#' coefficient name and numerical values, including factor contrasts and
+#' interactions. For example, \code{x * f} must appear on both sides of the
+#' grouping bar when all its expanded columns vary. At least two grouping
+#' levels must be observed. Unsupported model structures and prior
+#' specifications give an error. Custom Stan code using population- or
+#' group-level coefficients must run after their reconstruction in generated
+#' quantities. Add such code with
+#' \code{stanvar(..., block = "genquant", position = "end")}.
 #'
 #' @seealso \code{\link{brmsformula}}
 #'
@@ -53,11 +76,16 @@
 #' fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
 #'             data = epilepsy)
 #' summary(fit4)
+#'
+#' # physical sum-to-zero varying intercepts, slopes, and interactions
+#' fit5 <- brm(count ~ zAge * Trt +
+#'               (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+#'             data = epilepsy, family = poisson())
 #' }
 #'
 #' @export
 gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
-               cov = NULL, dist = "gaussian") {
+               cov = NULL, dist = "gaussian", s2z = FALSE) {
   label <- deparse0(match.call())
   groups <- as.character(as.list(substitute(list(...)))[-1])
   if (length(groups) > 1L) {
@@ -65,6 +93,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   }
   stopif_illegal_group(groups[1])
   cor <- as_one_logical(cor)
+  s2z <- as_one_logical(s2z)
   id <- as_one_character(id, allow_na = TRUE)
   by <- substitute(by)
   if (!is.null(by)) {
@@ -91,7 +120,7 @@ gr <- function(..., by = NULL, cor = TRUE, id = NA, pw = NULL,
   byvars <- all_vars(by)
   pwvars <- all_vars(pw)
   allvars <- str2formula(c(groups, byvars, pwvars))
-  nlist(groups, allvars, label, by, cor, id, pw, cov, dist, type = "")
+  nlist(groups, allvars, label, by, cor, s2z, id, pw, cov, dist, type = "")
 }
 
 #' Set up multi-membership grouping terms in \pkg{brms}
@@ -192,7 +221,7 @@ mm <- function(..., weights = NULL, scale = TRUE,
   }
   nlist(
     groups, weights, weightvars, allvars, label,
-    by, cor, id, pw, cov, dist, type = "mm"
+    by, cor, s2z = FALSE, id, pw, cov, dist, type = "mm"
   )
 }
 
@@ -560,6 +589,7 @@ get_re.btl <- function(x, ...) {
 #   dpar: name of the distributional parameter
 #   nlpar: name of the non-linear parameter
 #   cor: are correlations modeled for this effect?
+#   s2z: use a sum-to-zero parameterization for this effect?
 #   ggn: global number of the grouping factor
 #   type: special effects type; can be 'sp' or 'cs'
 #   gcall: output of functions 'gr' or 'mm'
@@ -605,6 +635,7 @@ frame_re <- function(bterms, data, old_levels = NULL) {
       nlpar = re$nlpar[[i]],
       ggn = NA,
       cor = re$cor[[i]],
+      s2z = re$gcall[[i]]$s2z,
       type = re$type[[i]],
       by = re$gcall[[i]]$by,
       cov = re$gcall[[i]]$cov,
@@ -739,6 +770,417 @@ frame_re <- function(bterms, data, old_levels = NULL) {
   out
 }
 
+# Does a local linear predictor contain a sum-to-zero group-level block?
+has_re_s2z <- function(x) {
+  is.bframel(x) && any(x$frame$re$s2z)
+}
+
+# Include the predictor and group in errors from multi-response models. The
+# enclosing response labels survive category-specific predictor expansion.
+re_s2z_context <- function(bframe, r, coef = r$coef, prior = NULL) {
+  stopifnot(is.bframel(bframe), is.reframe(r), has_rows(r))
+  px <- check_prefix(bframe, keep_mu = TRUE)
+  enclosing <- attr(bframe$frame$re, "s2z_context")
+  response <- if (nzchar(px$resp)) px$resp else enclosing$response
+  family <- bframe$family$family %||% ""
+  if (!nzchar(family)) {
+    family <- enclosing$family
+  }
+  id <- r$gcall[[1]]$id
+  if (is.na(id)) {
+    id <- unique(r$id)
+  }
+  list(
+    response = response, family = family,
+    dpar = if (nzchar(px$dpar)) px$dpar else "mu",
+    nlpar = if (nzchar(px$nlpar)) px$nlpar else "<none>",
+    group = paste(unique(r$group), collapse = ", "),
+    id = paste(trimws(id), collapse = ", "),
+    coef = unique(coef[nzchar(coef)]), prior = prior
+  )
+}
+
+format_re_s2z_context <- function(context) {
+  stopifnot(is.list(context))
+  out <- paste0(
+    "response '", context$response, "', family '", context$family,
+    "', dpar '", context$dpar, "', nlpar '", context$nlpar,
+    "', group '", context$group, "', ID '", context$id, "'"
+  )
+  if (length(context$coef)) {
+    out <- paste0(
+      out, ", coefficient(s) '", paste(context$coef, collapse = ", "), "'"
+    )
+  }
+  if (!is.null(context$prior) && nzchar(as.character(context$prior))) {
+    out <- paste0(out, ", prior '", as.character(context$prior), "'")
+  }
+  out
+}
+
+stop_re_s2z <- function(context, capability, problem, remedy) {
+  stop2(
+    problem, "\nS2Z capability '", capability, "' is unavailable for ",
+    format_re_s2z_context(context), ". Remedy: ", remedy
+  )
+}
+
+# Build one structural plan per linear predictor. Population coordinates and
+# their active/fixed-only partition belong to the plan; each block stores only
+# its covariance metadata and its map into those population coordinates.
+.re_s2z_build_plan <- function(bframe) {
+  stopifnot(is.bframel(bframe))
+  if (!has_re_s2z(bframe)) {
+    return(NULL)
+  }
+  re <- bframe$frame$re
+  ids <- unique(re$id[re$s2z])
+  qnames <- bframe$frame$fe$vars
+  original_q <- seq_along(qnames)
+  fixef <- bframe$frame$fe$vars_stan
+  center <- bframe$frame$fe$center
+  px <- check_prefix(bframe)
+  p <- usc(combine_prefix(px))
+  blocks <- lapply(ids, function(id) {
+    r <- subset2(re, id = id)
+    match_q <- match(r$coef, qnames)
+    # A centered varying slope also touches the temporary intercept, even
+    # when its realized column mean is zero.
+    block_active_q <- sort(unique(c(
+      match_q[!is.na(match_q)],
+      if (center && any(r$coef != "Intercept")) 1L
+    )))
+    nlist(
+      id, r, match_q, block_active_q,
+      context = re_s2z_context(bframe, r = r)
+    )
+  })
+  active_q <- sort(unique(ulapply(blocks, `[[`, "block_active_q")))
+  inactive_q <- setdiff(original_q, active_q)
+  active_names <- qnames[active_q]
+  nlist(
+    p, qnames, fixef, center, active_q, inactive_q, active_names,
+    ids, set_id = ids[1L], blocks
+  )
+}
+
+# Return the predictor's structural plan, optionally resolving active priors.
+re_s2z_plan <- function(bframe, prior = NULL) {
+  stopifnot(is.bframel(bframe))
+  if (!has_re_s2z(bframe)) {
+    return(NULL)
+  }
+  plan <- attr(bframe$frame$re, "s2z_plan")
+  if (is.null(plan)) {
+    plan <- .re_s2z_build_plan(bframe)
+  }
+  if (!is.null(prior)) {
+    plan <- .re_s2z_plan_priors(plan, bframe = bframe, prior = prior)
+  }
+  plan
+}
+
+# Validate local structural eligibility before any fixed/group design match is
+# attempted. The ordering here is intentional: family and term capabilities
+# should diagnose themselves even when the corresponding ordinary fixed column
+# is absent (for example, ordinal threshold models).
+validate_re_s2z_structure <- function(bframe, data) {
+  stopifnot(is.bframel(bframe), is.data.frame(data))
+  if (!has_re_s2z(bframe)) {
+    return(invisible(NULL))
+  }
+  re <- bframe$frame$re
+  ids <- unique(re$id[re$s2z])
+  first_r <- subset2(re, id = ids[1L])
+  if (is_ordinal(bframe$family)) {
+    stop_re_s2z(
+      re_s2z_context(bframe, r = first_r), "ordinal_location",
+      paste0(
+        "Ordinal thresholds are not yet supported together with ",
+        "gr(..., s2z = TRUE)."
+      ),
+      "use a conventional group-level term for this ordinal predictor, or wait for ordinal S2Z support."
+    )
+  }
+  if (order_intercepts(bframe)) {
+    stop_re_s2z(
+      re_s2z_context(bframe, r = first_r), "ordered_mixture",
+      paste0(
+        "Ordered mixture intercepts are not yet supported together with ",
+        "gr(..., s2z = TRUE)."
+      ),
+      "disable ordered mixture intercepts or use a conventional group-level term."
+    )
+  }
+  for (id in ids) {
+    r <- subset2(re, id = id)
+    context <- re_s2z_context(bframe, r = r)
+    if (!all(r$s2z)) {
+      stop_re_s2z(
+        context, "same_id_s2z",
+        paste0(
+          "All coefficients sharing a group-level ID must use the same ",
+          "'s2z' setting."
+        ),
+        "give every term with this ID the same s2z setting or use distinct IDs."
+      )
+    }
+    if (length(unique(r$group)) != 1L) {
+      stop_re_s2z(
+        context, "same_id_group",
+        paste0(
+          "All coefficients sharing a sum-to-zero group-level ID must use ",
+          "the same grouping factor."
+        ),
+        "use one grouping factor per S2Z ID or assign distinct IDs."
+      )
+    }
+    if (length(unique(r$dist)) != 1L) {
+      stop_re_s2z(
+        context, "same_id_distribution",
+        paste0(
+          "All coefficients sharing a group-level ID must use the same ",
+          "group-level distribution."
+        ),
+        "use one group-effect distribution per S2Z ID or assign distinct IDs."
+      )
+    }
+    if (length(unique(r$cor)) != 1L) {
+      stop_re_s2z(
+        context, "same_id_correlation",
+        paste0(
+          "All coefficients sharing a group-level ID must use the same ",
+          "'cor' setting."
+        ),
+        "use one correlation setting per S2Z ID or assign distinct IDs."
+      )
+    }
+    if (any(nzchar(r$gtype), na.rm = TRUE) ||
+        any(nzchar(r$type), na.rm = TRUE)) {
+      stop_re_s2z(
+        context, "ordinary_gr_only",
+        paste0(
+          "The sum-to-zero parameterization currently supports only ",
+          "ordinary 'gr' terms."
+        ),
+        "remove the special group coefficient or use s2z = FALSE for this term."
+      )
+    }
+    has_pw <- any(vapply(r$gcall, function(gcall) {
+      isTRUE(nzchar(gcall$pw %||% ""))
+    }, logical(1)))
+    has_by <- any(nzchar(r$by), na.rm = TRUE)
+    has_cov <- any(nzchar(r$cov), na.rm = TRUE)
+    if (has_by || has_cov || has_pw) {
+      capability <- if (has_by) "by" else if (has_cov) "cov" else "pw"
+      remedy <- switch(
+        capability,
+        by = paste0(
+          "remove 'by' or use s2z = FALSE to retain separate ",
+          "variance-covariance matrices for its levels."
+        ),
+        cov = paste0(
+          "remove 'cov' to use independent grouping levels, or use ",
+          "s2z = FALSE to retain the supplied group covariance matrix."
+        ),
+        pw = paste0(
+          "remove 'pw' or use s2z = FALSE to retain the group-level ",
+          "prior weights."
+        )
+      )
+      stop_re_s2z(
+        context, capability,
+        paste0(
+          "Argument '", capability, "' is not yet supported together ",
+          "with gr(..., s2z = TRUE)."
+        ),
+        remedy
+      )
+    }
+    if (isTRUE(bframe$frame$fe$sparse)) {
+      stop_re_s2z(
+        context, "sparse",
+        paste0(
+          "Sparse and QR-decomposed population-level design matrices are ",
+          "not yet supported together with gr(..., s2z = TRUE)."
+        ),
+        "disable sparse fixed-effect design generation for this predictor."
+      )
+    }
+    if (!identical(bframe$frame$fe$decomp, "none")) {
+      stop_re_s2z(
+        context, "qr",
+        paste0(
+          "Sparse and QR-decomposed population-level design matrices are ",
+          "not yet supported together with gr(..., s2z = TRUE)."
+        ),
+        "set decomp = 'none' for this predictor."
+      )
+    }
+    # During model construction the physical constraint is defined over the
+    # levels actually represented in the likelihood. Retained but unused
+    # factor levels would otherwise introduce unobserved balancing effects.
+    # Post-processing frames carry a fitted basis and may legitimately contain
+    # only a subset of the fitted levels in newdata.
+    levels <- get_levels(r)[[r$group[1L]]]
+    if (is.null(bframe$basis)) {
+      group_name <- r$gcall[[1L]]$groups
+      group_data <- get(group_name, data)
+      observed_levels <- unique(as.character(group_data[!is.na(group_data)]))
+      if (length(observed_levels) < 2L) {
+        stop_re_s2z(
+          context, "minimum_levels",
+          paste0(
+            "The sum-to-zero parameterization requires at least two observed ",
+            "grouping levels."
+          ),
+          "supply data with at least two observed levels or use a fixed effect."
+        )
+      }
+      unused_levels <- setdiff(as.character(levels), observed_levels)
+      if (length(unused_levels)) {
+        stop_re_s2z(
+          context, "unused_levels",
+          paste0(
+            "The sum-to-zero parameterization cannot retain unobserved ",
+            "grouping levels: ", paste(unused_levels, collapse = ", "), "."
+          ),
+          "drop unused factor levels or set drop_unused_levels = TRUE."
+        )
+      }
+    } else if (length(levels) < 2L) {
+      stop_re_s2z(
+        context, "minimum_levels",
+        paste0(
+          "The sum-to-zero parameterization requires at least two observed ",
+          "grouping levels."
+        ),
+        "supply data with at least two observed levels or use a fixed effect."
+      )
+    }
+  }
+  invisible(NULL)
+}
+
+# Validate that matched fixed and group columns are numerically identical.
+validate_re_s2z_design <- function(bframe, data) {
+  stopifnot(is.bframel(bframe))
+  if (!has_re_s2z(bframe)) {
+    return(invisible(NULL))
+  }
+  X <- bframe$sdata$fe$X
+  infos <- re_s2z_plan(bframe)$blocks
+  missing <- unique(ulapply(infos, function(info) {
+    info$r$coef[is.na(info$match_q)]
+  }))
+  if (length(missing)) {
+    first <- which(vapply(infos, function(info) {
+      any(is.na(info$match_q))
+    }, logical(1)))[1L]
+    stop_re_s2z(
+      re_s2z_context(bframe, r = infos[[first]]$r, coef = missing),
+      "matching_name",
+      paste0(
+        "Every sum-to-zero group-level coefficient must have a matching ",
+        "population-level design column. Missing: ",
+        paste(missing, collapse = ", "), "."
+      ),
+      "add population-level terms with these coefficient names or remove the unmatched group effects."
+    )
+  }
+  mismatches <- list()
+  for (info in infos) {
+    # A shared ID can combine several terms; concatenate their design
+    # matrices in the same coefficient order used by frame_re().
+    Z <- do_call(cbind, lapply(unique(info$r$gn), function(gn) {
+      r <- subset2(info$r, gn = gn)
+      get_model_matrix(r$form[[1]], data = data, rename = FALSE)
+    }))
+    if (ncol(Z) != nrow(info$r)) {
+      stop_re_s2z(
+        info$context, "internal_design",
+        "Internal mismatch in the sum-to-zero group-level design matrix.",
+        "report this model and data as a brms issue."
+      )
+    }
+    for (j in seq_len(ncol(Z))) {
+      # The omitted-mean identity is exact only when the two likelihood design
+      # columns are numerically identical; even a tiny tolerance would define
+      # a different posterior.
+      same <- identical(
+        unname(Z[, j]), unname(X[, info$match_q[j]])
+      )
+      if (!same) {
+        mismatches[[length(mismatches) + 1L]] <- list(
+          info = info, coef = info$r$coef[j]
+        )
+      }
+    }
+  }
+  if (length(mismatches)) {
+    coef <- unique(vapply(mismatches, `[[`, character(1), "coef"))
+    first <- mismatches[[1L]]$info
+    stop_re_s2z(
+      re_s2z_context(bframe, r = first$r, coef = coef),
+      "matching_values",
+      paste0(
+        "Population- and group-level design columns must be identical for ",
+        "gr(..., s2z = TRUE). Mismatch for coefficient(s) '",
+        paste(coef, collapse = ", "), "'."
+      ),
+      "use the identical population- and group-level term expressions and contrasts."
+    )
+  }
+  invisible(NULL)
+}
+
+# Group-level IDs may be shared only within one S2Z linear predictor.
+validate_re_s2z_ids <- function(bframe) {
+  stopifnot(is.anybrmsframe(bframe))
+  if (!any(bframe$frame$re$s2z)) {
+    return(invisible(NULL))
+  }
+  all_frames <- all_bframel(bframe)
+  frames <- Filter(has_re_s2z, all_frames)
+  if (!length(frames)) {
+    return(invisible(NULL))
+  }
+  s2z_ids <- unique(ulapply(frames, function(x) {
+    x$frame$re$id[x$frame$re$s2z]
+  }))
+  for (id in s2z_ids) {
+    occurrences <- Filter(function(x) {
+      r <- x$frame$re
+      has_rows(r) && id %in% r$id
+    }, all_frames)
+    if (length(occurrences) > 1L) {
+      contexts <- lapply(occurrences, function(x) {
+        re_s2z_context(x, r = subset2(x$frame$re, id = id))
+      })
+      affected <- paste0(
+        "Affected linear predictors:\n  - ",
+        paste(
+          vapply(contexts, format_re_s2z_context, character(1)),
+          collapse = "\n  - "
+        )
+      )
+      stop_re_s2z(
+        contexts[[1L]], "cross_predictor_id",
+        paste0(
+          "A sum-to-zero group-level ID cannot span multiple linear ",
+          "predictors.\n", affected
+        ),
+        paste0(
+          "use a distinct ID in every listed linear predictor or omit ",
+          "the shared ID. Use s2z = FALSE if cross-predictor group-effect ",
+          "correlations are required."
+        )
+      )
+    }
+  }
+  invisible(NULL)
+}
+
 # like frame_re but only returns its levels attribute
 # this avoids issue #1221 and likely some other edge cases
 frame_re_levels_only <- function(bterms, data) {
@@ -763,7 +1205,8 @@ empty_reframe <- function() {
     id = numeric(0), group = character(0), gn = numeric(0),
     coef = character(0), cn = numeric(0), resp = character(0),
     dpar = character(0), nlpar = character(0), ggn = numeric(0),
-    cor = logical(0), type = character(0), form = character(0),
+    cor = logical(0), s2z = logical(0), type = character(0),
+    form = character(0),
     stringsAsFactors = FALSE
   )
   class(out) <- reframe_class()
