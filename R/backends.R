@@ -570,6 +570,62 @@ use_threading <- function(threads, force = FALSE) {
   out
 }
 
+#' Subsampling support for external backends
+#'
+#' Configure observation-level subsampling for Stan code generation.
+#' When active, brms generates code that loops over a subset of
+#' observations using external C++ index and size functions, and
+#' wraps observation-level variables in the likelihood with external
+#' getter functions.
+#'
+#' @param size_fn Character string naming an external function that
+#'   returns the current subsample size (replaces \code{N} in loop
+#'   bounds and linear predictor initialization).
+#' @param index_fn Character string naming an external function that
+#'   maps a local loop index to a global observation index (used for
+#'   observation-indexed variables like \code{J_*} and \code{Z_*}).
+#' @param wrap Named list mapping observation-level variable names to
+#'   external wrapper function names. For example,
+#'   \code{list(Y = "get_subsampled_Y_int", Xc = "get_subsampled_Xc")}
+#'   causes the likelihood to use \code{get_subsampled_Y_int(Y)}
+#'   instead of \code{Y} and \code{get_subsampled_Xc(Xc)} instead
+#'   of \code{Xc}.
+#'
+#' @return A \code{brmssubsample} object to be passed to the
+#'   \code{subsample} argument of \code{\link{brm}} or
+#'   \code{\link{stancode}}.
+#'
+#' @export
+subsampling <- function(size_fn, index_fn, wrap = list()) {
+  size_fn <- as_one_character(size_fn)
+  index_fn <- as_one_character(index_fn)
+  stopifnot(is.list(wrap))
+  if (length(wrap) > 0) {
+    stopifnot(!is.null(names(wrap)), all(nzchar(names(wrap))))
+    wrap <- lapply(wrap, as_one_character)
+  }
+  out <- nlist(size_fn, index_fn, wrap)
+  class(out) <- "brmssubsample"
+  out
+}
+
+is.brmssubsample <- function(x) {
+  inherits(x, "brmssubsample")
+}
+
+validate_subsample <- function(subsample) {
+  if (is.null(subsample)) return(NULL)
+  if (!is.brmssubsample(subsample)) {
+    stop2("Argument 'subsample' must be NULL or ",
+          "specified via the 'subsampling' function.")
+  }
+  subsample
+}
+
+use_subsampling <- function(subsample) {
+  is.brmssubsample(subsample)
+}
+
 #' GPU support in Stan via OpenCL
 #'
 #' Use OpenCL for GPU support in \pkg{Stan} via the \pkg{brms} interface. Only
