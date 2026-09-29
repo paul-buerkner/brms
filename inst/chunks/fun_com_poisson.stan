@@ -126,7 +126,10 @@
     real log_mu = log(mu);
     real log_lambda = nu * log_mu;
     real log_Z;  // log denominator
-    vector[y] log_num_terms;  // terms of the log numerator
+    vector[max(y, 0)] log_num_terms;  // terms of the log numerator
+    if (y < 0) {
+      return negative_infinity();
+    }
     if (nu == 1) {
       return poisson_lcdf(y | mu);
     }

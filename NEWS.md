@@ -27,6 +27,10 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Handle negative, infinite, noninteger, and missing COM-Poisson CDF
+cutoffs correctly, including PIT at zero and truncation starting at zero.
+(#1938)
+
 * Fix vectorized COM-Poisson CDF calculations with varying cutoffs and
 parameters. (#1938)
 

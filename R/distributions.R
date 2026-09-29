@@ -1443,29 +1443,34 @@ rcom_poisson <- function(n, mu, shape, M = 10000) {
 
 # CDF of the COM-Poisson distribution
 pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
-  x <- round(x)
-  args <- expand(x = x, mu = mu, shape = shape)
+  args <- expand(x = floor(x), mu = mu, shape = shape)
   x <- args$x
-  mu <- args$mu
-  shape <- args$shape
-
-  log_mu <- log(mu)
-  log_Z <- log_Z_com_poisson(log_mu, shape)
-  out <- rep(0, length(x))
+  out <- rep(-Inf, length(x))
   dim(out) <- attributes(args)$max_dim
-  out[x > 0] <- log1p_exp(shape[x > 0] * log_mu[x > 0])
-  k <- 2
-  lfac <- 0
-  while (any(x >= k)) {
-    lfac <- lfac + log(k)
-    term <- shape * (k * log_mu - lfac)
-    out[x >= k] <- log_sum_exp(out[x >= k], term[x >= k])
-    k <- k + 1
+  out[is.na(x)] <- x[is.na(x)]
+  out[which(x == Inf)] <- 0
+  valid <- which(is.finite(x) & x >= 0)
+  if (length(valid)) {
+    x <- x[valid]
+    shape <- args$shape[valid]
+    log_mu <- log(args$mu[valid])
+    log_Z <- log_Z_com_poisson(log_mu, shape)
+    log_num <- rep(0, length(x))
+    positive <- x > 0
+    log_num[positive] <- log1p_exp(shape[positive] * log_mu[positive])
+    k <- 2
+    lfac <- 0
+    while (any(x >= k)) {
+      lfac <- lfac + log(k)
+      use <- x >= k
+      term <- shape[use] * (k * log_mu[use] - lfac)
+      log_num[use] <- log_sum_exp(log_num[use], term)
+      k <- k + 1
+    }
+    out[valid] <- pmin(log_num - log_Z, 0)
   }
-  out <- out - log_Z
-  out[out > 0] <- 0
   if (!lower.tail) {
-    out <- log1m_exp(out)
+    out <- log1m_prob(out)
   }
   if (!log.p) {
     out <- exp(out)
