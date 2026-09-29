@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Fix vectorized COM-Poisson CDF calculations with varying cutoffs and
+parameters. (#1938)
+
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)

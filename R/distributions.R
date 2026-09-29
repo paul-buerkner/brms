@@ -1453,13 +1453,13 @@ pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   log_Z <- log_Z_com_poisson(log_mu, shape)
   out <- rep(0, length(x))
   dim(out) <- attributes(args)$max_dim
-  out[x > 0] <- log1p_exp(shape * log_mu)
+  out[x > 0] <- log1p_exp(shape[x > 0] * log_mu[x > 0])
   k <- 2
   lfac <- 0
   while (any(x >= k)) {
     lfac <- lfac + log(k)
     term <- shape * (k * log_mu - lfac)
-    out[x >= k] <- log_sum_exp(out[x >= k], term)
+    out[x >= k] <- log_sum_exp(out[x >= k], term[x >= k])
     k <- k + 1
   }
   out <- out - log_Z
