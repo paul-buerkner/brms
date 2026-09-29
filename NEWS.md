@@ -27,6 +27,13 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Unify COM-Poisson normalization and means in R and Stan, using the
+three-correction Gaunt approximation in a conservatively tested region and
+controlled direct sums elsewhere. Retain small survival probabilities and
+shape derivatives at the Poisson limit; unconverged direct sums fail
+explicitly. Fits in regions where the previous approximation was inaccurate
+should be refitted. (#1938)
+
 * Include censoring and truncation adjustments in COM-Poisson `log_lik()`,
 so model comparisons use the likelihood fitted by Stan. (#1938)
 

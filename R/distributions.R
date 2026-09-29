@@ -1445,36 +1445,16 @@ rcom_poisson <- function(n, mu, shape, M = 10000) {
 pcom_poisson <- function(x, mu, shape, lower.tail = TRUE, log.p = FALSE) {
   args <- expand(x = floor(x), mu = mu, shape = shape)
   x <- args$x
-  out <- rep(-Inf, length(x))
+  out <- rep(if (lower.tail) -Inf else 0, length(x))
   dim(out) <- attributes(args)$max_dim
   out[is.na(x)] <- x[is.na(x)]
-  out[which(x == Inf)] <- 0
+  out[which(x == Inf)] <- if (lower.tail) 0 else -Inf
   valid <- which(is.finite(x) & x >= 0)
   if (length(valid)) {
-    x <- x[valid]
-    shape <- args$shape[valid]
-    log_mu <- log(args$mu[valid])
-    log_Z <- log_Z_com_poisson(log_mu, shape)
-    log_num <- rep(0, length(x))
-    positive <- x > 0
-    log_num[positive] <- log1p_exp(shape[positive] * log_mu[positive])
-    k <- 2
-    lfac <- 0
-    while (any(x >= k)) {
-      lfac <- lfac + log(k)
-      use <- x >= k
-      term <- shape[use] * (k * log_mu[use] - lfac)
-      log_num[use] <- log_sum_exp(log_num[use], term)
-      k <- k + 1
-    }
-    out[valid] <- pmin(log_num - log_Z, 0)
+    out[valid] <- com_poisson_log_cdf(x[valid], log(args$mu[valid]),
+                                     args$shape[valid], lower.tail)
   }
-  if (!lower.tail) {
-    out <- log1m_prob(out)
-  }
-  if (!log.p) {
-    out <- exp(out)
-  }
+  if (!log.p) out <- exp(out)
   out
 }
 
@@ -1487,217 +1467,227 @@ qcom_poisson <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE,
   mu <- args$mu
   shape <- args$shape
   M <- as.integer(as_one_numeric(M))
-
+  if (M < 0) stop2("'M' must be nonnegative.")
   out <- rep(NA_real_, length(p))
   dim(out) <- attributes(args)$max_dim
   out[!is.finite(p)] <- p[!is.finite(p)]
-
-  use_poisson <- is.finite(p) & shape == 1
-  if (any(use_poisson)) {
-    out[use_poisson] <- qpois(p[use_poisson], lambda = mu[use_poisson])
+  poisson <- which(is.finite(p) & shape == 1)
+  out[poisson] <- qpois(p[poisson], mu[poisson])
+  out[which(p == 0)] <- 0
+  out[which(p == 1)] <- Inf
+  use <- which(is.finite(p) & p > 0 & p < 1 & shape != 1)
+  if (!length(use)) return(out)
+  log_mu <- log(mu[use])
+  shape <- shape[use]
+  p <- p[use]
+  log_Z <- log_Z_com_poisson(log_mu, shape)
+  # Compare the smaller tail on its log scale. Binary search preserves M as
+  # the largest admissible quantile, without accumulating rounded CDF terms.
+  reached <- function(x, j) {
+    lp <- com_poisson_log_cdf(x, log_mu[j], shape[j], log_Z = log_Z[j])
+    upper <- p[j] > 0.5
+    if (any(upper)) {
+      lp[upper] <- com_poisson_log_cdf(x[upper], log_mu[j[upper]],
+        shape[j[upper]], lower.tail = FALSE, log_Z = log_Z[j[upper]])
+    }
+    ifelse(upper, lp <= log1p(-p[j]), lp >= log(p[j]))
   }
-
-  use_inf <- is.finite(p) & p == 1 & shape != 1
-  if (any(use_inf)) {
-    out[use_inf] <- Inf
+  j <- seq_along(use)
+  found <- reached(rep(M, length(j)), j)
+  if (any(!found)) {
+    warning2("Computing quantiles of the 'com_poisson' distribution failed in ",
+             sum(!found), " cases.")
   }
-
-  search_mask <- is.finite(p) & p < 1 & shape != 1
-  if (!any(search_mask)) {
-    return(out)
+  lo <- rep(-1, length(j))
+  hi <- rep(M, length(j))
+  active <- which(found & hi - lo > 1)
+  while (length(active)) {
+    mid <- floor((lo[active] + hi[active]) / 2)
+    yes <- reached(mid, active)
+    hi[active[yes]] <- mid[yes]
+    lo[active[!yes]] <- mid[!yes]
+    active <- which(found & hi - lo > 1)
   }
-
-  log_mu <- log(mu[search_mask])
-  shape_t <- shape[search_mask]
-  p_t <- p[search_mask]
-  log_Z <- log_Z_com_poisson(log_mu, shape_t, approx = FALSE)
-
-  cdf <- exp(-log_Z)
-  out_t <- rep(0, sum(search_mask))
-  not_found <- cdf < p_t
-
-  y <- 0
-  lfac <- 0
-  while (any(not_found) && y <= M) {
-    y <- y + 1
-    out_t[not_found] <- y
-    lfac <- lfac + log(y)
-    cdf <- cdf + exp(shape_t * (y * log_mu - lfac) - log_Z)
-    not_found <- cdf < p_t
-  }
-
-  if (any(not_found)) {
-    out_t[not_found] <- NA
-    nfailed <- sum(not_found)
-    warning2(
-      "Computing quantiles of the 'com_poisson' ",
-      "distribution failed in ", nfailed, " cases."
-    )
-  }
-
-  out[search_mask] <- out_t
+  out[use[found]] <- hi[found]
   out
 }
 
-# log normalizing constant of the COM Poisson distribution
-# @param log_mu log location parameter
-# @param shape shape parameter
-# @param M maximal evaluated element of the series
-# @param thres threshold for new elements at which to stop evaluation
-# @param approx use a closed form approximation of the mean if appropriate?
-log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-16,
-                              approx = TRUE) {
-  if (isTRUE(any(shape <= 0))) {
-    stop2("'shape' must be positive.")
-  }
-  if (isTRUE(any(shape == Inf))) {
-    stop2("'shape' must be finite.")
-  }
-  approx <- as_one_logical(approx)
+# Mode-centred sum with geometric bounds on omitted mass; see Shmueli et al.
+# (2005), Appendix B.1, Eqs. (33)-(35), doi:10.1111/j.1467-9876.2005.00474.x.
+# Apply the bounds in both directions and additionally bound the first moment.
+# M limits terms per direction; thres controls relative mass/moment tails.
+# If the first omitted weight is a at count t and outward ratios are <= r < 1:
+#   omitted mass <= a / (1 - r)
+#   right first moment <= a * (t / (1 - r) + r / (1 - r)^2)
+#   left first moment <= t * a / (1 - r), since remaining counts are <= t.
+com_poisson_sum <- function(log_mu, shape, M = 10000, thres = 1e-12) {
   args <- expand(log_mu = log_mu, shape = shape)
   log_mu <- args$log_mu
   shape <- args$shape
-
-  out <- rep(NA, length(log_mu))
-  dim(out) <- attributes(args)$max_dim
-  use_poisson <- shape == 1
-  if (any(use_poisson)) {
-    # shape == 1 implies the poisson distribution
-    out[use_poisson] <- exp(log_mu[use_poisson])
+  M <- as.integer(as_one_numeric(M))
+  thres <- as_one_numeric(thres)
+  if (M < 0 || !is.finite(thres) || thres <= 0 || thres >= 1) {
+    stop2("Invalid COM-Poisson summation controls.")
   }
-  if (approx) {
-    # use a closed form approximation if appropriate
-    use_approx <- log_mu * shape >= log(1.5) & log_mu >= log(1.5)
-    if (any(use_approx)) {
-      out[use_approx] <- log_Z_com_poisson_approx(
-        log_mu[use_approx], shape[use_approx]
-      )
+  if (any(!is.finite(log_mu)) || any(!is.finite(shape) | shape <= 0)) {
+    stop2("COM-Poisson requires finite positive 'mu' and 'shape'.")
+  }
+  mode <- floor(exp(log_mu))
+  if (any(!is.finite(mode))) stop2("COM-Poisson modal location is too large.")
+  mass <- rep(1, length(mode))
+  log_moment <- log(mode)
+  for (direction in c(-1, 1)) {
+    k <- mode
+    lt <- rep(0, length(mode))
+    active <- seq_along(mode)
+    for (i in 0:M) {
+      if (!length(active)) break
+      j <- active
+      lr <- if (direction < 0) {
+        shape[j] * (log(k[j]) - log_mu[j])
+      } else shape[j] * (log_mu[j] - log(k[j] + 1))
+      # Successive ratios decrease away from the mode. Their current value
+      # therefore bounds all remaining ratios by a geometric sequence.
+      tail <- moment_tail <- rep(Inf, length(j))
+      decreasing <- which(lr < 0)
+      if (length(decreasing)) {
+        h <- decreasing
+        denom <- -expm1(lr[h])
+        tail[h] <- lt[j[h]] + lr[h] - log(denom)
+        factor <- if (direction < 0) pmax(k[j[h]] - 1, 0) else
+          k[j[h]] + 1 + exp(lr[h]) / denom
+        moment_tail[h] <- tail[h] + log(factor)
+      }
+      done <- tail <= log(thres / 2) + log(mass[j]) &
+        moment_tail <= log(thres / 2) + log_moment[j]
+      if (direction < 0) done[k[j] == 0] <- TRUE
+      active <- j[!done]
+      if (!length(active)) break
+      if (i == M) stop2("COM-Poisson summation failed to converge within M terms per direction.")
+      h <- which(!done)
+      lt[active] <- lt[active] + lr[h]
+      k[active] <- k[active] + direction
+      w <- exp(lt[active])
+      mass[active] <- mass[active] + w
+      log_moment[active] <- log_sum_exp(log_moment[active], log(k[active]) + lt[active])
     }
   }
-  use_exact <- is.na(out)
-  if (any(use_exact)) {
-    # direct computation of the truncated series
-    M <- as.integer(as_one_numeric(M))
-    thres <- as_one_numeric(thres)
-    log_thres <- log(thres)
-    log_mu <- log_mu[use_exact]
-    shape <- shape[use_exact]
-    # first 2 terms of the series
-    out_exact <- log1p_exp(shape * log_mu)
-    lfac <- 0
-    k <- 2
-    converged <- FALSE
-    while (!converged && k <= M) {
-      lfac <- lfac + log(k)
-      term <- shape * (k * log_mu - lfac)
-      out_exact <- log_sum_exp(out_exact, term)
-      converged <- all(term <= log_thres)
-      k <- k + 1
-    }
-    out[use_exact] <- out_exact
-    if (!converged) {
-      warning2(
-        "Approximating the normalizing constant of the 'com_poisson' ",
-        "distribution failed and results may be inaccurate."
-      )
-    }
-  }
+  out <- list(logZ = shape * (mode * log_mu - lgamma(mode + 1)) + log(mass),
+              mean = exp(log_moment - log(mass)))
+  dim(out$logZ) <- dim(out$mean) <- attributes(args)$max_dim
   out
 }
 
-# approximate the log normalizing constant of the COM Poisson distribution
-# based on doi:10.1007/s10463-017-0629-6
-log_Z_com_poisson_approx <- function(log_mu, shape) {
-  shape_mu <- shape * exp(log_mu)
-  shape2 <- shape^2
-  # first 4 terms of the residual series
-  log_sum_resid <- log(
-    1 + shape_mu^(-1) * (shape2 - 1) / 24 +
-      shape_mu^(-2) * (shape2 - 1) / 1152 * (shape2 + 23) +
-      shape_mu^(-3) * (shape2 - 1) / 414720 *
-        (5 * shape2^2 - 298 * shape2 + 11237)
-  )
-  shape_mu + log_sum_resid -
-    ((log(2 * pi) + log_mu) * (shape - 1) / 2 + log(shape) / 2)
+# Log of an unnormalized one-sided sum, starting at its boundary. Log sums
+# also permit traversing the mode when the initially chosen tail exceeds 1/2.
+com_poisson_log_tail <- function(x, log_mu, shape, lower, M = 10000,
+                                 thres = 1e-12) {
+  k <- ifelse(lower, x, x + 1)
+  first <- shape * (k * log_mu - lgamma(k + 1))
+  total <- lt <- rep(0, length(k))
+  active <- seq_along(k)
+  for (i in 0:M) {
+    if (!length(active)) break
+    j <- active
+    lr <- shape[j] * ifelse(lower[j], log(k[j]) - log_mu[j],
+                            log_mu[j] - log(k[j] + 1))
+    bound <- rep(Inf, length(j))
+    h <- which(lr < 0)
+    bound[h] <- lt[j[h]] + lr[h] - log(-expm1(lr[h]))
+    done <- bound <= log(thres) + total[j]
+    done[lower[j] & k[j] == 0] <- TRUE
+    active <- j[!done]
+    if (!length(active)) break
+    if (i == M) stop2("COM-Poisson tail sum failed to converge within M terms.")
+    lt[active] <- lt[active] + lr[!done]
+    k[active] <- k[active] + ifelse(lower[active], -1, 1)
+    total[active] <- log_sum_exp(total[active], lt[active])
+  }
+  first + total
 }
 
-# compute the log mean of the COM Poisson distribution
-# @param mu location parameter
-# @param shape shape parameter
-# @param M maximal evaluated element of the series
-# @param thres threshold for new elements at which to stop evaluation
-# @param approx use a closed form approximation of the mean if appropriate?
-mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-16,
-                             approx = TRUE) {
-  if (isTRUE(any(shape <= 0))) {
-    stop2("'shape' must be positive.")
+# Finite nonnegative cutoffs only. Always evaluate the smaller probability
+# directly, keeping the far survival tail usable for censoring/truncation.
+com_poisson_log_cdf <- function(x, log_mu, shape, lower.tail = TRUE,
+                                log_Z = log_Z_com_poisson(log_mu, shape)) {
+  lower <- x < floor(exp(log_mu))
+  lp <- com_poisson_log_tail(x, log_mu, shape, lower) - log_Z
+  switch <- which(lp > -log(2))
+  if (length(switch)) {
+    lower[switch] <- !lower[switch]
+    lp[switch] <- com_poisson_log_tail(x[switch], log_mu[switch], shape[switch],
+                                      lower[switch]) - log_Z[switch]
   }
-  if (isTRUE(any(shape == Inf))) {
-    stop2("'shape' must be finite.")
-  }
+  lp <- pmin(lp, 0)
+  complement <- lower != lower.tail
+  lp[complement] <- log1m_prob(lp[complement])
+  lp
+}
+
+# Same empirical Gaunt region as Stan, compared on the log scale.
+# These thresholds are tested, not a uniform error bound.
+com_poisson_use_approx <- function(log_mu, shape) {
+  log_shape <- log(shape)
+  log_mu + log_shape >= log(200) & log_mu - log_shape >= log(50)
+}
+
+# Gaunt et al. (2019), Eq. (A.31), doi:10.1007/s10463-017-0629-6.
+# Retain three corrections, avoiding large powers of shape.
+# The mean is d log(Z) / d log(mu) / shape for the same expansion.
+com_poisson_approx <- function(log_mu, shape) {
+  mu <- exp(log_mu)
+  a <- shape / mu
+  b <- 1 / (shape * mu)
+  t1 <- (a - b) / 24
+  t2 <- (a - b) * (a + 23 * b) / 1152
+  t3 <- (a - b) * (5 * a^2 - 298 * a * b + 11237 * b^2) / 414720
+  correction <- t1 + t2 + t3
+  list(logZ = shape * mu - (shape - 1) / 2 * (log(2 * pi) + log_mu) -
+         log(shape) / 2 + log1p(correction),
+       mean = mu - (1 - 1 / shape) / 2 -
+         (t1 + 2 * t2 + 3 * t3) / (shape * (1 + correction)))
+}
+
+# Shared normalizer/mean policy. approx = FALSE forces direct summation.
+# M and thres apply only to the direct sum, not the approximation error.
+com_poisson_normalizer <- function(log_mu, shape, M = 10000, thres = 1e-12,
+                                   approx = TRUE) {
   approx <- as_one_logical(approx)
-  args <- expand(mu = mu, shape = shape)
-  mu <- args$mu
+  M <- as.integer(as_one_numeric(M))
+  thres <- as_one_numeric(thres)
+  if (M < 0 || !is.finite(thres) || thres <= 0 || thres >= 1) {
+    stop2("Invalid COM-Poisson summation controls.")
+  }
+  args <- expand(log_mu = log_mu, shape = shape)
+  log_mu <- args$log_mu
   shape <- args$shape
-
-  out <- rep(NA, length(mu))
-  dim(out) <- attributes(args)$max_dim
-  use_poisson <- shape == 1
-  if (any(use_poisson)) {
-    # shape == 1 implies the poisson distribution
-    out[use_poisson] <- mu[use_poisson]
+  if (any(!is.finite(log_mu)) || any(!is.finite(shape) | shape <= 0)) {
+    stop2("COM-Poisson requires finite positive 'mu' and 'shape'.")
   }
-  if (approx) {
-    # use a closed form approximation if appropriate
-    use_approx <- mu^shape >= 1.5 & mu >= 1.5
-    if (any(use_approx)) {
-      out[use_approx] <- mean_com_poisson_approx(
-        mu[use_approx], shape[use_approx]
-      )
-    }
+  if (any(!is.finite(exp(log_mu)))) stop2("COM-Poisson modal location is too large.")
+  use_approx <- approx & com_poisson_use_approx(log_mu, shape)
+  out <- list(logZ = numeric(length(log_mu)), mean = numeric(length(log_mu)))
+  for (use in c(TRUE, FALSE)) {
+    j <- which(use_approx == use)
+    if (!length(j)) next
+    a <- if (use) com_poisson_approx(log_mu[j], shape[j]) else
+      com_poisson_sum(log_mu[j], shape[j], M, thres)
+    out$logZ[j] <- a$logZ
+    out$mean[j] <- a$mean
   }
-  use_exact <- is.na(out)
-  if (any(use_exact)) {
-    # direct computation of the truncated series
-    M <- as.integer(as_one_numeric(M))
-    thres <- as_one_numeric(thres)
-    log_thres <- log(thres)
-    mu <- mu[use_exact]
-    shape <- shape[use_exact]
-    log_mu <- log(mu)
-    # first 2 terms of the series
-    log_num <- shape * log_mu  # numerator
-    log_Z <- log1p_exp(shape * log_mu)  # denominator
-    lfac <- 0
-    k <- 2
-    converged <- FALSE
-    while (!converged && k <= M) {
-      log_k <- log(k)
-      lfac <- lfac + log_k
-      term <- shape * (k * log_mu - lfac)
-      log_num <- log_sum_exp(log_num, log_k + term)
-      log_Z <- log_sum_exp(log_Z, term)
-      converged <- all(term <= log_thres)
-      k <- k + 1
-    }
-    if (!converged) {
-      warning2(
-        "Approximating the mean of the 'com_poisson' ",
-        "distribution failed and results may be inaccurate."
-      )
-    }
-    out[use_exact] <- exp(log_num - log_Z)
-  }
+  dim(out$logZ) <- dim(out$mean) <- attributes(args)$max_dim
   out
 }
 
-# approximate the mean of COM-Poisson distribution
-# based on doi:10.1007/s10463-017-0629-6
-mean_com_poisson_approx <- function(mu, shape) {
-  term <- 1 - (shape - 1) / (2 * shape) * mu^(-1) -
-    (shape^2 - 1) / (24 * shape^2) * mu^(-2) -
-    (shape^2 - 1) / (24 * shape^3) * mu^(-3)
-  mu * term
+# log_mu is log modal location. Main distribution interfaces still use mu.
+log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-12,
+                              approx = TRUE) {
+  com_poisson_normalizer(log_mu, shape, M, thres, approx)$logZ
+}
+
+mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-12,
+                             approx = TRUE) {
+  com_poisson_normalizer(log(mu), shape, M, thres, approx)$mean
 }
 
 #' The Dirichlet Distribution
