@@ -27,6 +27,13 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Replace the COM-Poisson asymptotic normalizer and mean with direct sums
+whose omitted mass and first moment have controlled relative error. Align
+R and Stan probability calculations, retain small survival probabilities,
+and preserve shape derivatives at the Poisson limit. Computation can be
+slower; unconverged sums now fail explicitly. Fits in regions where the
+previous approximation was inaccurate should be refitted. (#1938)
+
 * Include censoring and truncation adjustments in COM-Poisson `log_lik()`,
 so model comparisons use the likelihood fitted by Stan. (#1938)
 
