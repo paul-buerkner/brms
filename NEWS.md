@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Include censoring and truncation adjustments in COM-Poisson `log_lik()`,
+so model comparisons use the likelihood fitted by Stan. (#1938)
+
 * Handle negative, infinite, noninteger, and missing COM-Poisson CDF
 cutoffs correctly, including PIT at zero and truncation starting at zero.
 (#1938)

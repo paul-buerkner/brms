@@ -76,3 +76,62 @@ test_that("Stan COM-Poisson CDF accepts negative cutoffs", {
                  tolerance = 1e-8)
   }
 })
+
+test_that("COM-Poisson log_lik applies censoring, truncation, and weights", {
+  for (nu in c(1, 2)) {
+    mu <- if (nu == 1) 2 else 0.8
+    ref <- cmp_reference(mu, nu)
+    for (bounds in list(c(-Inf, Inf), c(0, Inf), c(-Inf, 5), c(0, 5), c(0.2, 5))) {
+      for (cens in c(0, -1, 1, 2)) for (weight in c(1, 2.5)) {
+        prep <- structure(list(
+          family = brmsfamily("com_poisson"),
+          dpars = list(mu = c(mu, mu), shape = nu),
+          data = list(Y = 1, cens = cens, rcens = 3,
+                      weights = weight)), class = "brmsprep")
+        if (is.finite(bounds[1])) prep$data$lb <- bounds[1]
+        if (is.finite(bounds[2])) prep$data$ub <- bounds[2]
+        mass <- switch(as.character(cens),
+          "0" = ref$p[2], "-1" = sum(ref$p[ref$y <= 1]),
+          "1" = sum(ref$p[ref$y > 1]),
+          "2" = sum(ref$p[ref$y > 1 & ref$y <= 3]))
+        norm <- sum(ref$p[ref$y >= ceiling(bounds[1]) & ref$y <= bounds[2]])
+        expected <- weight * (log(mass) - log(norm))
+        expect_equal(brms:::log_lik_com_poisson(1, prep), rep(expected, 2),
+                     tolerance = 1e-10)
+      }
+    }
+  }
+})
+
+test_that("COM-Poisson censored and truncated likelihoods match Stan", {
+  skip_if_not_installed("cmdstanr")
+  skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
+  chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
+  code <- c("functions {", readLines(chunk), "}",
+    "data { real mu; real nu; }",
+    "generated quantities { vector[4] ll;",
+    "real lnorm = log_diff_exp(com_poisson_lcdf(5 | mu, nu), com_poisson_lcdf(-1 | mu, nu));",
+    "ll[1] = com_poisson_lpmf(1 | mu, nu) - lnorm;",
+    "ll[2] = com_poisson_lcdf(1 | mu, nu) - lnorm;",
+    "ll[3] = com_poisson_lccdf(1 | mu, nu) - lnorm;",
+    "ll[4] = log_diff_exp(com_poisson_lcdf(3 | mu, nu), com_poisson_lcdf(1 | mu, nu)) - lnorm; }")
+  sf <- tempfile(fileext = ".stan")
+  writeLines(code, sf)
+  mod <- cmdstanr::cmdstan_model(sf, quiet = TRUE)
+  fit <- mod$sample(data = list(mu = 0.8, nu = 2), fixed_param = TRUE,
+                   chains = 1, iter_sampling = 1, refresh = 0,
+                   show_messages = FALSE, sig_figs = 18)
+  actual <- as.numeric(posterior::as_draws_matrix(fit$draws("ll"))[1, ])
+  prep <- structure(list(family = brmsfamily("com_poisson"),
+                        dpars = list(mu = 0.8, shape = 2),
+                        data = list(Y = 1, lb = 0, ub = 5, rcens = 3)),
+                    class = "brmsprep")
+  expected <- vapply(c(0, -1, 1, 2), function(cens) {
+    prep$data$cens <- cens
+    brms:::log_lik_com_poisson(1, prep)
+  }, numeric(1))
+  expect_equal(actual, expected, tolerance = 1e-8)
+  sc <- make_stancode(y | trunc(lb = 0, ub = 5) ~ 1,
+                     data = data.frame(y = 0:5), family = brmsfamily("com_poisson"))
+  expect_match(sc, "com_poisson_lcdf(lb[n] - 1", fixed = TRUE)
+})
