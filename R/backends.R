@@ -27,7 +27,7 @@ parse_model <- function(model, backend, ...) {
   # if (cmdstanr::cmdstan_version() >= "2.29.0") {
   #   .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
   # }
-  if (utils::packageVersion("cmdstanr") >= "0.9.0.9004") {
+  if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
     cmdstanr::check_syntax_stan_file(temp_file, quiet = TRUE, ...)
   } else {
     out <- eval_silent(
@@ -313,7 +313,7 @@ fit_model <- function(model, backend, ...) {
   } else if (algorithm %in% c("pathfinder")) {
     c(args) <- list(num_paths = chains)
     if (use_threading) {
-      if (utils::packageVersion("cmdstanr") >= "0.9.0.9004") {
+      if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
         args$threads <- threads$threads
       } else {
         args$num_threads <- threads$threads
@@ -386,8 +386,17 @@ needs_recompilation <- function(x) {
     # TODO: figure out when rstan requires recompilation
     out <- FALSE
   } else if (backend == "cmdstanr") {
-    exe_file <- attributes(x$fit)$CmdStanModel$exe_file()
-    out <- !is.character(exe_file) || !file.exists(exe_file)
+    model <- attributes(x$fit)$CmdStanModel
+    if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
+      # a model object saved under an older CmdStanR has no is_current()
+      # method and needs recompiling anyway, and so does one whose check
+      # cannot run (stanc rejecting the saved Stan file, for example)
+      out <- !is.function(model$is_current) ||
+        !tryCatch(model$is_current(), error = function(e) FALSE)
+    } else {
+      exe_file <- model$exe_file()
+      out <- !is.character(exe_file) || !file.exists(exe_file)
+    }
   } else if (backend == "mock") {
     out <- FALSE
   }
