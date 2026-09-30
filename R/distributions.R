@@ -1520,7 +1520,7 @@ qcom_poisson <- function(p, mu, shape, lower.tail = TRUE, log.p = FALSE,
 #   omitted mass <= a / (1 - r)
 #   right first moment <= a * (t / (1 - r) + r / (1 - r)^2)
 #   left first moment <= t * a / (1 - r), since remaining counts are <= t.
-com_poisson_sum <- function(log_mu, shape, M = 10000, thres = 1e-12) {
+com_poisson_sum <- function(log_mu, shape, M = 100000, thres = 1e-12) {
   args <- expand(log_mu = log_mu, shape = shape)
   log_mu <- args$log_mu
   shape <- args$shape
@@ -1580,7 +1580,7 @@ com_poisson_sum <- function(log_mu, shape, M = 10000, thres = 1e-12) {
 
 # Log of an unnormalized one-sided sum, starting at its boundary. Log sums
 # also permit traversing the mode when the initially chosen tail exceeds 1/2.
-com_poisson_log_tail <- function(x, log_mu, shape, lower, M = 10000,
+com_poisson_log_tail <- function(x, log_mu, shape, lower, M = 100000,
                                  thres = 1e-12) {
   k <- ifelse(lower, x, x + 1)
   first <- shape * (k * log_mu - lgamma(k + 1))
@@ -1650,7 +1650,7 @@ com_poisson_approx <- function(log_mu, shape) {
 
 # Shared normalizer/mean policy. approx = FALSE forces direct summation.
 # M and thres apply only to the direct sum, not the approximation error.
-com_poisson_normalizer <- function(log_mu, shape, M = 10000, thres = 1e-12,
+com_poisson_normalizer <- function(log_mu, shape, M = 100000, thres = 1e-12,
                                    approx = TRUE) {
   approx <- as_one_logical(approx)
   M <- as.integer(as_one_numeric(M))
@@ -1680,12 +1680,12 @@ com_poisson_normalizer <- function(log_mu, shape, M = 10000, thres = 1e-12,
 }
 
 # log_mu is log modal location. Main distribution interfaces still use mu.
-log_Z_com_poisson <- function(log_mu, shape, M = 10000, thres = 1e-12,
+log_Z_com_poisson <- function(log_mu, shape, M = 100000, thres = 1e-12,
                               approx = TRUE) {
   com_poisson_normalizer(log_mu, shape, M, thres, approx)$logZ
 }
 
-mean_com_poisson <- function(mu, shape, M = 10000, thres = 1e-12,
+mean_com_poisson <- function(mu, shape, M = 100000, thres = 1e-12,
                              approx = TRUE) {
   com_poisson_normalizer(log(mu), shape, M, thres, approx)$mean
 }

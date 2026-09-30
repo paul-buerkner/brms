@@ -207,6 +207,26 @@ test_that("COM-Poisson normalization, moments and tails agree with independent s
   expect_equal(brms:::qcom_poisson(0.75, 2, 30, M = 2), 2)
 })
 
+test_that("COM-Poisson sums allow broad distributions beyond the old work limit", {
+  mu <- 1
+  nu <- 1e-4
+  ref <- cmp_reference(mu, nu, K = 100000)
+  expect_error(brms:::log_Z_com_poisson(log(mu), nu, M = 10000),
+               "failed to converge")
+  expect_equal(brms:::log_Z_com_poisson(log(mu), nu), ref$logZ,
+               tolerance = 1e-10)
+  expect_equal(brms:::mean_com_poisson(mu, nu), ref$mean, tolerance = 1e-10)
+  x <- c(0, 958, 4609, 10001)
+  for (lower in c(TRUE, FALSE)) {
+    expected <- vapply(x, function(q) {
+      keep <- if (lower) ref$y <= q else ref$y > q
+      log(sum(ref$p[keep]))
+    }, numeric(1))
+    expect_equal(brms:::pcom_poisson(x, mu, nu, lower, log.p = TRUE),
+                 expected, tolerance = 1e-10)
+  }
+})
+
 test_that("COM-Poisson hybrid remains consistent at its switching boundaries", {
   g <- cmp_switch_cases()
   refs <- lapply(seq_len(nrow(g)), function(i) cmp_reference(g$mu[i], g$nu[i], 20000))
@@ -284,7 +304,8 @@ test_that("compiled COM-Poisson values and gradients match independent reference
   grad_grid <- rbind(cmp_switch_cases(),
     data.frame(mu = 2, nu = c(1 - 1e-8, 1, 1 + 1e-8)),
     data.frame(mu = 300, nu = c(1 - 1e-8, 1, 1 + 1e-8)),
-    data.frame(mu = c(2 - 1e-8, 2, 2 + 1e-8), nu = 30))
+    data.frame(mu = c(2 - 1e-8, 2, 2 + 1e-8), nu = 30),
+    data.frame(mu = 1, nu = 1e-4))
   uf <- tempfile(fileext = ".json")
   df <- tempfile(fileext = ".json")
   of <- tempfile(fileext = ".csv")
@@ -314,7 +335,7 @@ test_that("compiled COM-Poisson values and gradients match independent reference
     gradients <- do.call(rbind, gradients)
     expected <- t(vapply(seq_len(nrow(grad_grid)), function(i) {
       mu <- grad_grid$mu[i]; nu <- grad_grid$nu[i]
-      r <- cmp_reference(mu, nu, K = 20000)
+      r <- cmp_reference(mu, nu, K = if (nu < 0.001) 100000 else 20000)
       score <- r$y * log(mu) - lgamma(r$y + 1)
       keep <- switch(kind + 1L, r$y == data$cutoff,
                      r$y <= data$cutoff, r$y > data$cutoff)

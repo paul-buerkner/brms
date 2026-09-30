@@ -27,6 +27,11 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Allow up to 100,000 terms per direction in COM-Poisson direct sums,
+including CDF tails, to support broader distributions. Converged sums still
+stop early, and the accuracy tolerance and quantile search limit are unchanged.
+(#1938)
+
 * Unify COM-Poisson normalization and means in R and Stan, using the
 three-correction Gaunt approximation in a conservatively tested region and
 controlled direct sums elsewhere. Retain small survival probabilities and

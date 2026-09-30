@@ -84,7 +84,7 @@
       reject("COM-Poisson requires finite positive mu and shape");
     }
     if (com_poisson_use_approx(log_mu, nu)) return com_poisson_approx(log_mu, nu);
-    return com_poisson_sum(log_mu, nu, 10000, 1e-12);
+    return com_poisson_sum(log_mu, nu, 100000, 1e-12);
   }
 
   real log_Z_com_poisson(real log_mu, real nu) {
@@ -114,7 +114,7 @@
       if (lower_tail && k == 0) break;
       lr = lower_tail ? nu * (log(k) - log_mu) : nu * (log_mu - log(k + 1));
       if (lr < 0 && lt + lr - log(-expm1(lr)) <= log(1e-12) + total) break;
-      if (steps == 10000) reject("COM-Poisson tail sum failed to converge within M terms");
+      if (steps == 100000) reject("COM-Poisson tail sum failed to converge within M terms");
       lt += lr;
       k += lower_tail ? -1 : 1;
       total = log_sum_exp(total, lt);
