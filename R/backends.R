@@ -27,12 +27,16 @@ parse_model <- function(model, backend, ...) {
   # if (cmdstanr::cmdstan_version() >= "2.29.0") {
   #   .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
   # }
-  out <- eval_silent(
-    cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
-    type = "message", try = TRUE, silent = silent
-  )
-  out$check_syntax(quiet = TRUE)
-  collapse(out$code(), "\n")
+  if (utils::packageVersion("cmdstanr") >= "0.9.0.9004") {
+    cmdstanr::check_syntax_stan_file(temp_file, quiet = TRUE, ...)
+  } else {
+    out <- eval_silent(
+      cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
+      type = "message", try = TRUE, silent = silent
+    )
+    out$check_syntax(quiet = TRUE)
+  }
+  model
 }
 
 # parse model with a mock backend for testing
@@ -309,7 +313,11 @@ fit_model <- function(model, backend, ...) {
   } else if (algorithm %in% c("pathfinder")) {
     c(args) <- list(num_paths = chains)
     if (use_threading) {
-      args$num_threads <- threads$threads
+      if (utils::packageVersion("cmdstanr") >= "0.9.0.9004") {
+        args$threads <- threads$threads
+      } else {
+        args$num_threads <- threads$threads
+      }
     }
     out <- do_call(model$pathfinder, args)
   } else if (algorithm %in% c("laplace")) {
