@@ -134,14 +134,19 @@ summary.brmsfit <- function(object, priors = FALSE, prob = 0.95,
         )
       }
     }
-    div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
-    adapt_delta <- control_params(object)$adapt_delta
-    if (div_trans > 0) {
-      warning2(
-        "There were ", div_trans, " divergent transitions after warmup. ",
-        "Increasing adapt_delta above ", adapt_delta, " may help. See ",
-        "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
-      )
+    # some backend/engine combinations (e.g. engine = 'walnuts') do not report NUTS sampler diagnostics at all,
+    # in which case checking for divergent transitions is skipped
+    sampler_params1 <- attr(object$fit@sim$samples[[1]], "sampler_params")
+    if (isTRUE("divergent__" %in% names(sampler_params1))) {
+      div_trans <- sum(nuts_params(object, pars = "divergent__")$Value)
+      adapt_delta <- control_params(object)$adapt_delta
+      if (div_trans > 0) {
+        warning2(
+          "There were ", div_trans, " divergent transitions after warmup. ",
+          "Increasing adapt_delta above ", adapt_delta, " may help. See ",
+          "http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup"
+        )
+      }
     }
   }
 

@@ -108,7 +108,8 @@ control_params <- function(x, ...) {
 #' @export
 control_params.brmsfit <- function(x, pars = NULL, ...) {
   contains_draws(x)
-  if (is_equal(x$backend, "cmdstanr")) {
+  if (x$backend == "cmdstanr" || is_stanr_backend(x$backend)) {
+    # all three backends attach the same csfit-shaped list (see .stanfit_from_csfit)
     out <- attr(x$fit, "metadata")$metadata
   } else {
     out <- attr(x$fit@sim$samples[[1]], "args")$control

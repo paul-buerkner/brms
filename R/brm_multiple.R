@@ -232,6 +232,10 @@ combine_models <- function(..., mlist = NULL, check_data = TRUE) {
     att <- attributes(models[[1]]$fit)
     attributes(out$fit)$CmdStanModel <- att$CmdStanModel
     attributes(out$fit)$metadata <- att$metadata
+  } else if (is_stanr_backend(out$backend)) {
+    att <- attributes(models[[1]]$fit)
+    attributes(out$fit)$StanModel <- att$StanModel
+    attributes(out$fit)$metadata <- att$metadata
   }
   out
 }
