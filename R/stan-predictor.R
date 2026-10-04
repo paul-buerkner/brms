@@ -50,6 +50,9 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   }
   args <- nlist(prior, normalize, nlpars = names(x$nlpars), ...)
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
+  # user code placed in the likelihood block shares scope with the
+  # distributional parameters; see is_scalar_dpar
+  x$lik_scode <- collapse_stanvars(list(...)$stanvars, block = "likelihood")
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
     str_add_list(out) <- do_call(stan_predictor, c(nlp_args, args))

@@ -2941,6 +2941,14 @@ test_that("intercept-only distributional parameters are computed as scalars", {
   scode <- stancode(bf(y ~ x, sigma ~ 1) + bf(x ~ y, sigma ~ 1) + set_rescor(TRUE), dat)
   expect_match2(scode, "vector[N_y] sigma_y = rep_vector(0.0, N_y);")
 
+  # user code in the likelihood block that mentions the parameter keeps the vector
+  sv <- stanvar(scode = "sigma[1] += 0;", block = "likelihood", position = "start")
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, stanvars = sv)
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+  sv <- stanvar(scode = "mu[1] += 0;", block = "likelihood", position = "start")
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, stanvars = sv)
+  expect_match2(scode, "real sigma = 0;")
+
   # vectorized custom families receive predicted parameters as vectors
   cfam <- custom_family("cfam", dpars = c("mu", "sigma"), links = c("identity", "log"),
                         lb = c(NA, 0), vars = "vint1", loop = FALSE)
