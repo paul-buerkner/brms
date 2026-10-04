@@ -202,8 +202,10 @@ brmsterms.brmsformula <- function(formula, check_response = TRUE,
   # make a formula containing all required variables
   y$unused <- attr(x$formula, "unused")
   lhsvars <- if (resp_rhs_all) all_vars(y$respform)
+  # the mixture grouping variable is specified via the family, not the formula
+  mixvars <- if (has_mix_groups(family)) str2formula(get_mix_var(family))
   y$allvars <- allvars_formula(
-    lhsvars, advars, lapply(y$dpars, get_allvars),
+    lhsvars, advars, mixvars, lapply(y$dpars, get_allvars),
     lapply(y$nlpars, get_allvars), y$time$allvars,
     get_unused_arg_vars(y),
     .env = environment(formula)
