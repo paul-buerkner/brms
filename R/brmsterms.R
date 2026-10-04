@@ -847,6 +847,34 @@ is_nlpar <- function(x) {
   isTRUE(nzchar(x[["nlpar"]]))
 }
 
+# is a linear formula just a (centered) intercept? Its predictor
+# is then the same for every observation
+is_intercept_only <- function(x) {
+  is.bframel(x) && !is_nlpar(x) && !has_special_terms(x) &&
+    isTRUE(x$frame$fe$center) && !length(x$frame$fe$vars_stan)
+}
+
+# can a predicted distributional parameter be computed as a scalar in the
+# Stan code rather than as a vector over observations? This is the case
+# for intercept-only parameters, except in models where the parameter is
+# indexed by observation somewhere other than in the likelihood call
+# (mixtures, skew-normal and logistic-normal transforms, residual
+# correlations, autocorrelation) or where the type of the parameter is
+# part of a user-facing contract (vectorized custom families receive
+# predicted parameters as vectors)
+is_scalar_dpar <- function(bterms, dpar) {
+  stopifnot(is.brmsterms(bterms))
+  dpar <- as_one_character(dpar)
+  family <- bterms$family
+  if (nzchar(dpar_id(dpar)) || is.mixfamily(family) ||
+      is.customfamily(family) && isFALSE(family$loop) ||
+      any(family_names(bterms) %in% c("skew_normal", "logistic_normal")) ||
+      isTRUE(bterms$rescor) || has_ac_subset(bterms)) {
+    return(FALSE)
+  }
+  dpar_class(dpar, family) != "mu" && is_intercept_only(bterms$dpars[[dpar]])
+}
+
 # indicate if the intercept should be removed
 no_int <- function(x) {
   isFALSE(attr(x, "int", exact = TRUE))
