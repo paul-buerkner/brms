@@ -2756,50 +2756,6 @@ test_that("Un-normalized Stan code is correct", {
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
 })
 
-
-
-# the new array syntax is now used throughout brms
-# test_that("Canonicalizing Stan code is correct", {
-#   # tests require cmdstanr which is not yet on CRAN
-#   skip_on_cran()
-#
-#   # only run if cmdstan >= 2.29 can be found on the system
-#   # otherwise the canonicalized code will cause test failures
-#   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-#   found_cmdstan <- !is_try_error(cmdstan_version)
-#   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
-#   options(brms.backend = "cmdstanr")
-#
-#   scode <- stancode(
-#     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-#     data = epilepsy, family = poisson(),
-#     prior = prior(student_t(5,0,10), class = b) +
-#       prior(cauchy(0,2), class = sd),
-#     normalize = FALSE
-#   )
-#   expect_match2(scode, "array[M_1] vector[N_1] z_1;")
-#   expect_match2(scode, "array[M_2] vector[N_2] z_2;")
-#
-#   model <- "
-#   data {
-#     int a[5];
-#     real b[5];
-#     vector[5] c[4];
-#   }
-#   parameters {
-#     real d[5];
-#     vector[5] e[4];
-#   }
-#   "
-#   stan_file <- cmdstanr::write_stan_file(model)
-#   canonicalized_code <- .canonicalize_stan_model(stan_file, overwrite_file = FALSE)
-#   expect_match2(canonicalized_code, "array[5] int a;")
-#   expect_match2(canonicalized_code, "array[5] real b;")
-#   expect_match2(canonicalized_code, "array[4] vector[5] c;")
-#   expect_match2(canonicalized_code, "array[5] real d;")
-#   expect_match2(canonicalized_code, "array[4] vector[5] e;")
-# })
-
 test_that("Normalizing Stan code works correctly", {
   normalize_stancode <- brms:::normalize_stancode
   expect_equal(
