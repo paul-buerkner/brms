@@ -4,7 +4,7 @@ The `create_priorsense_data.brmsfit` method can be used to create the
 data structure needed by the priorsense package for performing
 power-scaling sensitivity analysis. This method is called automatically
 when performing powerscaling via
-[`powerscale`](https://rdrr.io/pkg/priorsense/man/powerscale-overview.html)
+[`powerscale`](https://mc-stan.org/priorsense/reference/powerscale-overview.html)
 or other related functions, so you will rarely need to call it manually
 yourself.
 
@@ -44,8 +44,8 @@ fit <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000756 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 7.56 seconds.
+#> Chain 1: Gradient evaluation took 0.00066 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 6.6 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -62,15 +62,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.26 seconds (Warm-up)
-#> Chain 1:                1.189 seconds (Sampling)
-#> Chain 1:                2.449 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.277 seconds (Warm-up)
+#> Chain 1:                1.203 seconds (Sampling)
+#> Chain 1:                2.48 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000155 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.55 seconds.
+#> Chain 2: Gradient evaluation took 0.000154 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.54 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -87,9 +87,9 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.297 seconds (Warm-up)
-#> Chain 2:                1.307 seconds (Sampling)
-#> Chain 2:                2.604 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.309 seconds (Warm-up)
+#> Chain 2:                1.321 seconds (Sampling)
+#> Chain 2:                2.63 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -112,15 +112,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.316 seconds (Warm-up)
-#> Chain 3:                1.276 seconds (Sampling)
-#> Chain 3:                2.592 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.335 seconds (Warm-up)
+#> Chain 3:                1.295 seconds (Sampling)
+#> Chain 3:                2.63 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000156 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.56 seconds.
+#> Chain 4: Gradient evaluation took 0.000154 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.54 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -137,9 +137,9 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.358 seconds (Warm-up)
-#> Chain 4:                1.222 seconds (Sampling)
-#> Chain 4:                2.58 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.368 seconds (Warm-up)
+#> Chain 4:                1.231 seconds (Sampling)
+#> Chain 4:                2.599 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: sratio 
@@ -212,20 +212,29 @@ powerscale_sensitivity(fit)
 #> Prior selection: all priors
 #> Likelihood selection: all data
 #> 
-#>        variable prior likelihood                     diagnosis
-#>  b_Intercept[1] 0.012      0.095                             -
-#>  b_Intercept[2] 0.026      0.087                             -
-#>  b_Intercept[3] 0.026      0.084                             -
-#>         b_treat 0.075      0.125 potential prior-data conflict
-#>        b_period 0.025      0.082                             -
-#>         b_carry 0.031      0.094                             -
-#>            disc   NaN        NaN                          <NA>
-#>    Intercept[1] 0.011      0.095                             -
-#>    Intercept[2] 0.026      0.087                             -
-#>    Intercept[3] 0.026      0.084                             -
+#>        variable prior likelihood                           diagnosis
+#>  b_Intercept[1] 0.012      0.095                                   -
+#>  b_Intercept[2] 0.026      0.087                                   -
+#>  b_Intercept[3] 0.026      0.084                                   -
+#>         b_treat 0.075      0.125 potential prior-likelihood conflict
+#>        b_period 0.025      0.082                                   -
+#>         b_carry 0.031      0.094                                   -
+#>            disc   NaN        NaN                                <NA>
+#>    Intercept[1] 0.011      0.095                                   -
+#>    Intercept[2] 0.026      0.087                                   -
+#>    Intercept[3] 0.026      0.084                                   -
 
 # create power-scaling sensitivity plots (for one variable)
 powerscale_plot_dens(fit, variable = "b_treat")
+#> 
+#> ── Power-scaling sensitivity density plot: ──
+#> 
+#> The plot shows posterior density depending on the degree of power-scaling
+#> (alpha). Overlapping lines indicate low sensitivity. Wider gaps between lines
+#> indicate greater sensitivity. Estimates with high Pareto k (dashed lines) may
+#> be inaccurate.
+#> Disable this help text with `help_text = FALSE` or
+#> `options(priorsense.plot_help_text = FALSE)`
 
 # }
 ```

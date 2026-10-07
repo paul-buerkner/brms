@@ -145,6 +145,7 @@
   models thanks to Seth Axen.
   ([\#1820](https://github.com/paul-buerkner/brms/issues/1820))
 - Improve documentation in several places.
+- Support the upcoming CmdStanR 1.0 release.
 
 ## brms 2.22.0
 

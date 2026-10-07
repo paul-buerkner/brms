@@ -86,8 +86,8 @@ fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.002451 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 24.51 seconds.
+#> Chain 1: Gradient evaluation took 0.003151 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 31.51 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -104,15 +104,15 @@ fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.768 seconds (Warm-up)
-#> Chain 1:                0.621 seconds (Sampling)
-#> Chain 1:                1.389 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.756 seconds (Warm-up)
+#> Chain 1:                0.627 seconds (Sampling)
+#> Chain 1:                1.383 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4.1e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.41 seconds.
+#> Chain 2: Gradient evaluation took 4.2e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.42 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -129,9 +129,9 @@ fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.717 seconds (Warm-up)
-#> Chain 2:                0.616 seconds (Sampling)
-#> Chain 2:                1.333 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.722 seconds (Warm-up)
+#> Chain 2:                0.621 seconds (Sampling)
+#> Chain 2:                1.343 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -154,9 +154,9 @@ fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.746 seconds (Warm-up)
-#> Chain 3:                0.602 seconds (Sampling)
-#> Chain 3:                1.348 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.75 seconds (Warm-up)
+#> Chain 3:                0.608 seconds (Sampling)
+#> Chain 3:                1.358 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -179,9 +179,9 @@ fit <- brm(y | trials(size) ~ x1 + x2 + car(W, gr = g),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.73 seconds (Warm-up)
-#> Chain 4:                0.605 seconds (Sampling)
-#> Chain 4:                1.335 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.735 seconds (Warm-up)
+#> Chain 4:                0.61 seconds (Sampling)
+#> Chain 4:                1.345 seconds (Total)
 #> Chain 4: 
 #> Warning: The largest R-hat is 1.15, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See

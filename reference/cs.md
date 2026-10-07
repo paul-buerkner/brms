@@ -40,8 +40,8 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000619 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 6.19 seconds.
+#> Chain 1: Gradient evaluation took 0.000813 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 8.13 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -58,15 +58,15 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.701 seconds (Warm-up)
-#> Chain 1:                2.728 seconds (Sampling)
-#> Chain 1:                5.429 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.685 seconds (Warm-up)
+#> Chain 1:                2.235 seconds (Sampling)
+#> Chain 1:                4.92 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000227 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.27 seconds.
+#> Chain 2: Gradient evaluation took 0.000234 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.34 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -83,9 +83,9 @@ fit <- brm(rating ~ period + carry + cs(treat),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.739 seconds (Warm-up)
-#> Chain 2:                2.146 seconds (Sampling)
-#> Chain 2:                4.885 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.574 seconds (Warm-up)
+#> Chain 2:                2.14 seconds (Sampling)
+#> Chain 2:                4.714 seconds (Total)
 #> Chain 2: 
 summary(fit)
 #>  Family: sratio 
@@ -97,14 +97,14 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept[1]    -0.02      0.06    -0.13     0.09 1.00     2235     1454
-#> Intercept[2]     0.86      0.10     0.66     1.06 1.00     2347     1580
-#> Intercept[3]    -0.16      0.41    -1.04     0.51 1.00     1505     1104
-#> period           0.11      0.09    -0.07     0.30 1.00     2476     1505
-#> carry           -0.08      0.09    -0.27     0.10 1.00     1431     1519
-#> treat[1]        -0.54      0.15    -0.83    -0.24 1.00     1468     1476
-#> treat[2]        -0.37      0.22    -0.80     0.06 1.00     1834     1664
-#> treat[3]         0.81      0.82    -0.56     2.60 1.00     1594     1186
+#> Intercept[1]    -0.02      0.06    -0.14     0.09 1.00     3010     1530
+#> Intercept[2]     0.86      0.10     0.68     1.05 1.00     2292     1632
+#> Intercept[3]    -0.18      0.41    -1.10     0.55 1.00     1263     1005
+#> period           0.12      0.09    -0.08     0.30 1.00     2901     1265
+#> carry           -0.08      0.09    -0.26     0.09 1.00     1705     1546
+#> treat[1]        -0.54      0.15    -0.81    -0.25 1.00     1751     1631
+#> treat[2]        -0.38      0.22    -0.82     0.05 1.00     2071     1624
+#> treat[3]         0.83      0.82    -0.63     2.65 1.00     1179     1057
 #> 
 #> Further Distributional Parameters:
 #>      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS

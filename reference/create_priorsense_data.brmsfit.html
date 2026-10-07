@@ -34,13 +34,16 @@ functions, so you will rarely need to call it manually yourself."><meta property
 
     <div id="navbar" class="collapse navbar-collapse ms-3">
       <ul class="navbar-nav me-auto"><li class="nav-item"><a class="nav-link" href="../index.html" aria-label="Go to homepage"><span class="fa fa-home fa-lg"></span></a></li>
+<li class="nav-item"><a class="nav-link" href="../articles/index.html">Articles</a></li>
 <li class="active nav-item"><a class="nav-link" href="../reference/index.html">Functions</a></li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-other-packages" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Other Packages</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-other-packages"><li><a class="external-link dropdown-item" href="https://mc-stan.org/bayesplot">bayesplot</a></li>
     <li><a class="external-link dropdown-item" href="https://mc-stan.org/cmdstanr">cmdstanr</a></li>
+    <li><a class="external-link dropdown-item" href="https://mc-stan.org/loo">loo</a></li>
     <li><a class="external-link dropdown-item" href="https://mc-stan.org/posterior">posterior</a></li>
+    <li><a class="external-link dropdown-item" href="https://mc-stan.org/priorsense/">priorsense</a></li>
     <li><a class="external-link dropdown-item" href="https://mc-stan.org/projpred">projpred</a></li>
     <li><a class="external-link dropdown-item" href="https://mc-stan.org/rstan">rstan</a></li>
     <li><a class="external-link dropdown-item" href="https://mc-stan.org/rstanarm">rstanarm</a></li>
@@ -76,7 +79,7 @@ functions, so you will rarely need to call it manually yourself."><meta property
 create the data structure needed by the <span class="pkg">priorsense</span> package
 for performing power-scaling sensitivity analysis. This method is
 called automatically when performing powerscaling via
-<code><a href="https://rdrr.io/pkg/priorsense/man/powerscale-overview.html" class="external-link">powerscale</a></code> or other related
+<code><a href="https://mc-stan.org/priorsense/reference/powerscale-overview.html" class="external-link">powerscale</a></code> or other related
 functions, so you will rarely need to call it manually yourself.</p>
     </div>
 
@@ -116,8 +119,8 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.000756 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 7.56 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Gradient evaluation took 0.00066 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 6.6 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
@@ -134,15 +137,15 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.26 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.189 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.449 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:  Elapsed Time: 1.277 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                1.203 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1:                2.48 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 1: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000155 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.55 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Gradient evaluation took 0.000154 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.54 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
@@ -159,9 +162,9 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.297 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.307 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.604 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:  Elapsed Time: 1.309 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                1.321 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2:                2.63 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 2: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).</span>
@@ -184,15 +187,15 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:  Elapsed Time: 1.316 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                1.276 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                2.592 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:  Elapsed Time: 1.335 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                1.295 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3:                2.63 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 3: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Gradient evaluation took 0.000156 seconds</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.56 seconds.</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Gradient evaluation took 0.000154 seconds</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.54 seconds.</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Adjust your expectations accordingly!</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
@@ -209,9 +212,9 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:  Elapsed Time: 1.358 seconds (Warm-up)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                1.222 seconds (Sampling)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                2.58 seconds (Total)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:  Elapsed Time: 1.368 seconds (Warm-up)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                1.231 seconds (Sampling)</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4:                2.599 seconds (Total)</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Chain 4: </span>
 <span class="r-in"><span><span class="fu"><a href="https://rdrr.io/r/base/summary.html" class="external-link">summary</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  Family: sratio </span>
@@ -239,10 +242,10 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span> scale reduction factor on split chains (at convergence, Rhat = 1).</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># The following code requires the 'priorsense' package to be installed:</span></span></span>
-<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/n-kall/priorsense" class="external-link">priorsense</a></span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://mc-stan.org/priorsense/" class="external-link">priorsense</a></span><span class="op">)</span></span></span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># perform power-scaling of the prior</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/priorsense/man/powerscale-overview.html" class="external-link">powerscale</a></span><span class="op">(</span><span class="va">fit</span>, alpha <span class="op">=</span> <span class="fl">1.5</span>, component <span class="op">=</span> <span class="st">"prior"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://mc-stan.org/priorsense/reference/powerscale-overview.html" class="external-link">powerscale</a></span><span class="op">(</span><span class="va">fit</span>, alpha <span class="op">=</span> <span class="fl">1.5</span>, component <span class="op">=</span> <span class="st">"prior"</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> # A draws_df: 1000 iterations, 4 chains, and 10 variables</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    b_Intercept[1] b_Intercept[2] b_Intercept[3] b_treat b_period  b_carry disc</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> 1            0.68            2.3           2.10   -0.28    0.135 -0.44447    1</span>
@@ -279,25 +282,34 @@ with the <span class="pkg">priorsense</span> package.</p>
 <span class="r-out co"><span class="r-pr">#&gt;</span>  transform: identity </span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># perform power-scaling sensitivity checks</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/priorsense/man/powerscale-sensitivity.html" class="external-link">powerscale_sensitivity</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://mc-stan.org/priorsense/reference/powerscale-sensitivity.html" class="external-link">powerscale_sensitivity</a></span><span class="op">(</span><span class="va">fit</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Sensitivity based on cjs_dist</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Prior selection: all priors</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> Likelihood selection: all data</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> </span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        variable prior likelihood                     diagnosis</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[1] 0.012      0.095                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[2] 0.026      0.087                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[3] 0.026      0.084                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         b_treat 0.075      0.125 potential prior-data conflict</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>        b_period 0.025      0.082                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>         b_carry 0.031      0.094                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>            disc   NaN        NaN                          &lt;NA&gt;</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[1] 0.011      0.095                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[2] 0.026      0.087                             -</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[3] 0.026      0.084                             -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        variable prior likelihood                           diagnosis</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[1] 0.012      0.095                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[2] 0.026      0.087                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>  b_Intercept[3] 0.026      0.084                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         b_treat 0.075      0.125 potential prior-likelihood conflict</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>        b_period 0.025      0.082                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>         b_carry 0.031      0.094                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>            disc   NaN        NaN                                &lt;NA&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[1] 0.011      0.095                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[2] 0.026      0.087                                   -</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span>    Intercept[3] 0.026      0.084                                   -</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># create power-scaling sensitivity plots (for one variable)</span></span></span>
-<span class="r-in"><span><span class="fu"><a href="https://rdrr.io/pkg/priorsense/man/powerscale_plots.html" class="external-link">powerscale_plot_dens</a></span><span class="op">(</span><span class="va">fit</span>, variable <span class="op">=</span> <span class="st">"b_treat"</span><span class="op">)</span></span></span>
+<span class="r-in"><span><span class="fu"><a href="https://mc-stan.org/priorsense/reference/powerscale-plots.html" class="external-link">powerscale_plot_dens</a></span><span class="op">(</span><span class="va">fit</span>, variable <span class="op">=</span> <span class="st">"b_treat"</span><span class="op">)</span></span></span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> ── <span style="font-weight: bold;">Power-scaling sensitivity density plot:</span> ──</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> </span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> The plot shows posterior density depending on the degree of power-scaling</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> (alpha). Overlapping lines indicate low sensitivity. Wider gaps between lines</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> indicate greater sensitivity. Estimates with high Pareto k (dashed lines) may</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> be inaccurate.</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> Disable this help text with `help_text = FALSE` or</span>
+<span class="r-msg co"><span class="r-pr">#&gt;</span> `options(priorsense.plot_help_text = FALSE)`</span>
 <span class="r-plt img"><img src="create_priorsense_data.brmsfit-1.png" alt="" width="700" height="433"></span>
 <span class="r-in"><span><span class="co"># }</span></span></span>
 <span class="r-in"><span></span></span>

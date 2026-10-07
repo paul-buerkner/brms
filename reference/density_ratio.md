@@ -56,5 +56,5 @@ size of 10,000 or more to reliably estimate the densities.
 x <- rnorm(10000)
 y <- rnorm(10000, mean = 1)
 density_ratio(x, y, point = c(0, 1))
-#> [1] 1.556592 0.637758
+#> [1] 1.572358 0.621325
 ```
