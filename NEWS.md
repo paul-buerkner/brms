@@ -105,6 +105,7 @@ matrices. (#1939)
 * Improve efficiency of non-factorizable log-likelihoods 
 for Student-t models thanks to Seth Axen. (#1820)
 * Improve documentation in several places.
+* Support the upcoming CmdStanR 1.0 release.
 
 # brms 2.22.0
 
