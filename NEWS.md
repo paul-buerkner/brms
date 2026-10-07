@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Add an experimental sum-to-zero parameterization of group-level effects via
+`gr(..., s2z = TRUE)`, preserving their usual priors and interpretation. (#1925)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

@@ -1358,6 +1358,7 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
   prior <- prior + prior_no_checks
   rownames(prior) <- NULL
   attr(prior, "sample_prior") <- sample_prior
+  validate_re_s2z_prior(bframe, prior = prior)
   if (is_verbose()) {
     # show remaining default priors added to the model
     def_prior <- prepare_print_prior(prior)
@@ -1368,6 +1369,294 @@ validate_prior <- function(prior, formula, data, family = gaussian(),
     }
   }
   prior
+}
+
+# Check S2Z priors after ordinary and special prior validation has resolved
+# the effective prior table, including coefficient-specific overrides.
+validate_re_s2z_prior <- function(bframe, prior) {
+  stopifnot(is.anybrmsframe(bframe), is.brmsprior(prior))
+  if (!any(bframe$frame$re$s2z)) {
+    return(invisible(NULL))
+  }
+  frames <- Filter(has_re_s2z, all_bframel(bframe))
+  if (!length(frames)) {
+    return(invisible(NULL))
+  }
+  if (get_sample_prior(prior) != "no") {
+    first <- frames[[1L]]
+    r <- first$frame$re[first$frame$re$s2z, , drop = FALSE]
+    stop_re_s2z(
+      re_s2z_context(first, r = r), "sample_prior",
+      paste0(
+        "Argument 'sample_prior' is not yet supported together with ",
+        "gr(..., s2z = TRUE)."
+      ),
+      "set sample_prior = 'no' for this model."
+    )
+  }
+  for (x in frames) {
+    plan <- re_s2z_plan(x)
+    infos <- plan$blocks
+    active_q <- plan$active_q
+    active_names <- plan$active_names
+    active_intercept <- plan$center & active_names == "Intercept"
+    active_b <- active_names[!active_intercept]
+    if (length(active_b) && has_special_prior(prior, x, class = "b")) {
+      active_b_q <- active_q[!active_intercept]
+      touching <- which(vapply(infos, function(info) {
+        active_b_q[1L] %in% info$block_active_q
+      }, logical(1)))
+      r_context <- infos[[touching[1L]]]$r
+      stop_re_s2z(
+        re_s2z_context(
+          x, r = r_context, coef = active_b, prior = "special b prior"
+        ),
+        "active_special_prior",
+        paste0(
+          "Special population-level priors are not yet supported on ",
+          "S2Z-active coordinates."
+        ),
+        "use a supported scalar prior on the active coordinates or make them fixed-only."
+      )
+    }
+    if (any(active_intercept) &&
+        has_special_prior(prior, x, class = "Intercept")) {
+      stop_re_s2z(
+        re_s2z_context(
+          x, r = infos[[1L]]$r, coef = "Intercept",
+          prior = "special Intercept prior"
+        ),
+        "active_special_prior",
+        paste0(
+          "Special population-level priors are not yet supported on ",
+          "S2Z-active coordinates."
+        ),
+        "use a supported scalar intercept prior or remove the active intercept map."
+      )
+    }
+    for (info in infos) {
+      if (has_special_prior(prior, check_prefix(info$r), class = "sd")) {
+        stop_re_s2z(
+          re_s2z_context(
+            x, r = info$r, prior = "special group-scale prior"
+          ),
+          "active_special_prior",
+          paste0(
+            "Special priors are not yet supported on S2Z group-level ",
+            "standard deviations."
+          ),
+          "use an ordinary sd prior or use s2z = FALSE for this block."
+        )
+      }
+    }
+    # Resolving priors performs bounds, tags, argument, and distribution
+    # validation, restricted to the union of S2Z-active coordinates.
+    .re_s2z_plan_priors(plan, bframe = x, prior = prior)
+    for (info in infos) {
+      validate_re_s2z_sd_prior(prior, info$r, bframe = x)
+    }
+  }
+  invisible(NULL)
+}
+
+# Effective scalar population-level prior for one active coefficient.
+re_s2z_prior <- function(prior, bframe, class, coef = "", r) {
+  stopifnot(is.brmsprior(prior), is.bframel(bframe))
+  context <- re_s2z_context(bframe, r = r, coef = coef)
+  p <- subset2(prior, class = class, ls = check_prefix(bframe))
+  # Match stan_prior(): bounds apply to every coefficient, while individual
+  # priors and tags override the corresponding base prior together.
+  bounds <- stan_base_prior(p, col = c("lb", "ub"))
+  pcoef <- subset2(p, coef = coef)
+  value <- pcoef$prior
+  tag <- pcoef$tag
+  if (!isTRUE(nzchar(value))) {
+    value <- stan_base_prior(p)
+    tag <- stan_base_prior(p, col = "tag")
+  }
+  if (any(nzchar(bounds$lb)) || any(nzchar(bounds$ub))) {
+    stop_re_s2z(
+      context, "active_prior_bounds",
+      paste0(
+        "The sum-to-zero parameterization does not yet support bounded ",
+        "population-level priors (coefficient '", coef, "')."
+      ),
+      "remove the bound or make this coefficient fixed-only."
+    )
+  }
+  if (isTRUE(nzchar(tag))) {
+    stop_re_s2z(
+      context, "active_prior_tag",
+      paste0(
+        "The sum-to-zero parameterization does not yet support tagged ",
+        "population-level priors (coefficient '", coef, "')."
+      ),
+      "remove the tag or make this coefficient fixed-only."
+    )
+  }
+  context$prior <- value
+  parse_re_s2z_prior(value, coef = coef, context = context)
+}
+
+# Parse the exact scalar priors supported by the S2Z paths. Logistic priors
+# use an explicit omitted-mean fallback; the remaining proper distributions
+# are conditionally Gaussian.
+parse_re_s2z_prior <- function(prior, coef = "", context = NULL) {
+  prior <- rm_wsp(prior)
+  if (!nzchar(prior)) {
+    return(list(dist = "flat", location = 0, scale = 1, df = NA_real_))
+  }
+  fail <- function(capability, problem, remedy) {
+    if (is.null(context)) {
+      stop2(problem, " Remedy: ", remedy)
+    }
+    context$prior <- prior
+    stop_re_s2z(context, capability, problem, remedy)
+  }
+  call <- try(str2lang(prior), silent = TRUE)
+  if (inherits(call, "try-error") || !is.call(call)) {
+    fail(
+      "active_prior_distribution",
+      paste0(
+        "Prior '", prior, "' is not supported by the sum-to-zero ",
+        "parameterization (coefficient '", coef, "')."
+      ),
+      "use flat, normal, student_t, cauchy, or logistic with numeric constants."
+    )
+  }
+  dist <- as.character(call[[1]])
+  args <- as.list(call[-1])
+  number <- function(x) {
+    out <- suppressWarnings(as.numeric(deparse0(x)))
+    if (length(out) != 1L || !is.finite(out)) {
+      fail(
+        "active_prior_arguments",
+        paste0(
+          "All arguments of population-level priors used with the ",
+          "sum-to-zero parameterization must currently be numeric ",
+          "constants (coefficient '", coef, "')."
+        ),
+        "replace symbolic arguments with finite numeric constants."
+      )
+    }
+    out
+  }
+  if (dist == "std_normal" && !length(args)) {
+    out <- list(dist = "normal", location = 0, scale = 1, df = NA_real_)
+  } else if (dist == "normal" && length(args) == 2L) {
+    out <- list(
+      dist = "normal", location = number(args[[1]]),
+      scale = number(args[[2]]), df = NA_real_
+    )
+  } else if (dist == "student_t" && length(args) == 3L) {
+    out <- list(
+      dist = "student", df = number(args[[1]]),
+      location = number(args[[2]]), scale = number(args[[3]])
+    )
+  } else if (dist == "cauchy" && length(args) == 2L) {
+    out <- list(
+      dist = "student", df = 1, location = number(args[[1]]),
+      scale = number(args[[2]])
+    )
+  } else if (dist == "logistic" && length(args) == 2L) {
+    out <- list(
+      dist = "logistic", location = number(args[[1]]),
+      scale = number(args[[2]]), df = NA_real_
+    )
+  } else {
+    fail(
+      "active_prior_distribution",
+      paste0(
+        "Prior '", prior, "' is not supported by the sum-to-zero ",
+        "parameterization. Supported population-level priors are flat, ",
+        "normal, student_t, cauchy, and logistic (coefficient '", coef, "')."
+      ),
+      "choose one of the supported priors or make this coefficient fixed-only."
+    )
+  }
+  if (!(out$scale > 0) || out$dist == "student" && !(out$df > 0)) {
+    fail(
+      "active_prior_arguments",
+      paste0(
+        "Scale and degrees-of-freedom arguments must be positive in ",
+        "population-level priors used with the sum-to-zero ",
+        "parameterization (coefficient '", coef, "')."
+      ),
+      "supply a positive finite scale and, for student_t, positive degrees of freedom."
+    )
+  }
+  out
+}
+
+# Check fixed group scales before the Gaussian precision is constructed.
+validate_re_s2z_sd_prior <- function(prior, r, bframe) {
+  stopifnot(is.brmsprior(prior), is.reframe(r), has_rows(r))
+  px <- check_prefix(r)
+  p <- subset2(
+    prior, class = "sd", coef = c(r$coef, ""),
+    group = c(r$group[1], ""), ls = px
+  )
+  base_prior <- stan_base_prior(p)
+  for (coef in r$coef) {
+    pcoef <- subset2(p, coef = coef)
+    coef_prior <- pcoef$prior[nzchar(pcoef$prior)]
+    stopifnot(length(coef_prior) <= 1L)
+    value <- if (length(coef_prior)) {
+      coef_prior[[1]]
+    } else {
+      base_prior
+    }
+    if (!stan_is_constant_prior(value)) {
+      next
+    }
+    call <- try(str2lang(value), silent = TRUE)
+    fixed <- if (inherits(call, "try-error") || length(call) < 2L) {
+      NA_real_
+    } else {
+      suppressWarnings(as.numeric(deparse0(call[[2]])))
+    }
+    if (length(fixed) != 1L || !is.finite(fixed) || fixed <= 0) {
+      problem <- paste0(
+        "Group-level standard deviations fixed with 'constant' must be ",
+        "positive numeric scalars for gr(..., s2z = TRUE) ",
+        "(coefficient '", coef, "')."
+      )
+      stop_re_s2z(
+        re_s2z_context(bframe, r = r, coef = coef, prior = value),
+        "fixed_sd_positive", problem,
+        "use constant(value) with a finite value greater than zero, or estimate the scale."
+      )
+    }
+  }
+  invisible(NULL)
+}
+
+# Resolve active priors once for this predictor. Priors are never cached in the
+# structural frame, because callers may supply a different effective table.
+.re_s2z_plan_priors <- function(plan, bframe, prior) {
+  if (is.null(plan)) {
+    return(NULL)
+  }
+  specs <- lapply(plan$active_q, function(i) {
+    # Attribute prior diagnostics to a block that actually touches this
+    # population coordinate. In a multi-block predictor the first block need
+    # not contain the failing coefficient.
+    touching <- which(vapply(plan$blocks, function(block) {
+      i %in% block$block_active_q
+    }, logical(1)))
+    r_context <- plan$blocks[[touching[1L]]]$r
+    if (plan$center && plan$qnames[i] == "Intercept") {
+      re_s2z_prior(
+        prior, bframe, class = "Intercept", r = r_context
+      )
+    } else {
+      re_s2z_prior(
+        prior, bframe, class = "b", coef = plan$qnames[i], r = r_context
+      )
+    }
+  })
+  plan$prior <- setNames(specs, plan$active_names)
+  plan
 }
 
 # try to check if prior distributions are reasonable
