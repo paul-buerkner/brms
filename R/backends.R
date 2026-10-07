@@ -437,7 +437,7 @@ recompile_model <- function(x, recompile = NULL) {
   if (backend == "rstan") {
     x$fit@stanmodel <- new_model
   } else if (backend == "cmdstanr") {
-    attributes(x)$CmdStanModel <- new_model
+    attributes(x$fit)$CmdStanModel <- new_model
   } else if (backend == "mock") {
     stop2("'recompile_model' is not supported in the mock backend.")
   }
