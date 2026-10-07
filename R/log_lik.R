@@ -524,8 +524,10 @@ log_lik_com_poisson <- function(i, prep) {
     mu = get_dpar(prep, "mu", i),
     shape = get_dpar(prep, "shape", i = i)
   )
-  # no censoring or truncation allowed yet
-  out <- do_call(dcom_poisson, c(prep$data$Y[i], args, log = TRUE))
+  out <- log_lik_censor(dist = "com_poisson", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(
+    out, cdf = pcom_poisson, args = args, i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 

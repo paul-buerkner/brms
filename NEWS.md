@@ -27,6 +27,28 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Allow up to 100,000 terms per direction in COM-Poisson direct sums,
+including CDF tails, to support broader distributions. Converged sums still
+stop early, and the accuracy tolerance and quantile search limit are unchanged.
+(#1938)
+
+* Unify COM-Poisson normalization and means in R and Stan, using the
+three-correction Gaunt approximation in a conservatively tested region and
+controlled direct sums elsewhere. Retain small survival probabilities and
+shape derivatives at the Poisson limit; unconverged direct sums fail
+explicitly. Fits in regions where the previous approximation was inaccurate
+should be refitted. (#1938)
+
+* Include censoring and truncation adjustments in COM-Poisson `log_lik()`,
+so model comparisons use the likelihood fitted by Stan. (#1938)
+
+* Handle negative, infinite, noninteger, and missing COM-Poisson CDF
+cutoffs correctly, including PIT at zero and truncation starting at zero.
+(#1938)
+
+* Fix vectorized COM-Poisson CDF calculations with varying cutoffs and
+parameters. (#1938)
+
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)
