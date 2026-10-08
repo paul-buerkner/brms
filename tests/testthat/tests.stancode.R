@@ -1446,6 +1446,9 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")
 
   scode <- stancode(bf(y | cens(x) ~ 1, shape ~ 1), dat, family = Gamma())
+  expect_match2(scode, "target += gamma_lpdf(Y[Jevent[1:Nevent]] | shape, shape ./ mu[Jevent[1:Nevent]]);")
+
+  scode <- stancode(bf(y | cens(x) ~ 1, shape ~ x), dat, family = Gamma())
   expect_match2(scode, "target += gamma_lpdf(Y[Jevent[1:Nevent]] | shape[Jevent[1:Nevent]], shape[Jevent[1:Nevent]] ./ mu[Jevent[1:Nevent]]);")
 
   dat$x[1] <- 2
@@ -2847,4 +2850,70 @@ test_that("Grouping prior weights are added to the Stan code", {
   scode <- stancode(y1 ~ x + (x | mm(g1, g2, pw = g2wgt)), data = dat)
   expect_match2(scode, "vector[N_1] PW_1;  // weights for group contribution to the prior")
   expect_match2(scode, "target += PW_1[j] * std_normal_lpdf(z_1[, j]);")
+})
+
+test_that("intercept-only distributional parameters are computed as scalars", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10), g = rep(1:2, 5),
+                    cens = sample(0:1, 10, TRUE), dec = sample(0:1, 10, TRUE))
+
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat)
+  expect_match2(scode, "real sigma = 0;")
+  expect_match2(scode, "sigma += Intercept_sigma;")
+  expect_match2(scode, "sigma = exp(sigma);")
+  expect_match2(scode, "target += normal_lpdf(Y | mu, sigma);")
+
+  # looped likelihoods and censoring pass the scalar as is
+  scode <- stancode(bf(y | cens(cens) ~ x, sigma ~ 1), dat)
+  expect_match2(scode, "real sigma = 0;")
+  expect_match2(scode, "normal_lpdf(Y[Jevent[1:Nevent]] | mu[Jevent[1:Nevent]], sigma);")
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, threads = threading(2))
+  expect_match2(scode, "real sigma = 0;")
+  expect_match2(scode, "ptarget += normal_lpdf(Y[start:end] | mu, sigma);")
+  scode <- stancode(bf(y ~ x, hu ~ 1), dat, family = hurdle_lognormal())
+  expect_match2(scode, "real hu = 0;")
+  expect_match2(scode, "hurdle_lognormal_logit_lpdf(Y[n] | mu[n], sigma, hu);")
+  dat$n <- rpois(10, 3)
+  scode <- stancode(bf(n | rate(n + 1) ~ x, shape ~ 1), dat, family = negbinomial())
+  expect_match2(scode, "real shape = 0;")
+  expect_match2(scode, "neg_binomial_2_log_lpmf(Y | mu + log_denom, shape .* denom);")
+  scode <- stancode(bf(n ~ x, shape ~ 1), dat, family = inverse.gaussian())
+  expect_match2(scode, "real shape = 0;")
+  expect_match2(scode, "target += inv_gaussian_lpdf(Y | mu, shape);")
+
+  # the response-level predictor and non-intercept-only terms stay vectors
+  scode <- stancode(bf(y ~ 1, sigma ~ 1), dat)
+  expect_match2(scode, "vector[N] mu = rep_vector(0.0, N);")
+  expect_match2(scode, "real sigma = 0;")
+  scode <- stancode(bf(y ~ x, sigma ~ 1 + (1 | g)), dat)
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+  scode <- stancode(bf(y ~ x, sigma ~ 0 + Intercept), dat)
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+
+  # models whose Stan code indexes the parameter elsewhere keep the vector
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, family = skew_normal())
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+  scode <- stancode(bf(y ~ x, sigma1 ~ 1), dat, family = mixture(gaussian, gaussian))
+  expect_match2(scode, "vector[N] sigma1 = rep_vector(0.0, N);")
+  scode <- stancode(bf(y ~ x, sigma ~ 1) + bf(x ~ y, sigma ~ 1) + set_rescor(TRUE), dat)
+  expect_match2(scode, "vector[N_y] sigma_y = rep_vector(0.0, N_y);")
+
+  # user code in the likelihood block that mentions the parameter keeps the vector
+  sv <- stanvar(scode = "sigma[1] += 0;", block = "likelihood", position = "start")
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, stanvars = sv)
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+  sv <- stanvar(scode = "mu[1] += 0;", block = "likelihood", position = "start")
+  scode <- stancode(bf(y ~ x, sigma ~ 1), dat, stanvars = sv)
+  expect_match2(scode, "real sigma = 0;")
+
+  # vectorized custom families receive predicted parameters as vectors
+  cfam <- custom_family("cfam", dpars = c("mu", "sigma"), links = c("identity", "log"),
+                        lb = c(NA, 0), vars = "vint1", loop = FALSE)
+  cfam_stanvar <- stanvar(block = "functions", scode = "
+    real cfam_lpdf(vector y, vector mu, vector sigma, array[] int vint1) {
+      return normal_lpdf(y | mu, sigma);
+    }")
+  scode <- stancode(bf(y | vint(dec) ~ x, sigma ~ 1), dat, family = cfam,
+                    stanvars = cfam_stanvar)
+  expect_match2(scode, "vector[N] sigma = rep_vector(0.0, N);")
+  expect_match2(scode, "cfam_lpdf(Y | mu, sigma, vint1);")
 })

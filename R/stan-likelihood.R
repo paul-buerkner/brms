@@ -303,7 +303,9 @@ stan_log_lik_dpars <- function(bterms, reqn = stan_log_lik_adj(bterms),
     pred_dpars <- unique(dpar_class(pred_dpars, bterms))
   }
   is_pred <- dpars %in% pred_dpars
-  out <- paste0(dpars, resp, ifelse(reqn & is_pred, "[n]", ""))
+  # intercept-only parameters are computed as scalars (see is_scalar_dpar)
+  is_scalar <- ulapply(dpars, is_scalar_dpar, bterms = bterms)
+  out <- paste0(dpars, resp, ifelse(reqn & is_pred & !is_scalar, "[n]", ""))
   named_list(dpars, out)
 }
 
@@ -698,7 +700,9 @@ stan_log_lik_exgaussian <- function(bterms, ...) {
 }
 
 stan_log_lik_inverse.gaussian <- function(bterms, ...) {
-  is_pred_shape <- is_pred_dpar(bterms, "shape")
+  # the vectorized inv_gaussian_lpdf requires a scalar shape
+  is_pred_shape <- is_pred_dpar(bterms, "shape") &&
+    !is_scalar_dpar(bterms, "shape")
   reqn <- stan_log_lik_adj(bterms) || is_pred_shape
   p <- stan_log_lik_dpars(bterms, reqn = reqn)
   sdist("inv_gaussian", p$mu, p$shape, vec = FALSE)
