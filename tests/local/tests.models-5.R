@@ -1,5 +1,63 @@
 source("setup_tests_local.R")
 
+old_bayes_R2 <- function(fit) {
+  y <- brms:::get_y(fit, warn = TRUE)
+  ypred <- posterior_epred(fit, sort = TRUE)
+  e <- -1 * sweep(ypred, 2, y)
+  var_ypred <- matrixStats::rowVars(ypred)
+  var_e <- matrixStats::rowVars(e)
+  var_ypred / (var_ypred + var_e)
+}
+
+test_that("bayes_R2 prior-only draws match model-based formula", {
+  set.seed(2801)
+  dat <- data.frame(
+    x = rnorm(40),
+    y = rnorm(40)
+  )
+  fit <- brm(
+    y ~ x, data = dat, family = gaussian(),
+    prior = c(
+      prior(normal(0, 0.5), class = b),
+      prior(normal(0, 0.5), class = Intercept),
+      prior(exponential(1), class = sigma)
+    ),
+    sample_prior = "only",
+    chains = 1, iter = 600, warmup = 200,
+    seed = 2802, refresh = 0
+  )
+  ypred <- posterior_epred(fit, sort = TRUE)
+  sigma <- posterior_epred(fit, dpar = "sigma", sort = TRUE)
+  var_mupred <- matrixStats::rowVars(ypred)
+  var_res <- matrixStats::rowMeans2(sigma^2)
+  expected <- var_mupred / (var_mupred + var_res)
+  expect_equal(bayes_R2(fit, summary = FALSE)[, 1], expected)
+})
+
+test_that("bayes_R2 posterior difference shrinks with larger n", {
+  make_fit <- function(n, seed) {
+    set.seed(seed)
+    dat <- data.frame(x = rnorm(n))
+    dat$y <- 1 + 1.5 * dat$x + rnorm(n, sd = 1)
+    brm(
+      y ~ x, data = dat, family = gaussian(),
+      chains = 1, iter = 700, warmup = 300,
+      seed = seed, refresh = 0
+    )
+  }
+  fit_small <- make_fit(8, 2803)
+  fit_large <- make_fit(250, 2804)
+
+  model_small <- bayes_R2(fit_small, summary = FALSE)[, 1]
+  model_large <- bayes_R2(fit_large, summary = FALSE)[, 1]
+  residual_small <- old_bayes_R2(fit_small)
+  residual_large <- old_bayes_R2(fit_large)
+
+  diff_small <- abs(stats::median(model_small) - stats::median(residual_small))
+  diff_large <- abs(stats::median(model_large) - stats::median(residual_large))
+  expect_gt(diff_small, diff_large)
+})
+
 test_that("global shrinkage priors work correctly", suppressWarnings({
   set.seed(2563)
   dat <- epilepsy

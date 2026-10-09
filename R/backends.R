@@ -24,15 +24,16 @@ parse_model <- function(model, backend, ...) {
 .parse_model_cmdstanr <- function(model, silent = 1, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
-  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
-  #   .canonicalize_stan_model(temp_file, overwrite_file = TRUE)
-  # }
-  out <- eval_silent(
-    cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
-    type = "message", try = TRUE, silent = silent
-  )
-  out$check_syntax(quiet = TRUE)
-  collapse(out$code(), "\n")
+  if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
+    cmdstanr::check_syntax_stan_file(temp_file, quiet = TRUE, ...)
+  } else {
+    out <- eval_silent(
+      cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),
+      type = "message", try = TRUE, silent = silent
+    )
+    out$check_syntax(quiet = TRUE)
+  }
+  model
 }
 
 # parse model with a mock backend for testing
@@ -97,9 +98,6 @@ compile_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   args <- list(...)
   args$stan_file <- cmdstanr::write_stan_file(model)
-  # if (cmdstanr::cmdstan_version() >= "2.29.0") {
-  #   .canonicalize_stan_model(args$stan_file, overwrite_file = TRUE)
-  # }
   if (use_threading(threads, force = TRUE)) {
     args$cpp_options$stan_threads <- TRUE
   }
@@ -188,7 +186,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      out <- futures <- vector("list", chains)
+      futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_id <- i
         if (is.list(init)) {
@@ -200,9 +198,7 @@ fit_model <- function(model, backend, ...) {
           seed = TRUE
         )
       }
-      for (i in seq_len(chains)) {
-        out[[i]] <- future::value(futures[[i]])
-      }
+      out <- future::value(futures)
       out <- rstan::sflist2stanfit(out)
       rm(futures)
     } else {
@@ -285,7 +281,7 @@ fit_model <- function(model, backend, ...) {
         warning2("Argument 'cores' is ignored when using 'future'.")
       }
       args$chains <- 1L
-      out <- futures <- vector("list", chains)
+      futures <- vector("list", chains)
       for (i in seq_len(chains)) {
         args$chain_ids <- i
         if (is.list(init)) {
@@ -297,9 +293,7 @@ fit_model <- function(model, backend, ...) {
           seed = TRUE
         )
       }
-      for (i in seq_len(chains)) {
-        out[[i]] <- future::value(futures[[i]])
-      }
+      out <- future::value(futures)
       rm(futures)
     } else {
       out <- do_call(model$sample, args)
@@ -313,7 +307,11 @@ fit_model <- function(model, backend, ...) {
   } else if (algorithm %in% c("pathfinder")) {
     c(args) <- list(num_paths = chains)
     if (use_threading) {
-      args$num_threads <- threads$threads
+      if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
+        args$threads <- threads$threads
+      } else {
+        args$num_threads <- threads$threads
+      }
     }
     out <- do_call(model$pathfinder, args)
   } else if (algorithm %in% c("laplace")) {
@@ -382,8 +380,17 @@ needs_recompilation <- function(x) {
     # TODO: figure out when rstan requires recompilation
     out <- FALSE
   } else if (backend == "cmdstanr") {
-    exe_file <- attributes(x$fit)$CmdStanModel$exe_file()
-    out <- !is.character(exe_file) || !file.exists(exe_file)
+    model <- attributes(x$fit)$CmdStanModel
+    if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
+      # a model object saved under an older CmdStanR has no is_current()
+      # method and needs recompiling anyway, and so does one whose check
+      # cannot run (stanc rejecting the saved Stan file, for example)
+      out <- !is.function(model$is_current) ||
+        !tryCatch(model$is_current(), error = function(e) FALSE)
+    } else {
+      exe_file <- model$exe_file()
+      out <- !is.character(exe_file) || !file.exists(exe_file)
+    }
   } else if (backend == "mock") {
     out <- FALSE
   }
@@ -424,7 +431,7 @@ recompile_model <- function(x, recompile = NULL) {
   if (backend == "rstan") {
     x$fit@stanmodel <- new_model
   } else if (backend == "cmdstanr") {
-    attributes(x)$CmdStanModel <- new_model
+    attributes(x$fit)$CmdStanModel <- new_model
   } else if (backend == "mock") {
     stop2("'recompile_model' is not supported in the mock backend.")
   }
@@ -680,20 +687,6 @@ file_refit_options <- function() {
   c("never", "always", "on_change")
 }
 
-# canonicalize Stan model file in accordance with the current Stan version
-# this function may no longer be needed due to rstan 2.26+ now being on CRAN
-# for more details see https://github.com/paul-buerkner/brms/issues/1544
-# .canonicalize_stan_model <- function(stan_file, overwrite_file = TRUE) {
-#   cmdstan_mod <- cmdstanr::cmdstan_model(stan_file, compile = FALSE)
-#   out <- utils::capture.output(
-#     cmdstan_mod$format(
-#       canonicalize = list("deprecations", "braces", "parentheses"),
-#       overwrite_file = overwrite_file, backup = FALSE
-#     )
-#   )
-#   paste0(out, collapse = "\n")
-# }
-
 #' Read CmdStan CSV files as a brms-formatted stanfit object
 #'
 #' \code{read_csv_as_stanfit} is used internally to read CmdStan CSV files into a
@@ -771,7 +764,7 @@ read_csv_as_stanfit <- function(files, variables = NULL, sampler_diagnostics = N
   names(par_dims) <- model_pars
   par_dims <- lapply(par_dims, function(x) integer(0))
   pdims_num <- ulapply(model_pars, function(x)
-    sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$model_params))
+    sum(grepl(paste0("^", x, "\\[.*\\]$"), csfit$metadata$variables))
   )
   par_dims[pdims_num != 0] <-
     csfit$metadata$stan_variable_sizes[model_pars][pdims_num != 0]

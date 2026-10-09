@@ -242,6 +242,9 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     # see issue #441 for reasons to check for arrays
     is_array_Ksub <- is.array(Ksub)
     Ksub <- as.integer(Ksub)
+    if (length(Ksub) == 0L) {
+      stop2("'Ksub' must be a positive integer or a non-empty integer vector.")
+    }
     if (any(Ksub <= 0 | Ksub > K)) {
       stop2("'Ksub' must contain positive integers not larger than 'K'.")
     }
@@ -322,6 +325,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   future_args$future.seed <- TRUE
   res <- do_call("future_lapply", future_args, pkg = "future.apply")
 
+  diagnostics <- vector("list")
   lppds <- pred_obs_list <- vector("list", length(Ksub))
   if (save_fits) {
     fits <- array(list(), dim = c(length(Ksub), 3))
@@ -336,6 +340,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   }
 
   lppds <- do_call(cbind, lppds)
+
+  diagnostics$pareto_k <- apply(lppds, 2, posterior::pareto_khat,
+                                are_log_weights = TRUE)
+  diagnostics$n_eff <- apply(exp(lppds), 2, posterior::ess_mean)
+  diagnostics$r_eff <- diagnostics$n_eff / nrow(lppds)
+
   elpds <- apply(lppds, 2, log_mean_exp)
   pred_obs <- unlist(pred_obs_list)
   if (joint == "obs") {
@@ -388,15 +398,23 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
   se_est <- sqrt(nrow(pointwise) * apply(pointwise, 2, var))
   estimates <- cbind(Estimate = est, SE = se_est)
   rownames(estimates) <- colnames(pointwise)
-  out <- nlist(estimates, pointwise)
-  atts <- nlist(K, Ksub, group, folds, fold_type, joint)
+  out <- nlist(estimates, pointwise, diagnostics)
+  k_threshold <- min(posterior::ps_khat_threshold(nrow(lppds)), 0.7)
+  atts <- nlist(K, Ksub, group, folds, fold_type, joint, k_threshold)
   attributes(out)[names(atts)] <- atts
   if (save_fits) {
     out$fits <- fits
     out$data <- newdata
     out$data2 <- newdata2
   }
-  structure(out, class = c("kfold", "loo"))
+  if (length(loo::pareto_k_ids(out, threshold = k_threshold)) > 0) {
+    warning2(
+      "Found ", length(loo::pareto_k_ids(out, threshold = k_threshold)),
+      " observations with a pareto_k > ", k_threshold,
+      " in model '", model_name, "'."
+    )
+  }
+  structure(out, dims = dim(lppds), class = c("kfold", "loo"))
 }
 
 #' Predictions from K-Fold Cross-Validation
@@ -414,9 +432,12 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
 #' @inheritParams posterior_predict.brmsfit
 #'
 #' @return A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
-#'   Slot \code{y} contains the vector of observed responses.
-#'   Slot \code{yrep} contains the matrix of predicted responses,
-#'   with rows being posterior draws and columns being observations.
+#'   \code{y} is a named vector of observed responses (names = row indices).
+#'   \code{yrep} is an \code{array} of predictions with the same structure as
+#'   the chosen \code{method} would return for all \eqn{N} out-of-fold
+#'   observations at once, with posterior draws on the first dimension and
+#'   observations on the second. See the documentation of the underlying
+#'   prediction function for details on additional dimensions.
 #'
 #' @seealso \code{\link{kfold}}
 #'
@@ -452,21 +473,27 @@ kfold_predict <- function(x, method = "posterior_predict", resp = NULL, ...) {
   }
   method <- get(validate_pp_method(method), mode = "function")
   resp <- validate_resp(resp, x$fits[[1, "fit"]], multiple = FALSE)
-  all_predicted <- as.character(sort(unlist(x$fits[, "predicted"])))
+  all_predicted <- sort(unlist(x$fits[, "predicted"]))
   npredicted <- length(all_predicted)
-  ndraws <- ndraws(x$fits[[1, "fit"]])
-  y <- rep(NA, npredicted)
-  yrep <- matrix(NA, nrow = ndraws, ncol = npredicted)
-  names(y) <- colnames(yrep) <- all_predicted
+  
+  y <- setNames(rep(NA, npredicted), as.character(all_predicted))
+  yrep <- NULL
+
   for (k in seq_rows(x$fits)) {
     fit_k <- x$fits[[k, "fit"]]
     predicted_k <- x$fits[[k, "predicted"]]
     obs_names <- as.character(predicted_k)
     newdata <- x$data[predicted_k, , drop = FALSE]
+    
     y[obs_names] <- get_y(fit_k, resp, newdata = newdata, ...)
-    yrep[, obs_names] <- method(
+    
+    yrep_k <- method(
       fit_k, newdata = newdata, resp = resp,
       allow_new_levels = TRUE, summary = FALSE, ...
+    )
+    
+    yrep <- .update_yrep(
+      yrep, obs_names, yrep_k, npredicted, all_predicted
     )
   }
   nlist(y, yrep)
@@ -485,4 +512,25 @@ validate_joint <- function(joint) {
   joint <- as_one_character(joint)
   options <- c("obs", "fold", "group")
   match.arg(joint, options)
+}
+
+# internal function for initializing the yrep array and filling it with
+# predictions of each fold.
+.update_yrep <- function(yrep, obs, value, nrep, all_pred) {
+  # On first fold: 
+  if (is.null(yrep)) {
+    # initialise as NA array with same dimensions as yrep_k (returned from method)
+    d <- dim(value)
+    # expand 2nd dimension (number of observations) to cover all obs across folds
+    d[2] <- nrep
+    dn <- dimnames(value) %||% vector("list", length(d))
+    dn[[2]] <- as.character(all_pred)
+    # create array with correct dimensions and provide names for dimensions
+    yrep <- array(NA, dim = d, dimnames = dn)
+  }
+  idx <- rep(list(TRUE), length(dim(yrep)))
+  idx[[2]] <- obs
+  # equivalent to: list(yrep)[idx] <- value
+  # overwrites the NA entries of yrep with values from this fold (via idx)
+  do.call("[<-", c(list(yrep), idx, list(value = value)))
 }

@@ -37,7 +37,7 @@ brmsframe.brmsterms <- function(x, data, frame = NULL, basis = NULL, ...) {
     x$frame$re <- subset2(x$frame$re, resp = x$resp)
   }
   if (!is.null(basis)) {
-    x$frame$basis <- basis[c("resp_levels")]
+    x$frame$basis <- basis[c("resp_levels", "bhaz")]
   }
   data <- subset_data(data, x)
   x$frame$resp <- frame_resp(x, data = data)
@@ -332,6 +332,9 @@ frame_basis.brmsterms <- function(x, data, levels = NULL, ...) {
     y <- model.response(model.frame(x$respform, data, na.action = na.pass))
     out$resp_levels <- levels(as.factor(y))
   }
+  # the baseline hazard is a property of the response and hence stored here
+  # rather than with the (potentially non-linear) predictor terms
+  out$bhaz <- frame_basis_bhaz(x, data, ...)
   out
 }
 
@@ -347,7 +350,6 @@ frame_basis.btl <- function(x, data, ...) {
   out$gp <- frame_basis_gp(x, data, ...)
   out$sp <- frame_basis_sp(x, data, ...)
   out$ac <- frame_basis_ac(x, data, ...)
-  out$bhaz <- frame_basis_bhaz(x, data, ...)
   out
 }
 
@@ -420,13 +422,16 @@ frame_basis_ac <- function(x, data, ...) {
 }
 
 # prepare basis data for baseline hazards of the cox model
+# @param x a brmsterms object; the baseline hazard depends on the response
+#   and its addition terms only, not on any of the predictor terms
 frame_basis_bhaz <- function(x, data, ...) {
   out <- list()
   if (is_cox(x$family)) {
-    # compute basis matrix of the baseline hazard for the Cox model
-    y <- model.response(model.frame(x$respform, data, na.action = na.pass))
+    # the basis (and thus the knots of the baseline hazard) is constructed in
+    # the same way as on the original data in 'data_bhaz'; no warning is
+    # emitted here as it would already have been emitted there
     args <- family_info(x, "bhaz")$args
-    out$basis_matrix <- bhaz_basis_matrix(y, args = args)
+    out$basis_matrix <- bhaz_basis(x, data, args = args, warn = FALSE)
   }
   out
 }

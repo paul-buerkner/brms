@@ -19,6 +19,7 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  output = "random",
   ...
 )
 }
@@ -79,6 +80,11 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{output}{Type of predictive quantity to return. Either
+\code{"random"} (the default), \code{"probability"}, \code{"pit"},
+\code{"density"}, or \code{"quantile"}. See Details for more
+information.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

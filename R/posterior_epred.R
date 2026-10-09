@@ -738,15 +738,19 @@ posterior_epred_trunc <- function(prep) {
   stopifnot(is_trunc(prep))
   lb <- data2draws(prep$data[["lb"]], dim_mu(prep))
   ub <- data2draws(prep$data[["ub"]], dim_mu(prep))
+  family_name <- str_if(
+    is.customfamily(prep$family), 
+    prep$family$name, prep$family$family
+  )
   posterior_epred_trunc_fun <-
-    paste0("posterior_epred_trunc_", prep$family$family)
+    paste0("posterior_epred_trunc_", family_name)
   posterior_epred_trunc_fun <- try(
     get(posterior_epred_trunc_fun, asNamespace("brms")),
     silent = TRUE
   )
   if (is_try_error(posterior_epred_trunc_fun)) {
     stop2("posterior_epred values on the respone scale not yet implemented ",
-          "for truncated '", prep$family$family, "' models.")
+          "for truncated '", family_name, "' models.")
   }
   trunc_args <- nlist(prep, lb, ub)
   do_call(posterior_epred_trunc_fun, trunc_args)
@@ -897,22 +901,29 @@ posterior_epred_trunc_discrete <- function(dist, args, lb, ub) {
   if (any(is.infinite(c(lb, ub)))) {
     stop("lb and ub must be finite")
   }
+  # integer responses admit ceiling(lb):floor(ub), and log_lik_truncate()
+  # rounds the same way; without this a single non-integer bound turns the
+  # whole kernel grid fractional and zeroes every observation
+  lb <- ceiling(lb)
+  ub <- floor(ub)
   # simplify lb and ub back to vector format
   vec_lb <- lb[1, ]
   vec_ub <- ub[1, ]
   min_lb <- min(vec_lb)
-  # array of dimension S x N x length((lb+1):ub)
-  mk <- lapply((min_lb + 1):max(vec_ub), mean_kernel, args = args)
+  # the bounds are inclusive for integer responses, as in the Stan code and
+  # in log_lik; see #1923
+  # array of dimension S x N x length(lb:ub)
+  mk <- lapply(min_lb:max(vec_ub), mean_kernel, args = args)
   mk <- do_call(abind, c(mk, along = 3))
   m1 <- vector("list", ncol(mk))
   for (n in seq_along(m1)) {
     # summarize only over non-truncated values for this observation
-    J <- (vec_lb[n] - min_lb + 1):(vec_ub[n] - min_lb)
+    J <- (vec_lb[n] - min_lb + 1):(vec_ub[n] - min_lb + 1)
     m1[[n]] <- rowSums(mk[, n, ][, J, drop = FALSE])
   }
   rm(mk)
   m1 <- do.call(cbind, m1)
-  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb), args)))
+  m1 / (do.call(cdf, c(list(ub), args)) - do.call(cdf, c(list(lb - 1), args)))
 }
 
 #' @export

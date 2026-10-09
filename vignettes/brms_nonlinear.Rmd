@@ -209,7 +209,7 @@ plot(fit_loss, N = 3, ask = FALSE)
 conditional_effects(fit_loss)
 ```
 
-Next, we show marginal effects separately for each year.
+Next, we show conditional effects separately for each year.
 
 ```{r}
 conditions <- data.frame(AY = unique(loss$AY))

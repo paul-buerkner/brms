@@ -262,13 +262,6 @@ restructure_v2 <- function(x) {
     # that are directly passed to the Stan backends for later reuse (#1373)
     x$stan_args <- list()
   }
-  if (version < "2.19.3") {
-    # a slot was added to store parts of the Stan data computed at fitting time.
-    # storing this is strictly required only for spline models but there it is
-    # critical due to the machine-specific output of SVD (#1465)
-    bframe <- brmsframe(x$formula, data = x$data)
-    x$basis <- frame_basis(bframe, data = x$data)
-  }
   if (version < "2.21.3") {
     # the class of random effects data.frames was changed
     # in the process of introducing brmsframe objects
@@ -277,6 +270,21 @@ restructure_v2 <- function(x) {
   if (version < "2.22.11") {
     # tag column was added to the prior (#1724)
     x$prior$tag <- ""
+  }
+  if (version < "2.23.0") {
+    # a slot was added to store parts of the Stan data computed at fitting time.
+    # storing this is strictly required only for spline models but there it is
+    # critical due to the machine-specific output of SVD (#1465)
+
+    # additionally models with gp terms used not to store L but now need to in
+    # order for post-processing functions to work correctly (#1740)
+
+    # ensure that version-dependent defaults (e.g. the knots of the Cox
+    # baseline hazard) are computed as they were at fitting time
+    old_options <- options(.brmsfit_version = x$version$brms)
+    on.exit(options(old_options), add = TRUE)
+    bframe <- brmsframe(x$formula, data = x$data)
+    x$basis <- frame_basis(bframe, data = x$data)
   }
   x
 }

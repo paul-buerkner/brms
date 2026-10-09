@@ -77,6 +77,17 @@ fit_cmdstanr <- brm(rate ~ conc + state,
                     file = fname)
 upd_cmdstanr <- update(fit_cmdstanr,
                        formula. = rate ~ conc)
+
+# the updated fit will use a random seed unless specified, even if the
+# original fit had a seed argument. Use seed again for a reproducible fit
+
+fit_seed <- brm(rate ~ conc + state,
+                data = Puromycin,
+                seed = 1234)
+
+update_seed <- update(fit_seed,
+                      formula. = ~ . - state,
+                      seed = 1234)
 }
 
 }

@@ -38,11 +38,11 @@ Create a summary of a fitted model represented by a \code{brmsfit} object
 }
 \details{
 The convergence diagnostics \code{Rhat}, \code{Bulk_ESS}, and
-\code{Tail_ESS} are described in detail in Vehtari et al. (2020).
+\code{Tail_ESS} are described in detail by Vehtari et al. (2020).
 }
 \references{
 Aki Vehtari, Andrew Gelman, Daniel Simpson, Bob Carpenter, and
 Paul-Christian Bürkner (2020). Rank-normalization, folding, and
 localization: An improved R-hat for assessing convergence of
-MCMC. *Bayesian Analysis*. 1–28. dpi:10.1214/20-BA1221
+MCMC. \emph{Bayesian Analysis}. 1–28. \code{doi:10.1214/20-BA1221}
 }

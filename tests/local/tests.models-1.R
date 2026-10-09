@@ -29,8 +29,35 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   expect_ggplot(pp_check(fit1))
 
   # test kfold
-  kfold1 <- kfold(fit1, chains = 1, iter = 1000, save_fits = TRUE)
+  kfold1 <- kfold(fit1, save_fits = TRUE)
+  expect_equal(length(dim(kfold_predict(kfold1, method = "fitted")$yrep)), 2)
+  expect_equal(length(dim(kfold_predict(kfold1, method = "predict")$yrep)), 2)
+  loo1 <- SW(loo(fit1))
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
+  # expected output structure
+  expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
+                                "fits", "data", "data2"))
+  # dims has correct dimensionality
+  expect_equal(dim(kfold1)[1], ndraws(fit1))
+  expect_equal(dim(kfold1)[2], nrow(epilepsy))
+  # output structure of loo and kfold object should be equal 
+  # wrt estimates, pointwise and diagnostics slots
+  expect_equal(names(loo1)[1:3], names(kfold1)[1:3])
+  # diagnostics$pareto_k in kfold has same class as corresponding slot 
+  # in loo output
+  expect_equal(class(kfold1$diagnostics), class(loo1$diagnostics))
+  # diagnostics follow loo-style names
+  expect_equal(
+    sort(names(kfold1$diagnostics)),
+    sort(c("pareto_k", "n_eff", "r_eff"))
+  )
+  # expected length of pareto-k, n_eff, r_eff equal to pointwise
+  expected_len <- nrow(kfold1$pointwise)
+  expect_equal(length(kfold1$diagnostics$pareto_k), expected_len)
+  expect_equal(length(kfold1$diagnostics$n_eff), expected_len)
+  expect_equal(length(kfold1$diagnostics$r_eff), expected_len)
+  # 'dims' and 'k_threshold' are in attributes of kfold output
+  expect_all_true(c("dims", "k_threshold") %in% names(attributes(kfold1)))
   # define a loss function
   rmse <- function(y, yrep) {
     yrep_mean <- colMeans(yrep)
@@ -57,6 +84,9 @@ test_that("Ordinal model from brm doc works correctly", suppressWarnings({
     iter = 1000, chains = 2, refresh = 0
   )
   print(fit2)
+  kfold2 <- SM(brms::kfold(fit2, save_fits = TRUE))
+  expect_equal(length(dim(kfold_predict(kfold2, method = "fitted")$yrep)), 3)
+  expect_equal(length(dim(kfold_predict(kfold2, method = "predict")$yrep)), 2)
   expect_range(WAIC(fit2)$estimates[3, 1], 900, 950)
   suppressWarnings(ce <- conditional_effects(fit2, effect = "treat"),
                  "Predictions are treated as continuous variables")
@@ -114,6 +144,26 @@ test_that("Binomial model from brm doc works correctly", suppressWarnings({
   print(fit4)
   ce <- conditional_effects(fit4)
   expect_ggplot(plot(ce, ask = FALSE)[[1]])
+}))
+
+test_that("Categorical model works correctly with kfold_predict", suppressWarnings({
+  skip_if_not_installed("palmerpenguins")
+  data("penguins", package = "palmerpenguins")
+  penguins <- subset(penguins, complete.cases(penguins))
+
+  fit <- brm(
+    species ~ bill_length_mm + bill_depth_mm,
+    data = penguins,
+    family = categorical(),
+    chains = 2,
+    cores = 2,
+    iter = 200,
+    seed = 42
+  )
+
+  kfold1 <- brms::kfold(fit, save_fits = TRUE)
+  mupred_kfold <- kfold_predict(kfold1, method = "fitted")
+  expect_equal(length(dim(mupred_kfold$yrep)), 3)
 }))
 
 test_that("Non-linear model from brm doc works correctly", suppressWarnings({

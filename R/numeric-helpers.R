@@ -142,18 +142,49 @@ log1p_exp <- function(x) {
   ifelse(out < Inf, out, x)
 }
 
+# log(1 - exp(x)) for x < 0, following Stan's log1m_exp
+# Uses the two-branch algorithm of Maechler (2012); the naive log1p(-exp(x))
+# returns -Inf as x approaches 0 from below, because exp(x) rounds to 1
 log1m_exp <- function(x) {
-  ifelse(x < 0, log1p(-exp(x)), NaN)
+  out <- x
+  out[] <- NaN
+  near_zero <- which(x < 0 & x > -log(2))
+  far <- which(x <= -log(2))
+  out[near_zero] <- log(-expm1(x[near_zero]))
+  out[far] <- log1p(-exp(x[far]))
+  out[is.na(x)] <- x[is.na(x)]
+  out
 }
 
+# complement of a probability given on the log scale, log(1 - exp(lp)).
+# Stan's log1m_exp() returns NaN for lp >= 0, which is right for a generic
+# argument; lp == 0 is a saturated probability rather than an out-of-domain
+# one, so it maps to log(0) = -Inf here. lp > 0 is not a probability at all
+# and is left as NaN
+log1m_prob <- function(lp) {
+  out <- log1m_exp(lp)
+  out[!is.na(lp) & lp == 0] <- -Inf
+  out
+}
+
+# log(exp(x) - exp(y)) for x >= y, following Stan's log_diff_exp
+# Factoring out the larger term keeps the result usable when exp(x) and
+# exp(y) both underflow, as they do for bounds far in the same tail (#1899)
 log_diff_exp <- function(x, y) {
   stopifnot(length(x) == length(y))
-  ifelse(x > y, log(exp(x) - exp(y)), NaN)
+  out <- x + log1m_exp(y - x)
+  # as in Stan, equal arguments give log(0) = -Inf rather than NaN
+  out[which(x == y & x < Inf)] <- -Inf
+  out
 }
 
 log_sum_exp <- function(x, y) {
   max <- pmax(x, y)
-  max + log(exp(x - max) + exp(y - max))
+  out <- max + log(exp(x - max) + exp(y - max))
+  # two zero probabilities sum to zero rather than to NaN, as in Stan. The
+  # infinite cases still differ from Stan, which returns Inf for them
+  out[!is.na(max) & max == -Inf] <- -Inf
+  out
 }
 
 log_mean_exp <- function(x) {

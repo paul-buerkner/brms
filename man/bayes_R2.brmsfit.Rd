@@ -8,6 +8,7 @@
 \method{bayes_R2}{brmsfit}(
   object,
   resp = NULL,
+  method = NULL,
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
@@ -19,6 +20,12 @@
 
 \item{resp}{Optional names of response variables. If specified, predictions
 are performed only for the specified response variables.}
+
+\item{method}{Character string specifying how R2 is computed. Either
+`"model"` to use the model-based variances, or `"residual"` to
+use the residual-based variances. If `NULL` (default), the
+model-based R2 is computed where possible, falling back to residual-based
+R2 for families without current support of model-based variances.}
 
 \item{summary}{Should summary statistics be returned
 instead of the raw values? Default is \code{TRUE}.}
@@ -49,6 +56,12 @@ Compute a Bayesian version of R-squared for regression models
 \details{
 For an introduction to the approach, see Gelman et al. (2019)
  and \url{https://github.com/jgabry/bayes_R2/}.
+ For Gaussian and Bernoulli models, \code{bayes_R2} uses model-based residual
+ variances as proposed in Gelman et al. (2019), with Bernoulli models using 
+ Tjur's pseudo-variance. For Gaussian models with heteroscedastic
+ sigma, the mean residual variance is used as an approximation (see Tjur 
+ (2009) for discussion on this approximation). For other families, 
+ \code{bayes_R2} warns and falls back to residual-based variances.
 }
 \examples{
 \dontrun{
@@ -67,4 +80,8 @@ Andrew Gelman, Ben Goodrich, Jonah Gabry & Aki Vehtari. (2019).
   R-squared for Bayesian regression models, \emph{The American Statistician},
   73(3):307-309. \code{10.1080/00031305.2018.1549100} (Preprint available at
   \url{https://acris.aalto.fi/ws/portalfiles/portal/34206843/bayes_R2_v3.pdf})
+
+  Tue Tjur. (2009). Coefficient of determination in logistic regression 
+  models - A new proposal: The coefficient of discrimination, \emph{The 
+  American Statistician}, 63:366-372. \code{10.1198/tast.2009.08210}
 }

@@ -24,9 +24,12 @@ that control several aspects of data validation and prediction.}
 }
 \value{
 A \code{list} with two slots named \code{'y'} and \code{'yrep'}.
-  Slot \code{y} contains the vector of observed responses.
-  Slot \code{yrep} contains the matrix of predicted responses,
-  with rows being posterior draws and columns being observations.
+  \code{y} is a named vector of observed responses (names = row indices).
+  \code{yrep} is an \code{array} of predictions with the same structure as
+  the chosen \code{method} would return for all \eqn{N} out-of-fold
+  observations at once, with posterior draws on the first dimension and
+  observations on the second. See the documentation of the underlying
+  prediction function for details on additional dimensions.
 }
 \description{
 Compute and evaluate predictions after performing K-fold

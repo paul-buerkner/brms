@@ -44,6 +44,11 @@
 #'   the denominator values from which the response rates are computed.
 #' @param gr A vector of grouping indicators.
 #' @param df Degrees of freedom of baseline hazard splines for Cox models.
+#'   The knots of these splines are placed at the quantiles of the event times.
+#'   In \pkg{brms} versions 2.23.1 and earlier, the knots were placed at the
+#'   quantiles of both event and censoring times, which is generally not
+#'   recommended. For backwards compatibility, models fitted with those older
+#'   versions keep using the old placement in post-processing.
 #' @param ... For \code{resp_vreal}, vectors of real values.
 #'   For \code{resp_vint}, vectors of integer values. In Stan,
 #'   these variables will be named \code{vreal1}, \code{vreal2}, ...,
