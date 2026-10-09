@@ -638,6 +638,25 @@ collapse_lists <- function(..., ls = list()) {
   out
 }
 
+# recursively add the elements of 'y' that are missing in 'x'
+# classed objects (e.g. mgcv smooths) and unnamed lists count as single elements
+# @param x a list whose existing elements are kept
+# @param y a list providing the missing elements
+fill_missing <- function(x, y) {
+  if (is.null(x)) {
+    return(y)
+  }
+  is_plain <- function(z) is.list(z) && !is.object(z)
+  for (n in names(y)) {
+    if (is.null(x[[n]])) {
+      x[[n]] <- y[[n]]
+    } else if (is_plain(x[[n]]) && is_plain(y[[n]])) {
+      x[[n]] <- fill_missing(x[[n]], y[[n]])
+    }
+  }
+  x
+}
+
 # create a named list using object names
 nlist <- function(...) {
   m <- match.call()
