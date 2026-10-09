@@ -189,3 +189,42 @@ test_that("rename_old_categorical works correctly", {
   expect_equivalent(res, target)
 })
 
+test_that("restructure keeps the stored basis of models fitted before 2.23.0", {
+  set.seed(1234)
+  dat <- data.frame(
+    y = rnorm(40), x1 = rnorm(40), x2 = rnorm(40),
+    z = rnorm(40), g = rep(1:4, 10)
+  )
+  fit <- brm(y ~ t2(x1, x2) + gp(z, k = 5) + (1 | g), dat, empty = TRUE)
+  basis <- fit$basis
+  fit$version$brms <- package_version("2.22.0")
+  # spline bases are machine-specific and must not be recomputed (#1465)
+  attr(fit$basis$dpars$mu$sm[[1]]$sm[[1]], "stored") <- TRUE
+  # entries added in later versions are missing in older fits
+  fit$basis$dpars$mu$gp$Lgp_1 <- NULL
+  fit$basis$group_levels <- NULL
+
+  fit_up <- restructure(fit)
+  expect_true(attr(fit_up$basis$dpars$mu$sm[[1]]$sm[[1]], "stored"))
+  attr(fit_up$basis$dpars$mu$sm[[1]]$sm[[1]], "stored") <- NULL
+  expect_equal(fit_up$basis$dpars$mu$sm, basis$dpars$mu$sm)
+  # missing entries are recomputed
+  expect_equal(fit_up$basis$dpars$mu$gp$Lgp_1, basis$dpars$mu$gp$Lgp_1)
+  expect_equal(fit_up$basis$group_levels, basis$group_levels)
+  gp_names <- names(basis$dpars$mu$gp)
+  expect_equal(fit_up$basis$dpars$mu$gp[gp_names], basis$dpars$mu$gp)
+})
+
+test_that("fill_missing only adds missing elements", {
+  x <- list(a = 1, b = list(c = 2), s = structure(list(u = 1), class = "foo"))
+  y <- list(
+    a = 10, b = list(c = 20, d = 30),
+    s = structure(list(u = 10, v = 20), class = "foo"), e = 40
+  )
+  out <- brms:::fill_missing(x, y)
+  expect_equal(out$a, 1)
+  expect_equal(out$b, list(c = 2, d = 30))
+  expect_equal(out$s, x$s)
+  expect_equal(out$e, 40)
+  expect_equal(brms:::fill_missing(NULL, y), y)
+})
