@@ -67,55 +67,53 @@ posterior_smooths.brmsfit <- function(object, smooth, newdata = NULL,
 posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
                                   ndraws = NULL, draw_ids = NULL,
                                   nsamples = NULL, subset = NULL, ...) {
-	smooth <- rm_wsp(as_one_character(smooth))
-	ndraws <- use_alias(ndraws, nsamples)
-	draw_ids <- use_alias(draw_ids, subset)
-	object$frame$sm <- frame_sm(object, fit$data)
-	class(object) <- c("bframel", class(object))
-	smframe <- object$frame$sm
-	smframe$term <- rm_wsp(smframe$term)
-	smterms <- unique(smframe$term)
-	if (!smooth %in% smterms) {
-		stop2("Term '", smooth, "' cannot be found. Available ",
-				"smooth terms are: ", collapse_comma(smterms))
+  smooth <- rm_wsp(as_one_character(smooth))
+  ndraws <- use_alias(ndraws, nsamples)
+  draw_ids <- use_alias(draw_ids, subset)
+  object$frame$sm <- frame_sm(object, fit$data)
+  class(object) <- c("bframel", class(object))
+  smframe <- object$frame$sm
+  smframe$term <- rm_wsp(smframe$term)
+  smterms <- unique(smframe$term)
+  if (!smooth %in% smterms) {
+    stop2("Term '", smooth, "' cannot be found. Available ",
+          "smooth terms are: ", collapse_comma(smterms))
+  }
+  # find relevant variables
+  sub_smframe <- subset2(smframe, term = smooth)
+  covars <- all_vars(sub_smframe$covars[[1]])
+  byvars <- all_vars(sub_smframe$byvars[[1]])
+  req_vars <- c(covars, byvars)
+  # prepare predictions for splines
+  sdata <- standata(
+    fit, newdata, re_formula = NA, internal = TRUE,
+    check_response = FALSE, req_vars = req_vars
+  )
+  i <- which(smterms %in% smooth)[1]
+  J <- which(smframe$termnum == i)
+  p <- usc(combine_prefix(object))
+  scs <- unlist(attr(sdata[[paste0("Xs", p)]], "smcols")[J])
+  Xs_names <- attr(smframe, "Xs_names")[scs]
+  pars <- character()
+  if (length(Xs_names)) {
+    pars <- paste0("^bs?", p, "_", escape_all(Xs_names), "$")
+  }
+  for (i in J) {
+	for (j in seq_len(smframe$nbases[i])) {
+      pars <- c(pars, paste0("^s", p, "_", escape_all(smframe$label[i]), "_", j, "\\["))
 	}
-	# find relevant variables
-	sub_smframe <- subset2(smframe, term = smooth)
-	covars <- all_vars(sub_smframe$covars[[1]])
-	byvars <- all_vars(sub_smframe$byvars[[1]])
-	req_vars <- c(covars, byvars)
-	# prepare predictions for splines
-	sdata <- standata(
-		fit, newdata, re_formula = NA, internal = TRUE,
-		check_response = FALSE, req_vars = req_vars
-	)
-
-	i <- which(smterms %in% smooth)[1]
-	J <- which(smframe$termnum == i)
-	p <- usc(combine_prefix(object))
-	scs <- unlist(attr(sdata[[paste0("Xs", p)]], "smcols")[J])
-	Xs_names <- attr(smframe, "Xs_names")[scs]
-	pars <- character()
-	if (length(Xs_names)) {
-		pars <- paste0("^bs?", p, "_", escape_all(Xs_names), "$")
-	}
-	for (i in J) {
-		for (j in seq_len(smframe$nbases[i])) {
-			pars <- c(pars, paste0("^s", p, "_", escape_all(smframe$label[i]), "_", j, "\\["))
-		}
-	}
-
-	# select relevant smooth parameters before expanding draws
-	draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
-	draws <- as_draws_list(fit, variable = pars, regex = TRUE)
-	draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
-	draws <- as_draws_matrix(draws)
-	prep_args <- nlist(x = object, draws, sdata, data = fit$data)
-	prep <- do_call(prepare_predictions, prep_args)
-	prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
-	prep$sm$re <- prep$sm$re[J]
-	prep$family <- brmsfamily("gaussian")
-	predictor(prep, i = NULL)
+  }
+  # select relevant parameters before expanding draws
+  draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
+  draws <- as_draws_list(fit, variable = pars, regex = TRUE)
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
+  draws <- as_draws_matrix(draws)
+  prep_args <- nlist(x = object, draws, sdata, data = fit$data)
+  prep <- do_call(prepare_predictions, prep_args)
+  prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
+  prep$sm$re <- prep$sm$re[J]
+  prep$family <- brmsfamily("gaussian")
+  predictor(prep, i = NULL)
 }
 
 #' @export
