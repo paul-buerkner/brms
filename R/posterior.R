@@ -213,7 +213,7 @@ as_draws_rvars.brmsfit <- function(x, variable = NULL, regex = FALSE,
   if (!length(x@sim$samples)) {
     stop2("The model does not contain posterior draws.")
   }
-  out <- as_draws_list(x@sim$samples)
+  out <- as_draws_list(lapply(x@sim$samples, as.list))
   # first subset variables then remove warmup as removing warmup
   # will take a lot of time when extracting many variables
   out <- subset_draws(out, variable = variable, regex = regex)
