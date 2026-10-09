@@ -293,17 +293,17 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     gr <- usc(seq_along(groups))
     grb <- paste0("[", seq_along(groups), "]")
   }
-  family <- bterms$family$family
-  link <- bterms$family$link
-  if (family != "custom") {
+  if (!is.customfamily(bterms$family)) {
+    family_name <- bterms$family$family
+    link <- bterms$family$link
     if (has_extra_cat(bterms)) {
-        str_add(out$fun) <- glue(
-        "  #includeR `stan_hurdle_ordinal_lpmf('{family}', '{link}')`\n"
-        )
+      str_add(out$fun) <- glue(
+        "  #includeR `stan_hurdle_ordinal_lpmf('{family_name}', '{link}')`\n"
+      )
     } else {
-        str_add(out$fun) <- glue(
-        "  #includeR `stan_ordinal_lpmf('{family}', '{link}')`\n"
-        )
+      str_add(out$fun) <- glue(
+        "  #includeR `stan_ordinal_lpmf('{family_name}', '{link}')`\n"
+      )
     }
   }
   if (fix_intercepts(bterms)) {
