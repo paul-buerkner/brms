@@ -213,6 +213,12 @@ test_that("restructure keeps the stored basis of models fitted before 2.23.0", {
   expect_equal(fit_up$basis$group_levels, basis$group_levels)
   gp_names <- names(basis$dpars$mu$gp)
   expect_equal(fit_up$basis$dpars$mu$gp[gp_names], basis$dpars$mu$gp)
+
+  # models fitted before 2.19.3 did not store a basis at all
+  fit$version$brms <- package_version("2.19.0")
+  fit$basis <- NULL
+  fit_up <- restructure(fit)
+  expect_equal(fit_up$basis, basis)
 })
 
 test_that("fill_missing only adds missing elements", {

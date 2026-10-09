@@ -277,11 +277,12 @@ restructure_v2 <- function(x) {
     # tag column was added to the prior (#1724)
     x$prior$tag <- ""
   }
-  if (version < "2.23.0") {
+  if (version >= "2.19.3" && version < "2.23.0") {
     # entries were added to the basis, e.g. the boundary factor L of gp terms,
     # which is required for post-processing functions to work correctly (#1740)
     # stored entries are kept since the spline basis depends on the machine
     # it was computed on (#1465); only missing entries are recomputed
+    # older models already have an up-to-date basis computed above
     x$basis <- fill_missing(x$basis, restructure_basis(x))
   }
   x
