@@ -48,3 +48,24 @@ test_that("log_diff_exp follows the edge cases of Stan", {
   expect_true(is.nan(brms:::log_diff_exp(Inf, Inf)))
   expect_equal(brms:::log_diff_exp(0, -Inf), 0)
 })
+
+test_that("log_inv_logit and log1m_inv_logit stay exact in both tails", {
+  # inv_logit(x) rounds to 1 from x = 36.74 and to 0 below x = -709.78, so
+  # taking the log afterwards gave exactly 0 or -Inf. The reference never
+  # forms a probability near 1
+  log_F <- function(x) ifelse(x > 0, -log1p(exp(-x)), x - log1p(exp(x)))
+  x <- c(-1000, -800, -40, -1, 0, 1, 40, 800, 1000)
+  expect_equal(brms:::log_inv_logit(x), log_F(x))
+  expect_equal(brms:::log1m_inv_logit(x), log_F(-x))
+  expect_equal(brms:::log_inv_logit(-800), -800)
+  expect_equal(brms:::log1m_inv_logit(40), -40 - log1p(exp(-40)))
+  # the naive forms are accurate in between, and these agree with them there
+  x <- c(-5, -0.5, 0, 0.5, 5)
+  expect_equal(brms:::log_inv_logit(x), log(1 / (1 + exp(-x))))
+  expect_equal(brms:::log1m_inv_logit(x), log(1 - 1 / (1 + exp(-x))))
+  # Stan's conventions for non-finite input, and the shape of the input
+  expect_true(is.nan(brms:::log_inv_logit(NaN)))
+  expect_equal(brms:::log_inv_logit(c(-Inf, Inf)), c(-Inf, 0))
+  m <- matrix(c(-50, 2, -0.5, 50), nrow = 2)
+  expect_equal(dim(brms:::log1m_inv_logit(m)), c(2L, 2L))
+})

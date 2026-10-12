@@ -27,6 +27,10 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Evaluate the logit link in `log_lik` of `cumulative`, `sratio`, `cratio`
+and `hurdle_cumulative` models on the log scale, as #1192 did for the other
+links; categories with probability below about 1e-16 gave `-Inf` or `NaN`.
+Thanks to Ahmed Eldeeb. (#1192)
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)

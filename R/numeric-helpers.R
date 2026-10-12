@@ -198,12 +198,16 @@ log_expm1 <- function(x) {
   ifelse(out < Inf, out, x)
 }
 
+# log(inv_logit(x)) and log(1 - inv_logit(x)), as Stan's built-ins compute
+# them. The naive forms round inv_logit(x) to 1 from x = 36.74, which makes
+# the first exactly 0 and the second -Inf, and to 0 below x = -709.78. These
+# back the logit link in log_cdf() and log_ccdf()
 log_inv_logit <- function(x) {
-  log(inv_logit(x))
+  plogis(x, log.p = TRUE)
 }
 
 log1m_inv_logit <- function(x) {
-  log(1 - inv_logit(x))
+  plogis(x, lower.tail = FALSE, log.p = TRUE)
 }
 
 scale_unit <- function(x, lb = min(x), ub = max(x)) {

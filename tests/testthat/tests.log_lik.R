@@ -814,3 +814,53 @@ test_that("truncated log_lik uses inclusive lower bounds for integers", {
     dnorm(0.5, 0, 1, log = TRUE) - log(pnorm(1) - pnorm(0))
   )
 })
+
+test_that("ordinal logit log_lik is finite for improbable categories", {
+  # with the latent mean far from the thresholds the logit cdf rounded to 1,
+  # so a middle category was log_diff_exp(0, 0) = -Inf and sratio and cratio
+  # returned -Inf or NaN. The generated Stan code for cumulative uses
+  # log_inv_logit_diff() there. See #1192
+  ord_prep <- function(family, mu, Y, thres = c(0, 2), ...) {
+    prep <- structure(list(ndraws = 2L, nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(mu = matrix(mu, nrow = 2, ncol = 1), disc = 1, ...)
+    prep$thres <- list(
+      thres = matrix(thres, nrow = 2, ncol = length(thres), byrow = TRUE)
+    )
+    prep$family <- family
+    prep$data <- list(Y = Y)
+    prep
+  }
+  # log F(x) for the logistic cdf, never forming a probability near 1
+  log_F <- function(x) ifelse(x > 0, -log1p(exp(-x)), x - log1p(exp(x)))
+  # cumulative: P(Y = 2) = F(2 - mu) - F(-mu) = F(mu) - F(mu - 2)
+  log_p2 <- function(mu) log_F(mu) + log(-expm1(log_F(mu - 2) - log_F(mu)))
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -40, 2)),
+    rep(log_p2(-40), 2)
+  )
+  # still finite at mu = -30, but 1.1e-3 off
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -30, 2)),
+    rep(log_p2(-30), 2)
+  )
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -40, 3)),
+    rep(log_F(-42), 2)
+  )
+  # P(Y = 1) is F(-40) for both at mu = 40; these returned NaN
+  expect_equal(
+    brms:::log_lik_sratio(1, ord_prep(sratio("logit"), 40, 1)),
+    rep(log_F(-40), 2)
+  )
+  expect_equal(
+    brms:::log_lik_cratio(1, ord_prep(cratio("logit"), 40, 1)),
+    rep(log_F(-40), 2)
+  )
+  # hurdle_cumulative shares the cumulative code for Y > 0
+  expect_equal(
+    brms:::log_lik_hurdle_cumulative(
+      1, ord_prep(hurdle_cumulative("logit"), -40, 2, hu = 0.2)
+    ),
+    rep(log(0.8) + log_p2(-40), 2)
+  )
+})
