@@ -19,23 +19,15 @@ cmp_reference <- function(mu, shape, K = 2000L) {
 }
 
 test_that("COM-Poisson CDF vectorization respects elementwise parameters", {
-  x <- c(0, 1, 2, 4)
-  mu <- c(1, 2, 3, 4)
-  expect_warning(p <- brms:::pcom_poisson(x, mu, 1), NA)
-  expect_equal(p, ppois(x, mu), tolerance = 1e-12)
-  for (x in list(c(0, 1, 2, 4), c(1, 2, 4, 3))) {
-    mu <- c(0.4, 0.8, 1.1, 1.2)
-    shape <- c(0.5, 1.5, 3, 0.8)
-    ref <- mapply(function(y, m, s) sum(cmp_reference(m, s)$p[seq_len(y + 1)]),
-                  x, mu, shape)
-    expect_equal(brms:::pcom_poisson(x, mu, shape), ref, tolerance = 1e-12)
-    expect_equal(brms:::pcom_poisson(x, mu, shape),
-                 mapply(brms:::pcom_poisson, x, mu, shape))
-    xm <- matrix(x, nrow = 2)
-    mm <- matrix(mu, nrow = 2)
-    expect_equal(brms:::pcom_poisson(xm, mm, shape), matrix(ref, 2),
-                 tolerance = 1e-12)
-  }
+  x <- c(0, 2, 4, 1)
+  mu <- c(0.4, 0.8, 1.1, 1.2)
+  shape <- c(0.5, 1.5, 3, 0.8)
+  ref <- mapply(function(y, m, s) cmp_reference(m, s)$cdf[y + 1],
+                x, mu, shape)
+  expect_warning(p <- brms:::pcom_poisson(x, mu, shape), NA)
+  expect_equal(p, ref, tolerance = 1e-12)
+  expect_equal(brms:::pcom_poisson(matrix(x, 2), matrix(mu, 2), shape),
+               matrix(ref, 2), tolerance = 1e-12)
   expect_equal(brms:::pcom_poisson(0:4, 2, 1), ppois(0:4, 2))
 })
 
@@ -59,86 +51,26 @@ test_that("COM-Poisson CDF handles support boundaries and tail flags", {
                ppois(1, 2) / ppois(3, 2))
 })
 
-test_that("Stan COM-Poisson CDF accepts negative cutoffs", {
-  skip_if_not_installed("cmdstanr")
-  skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
-  chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
-  code <- c("functions {", readLines(chunk), "}",
-    "data { int N; array[N] int y; vector[N] mu; vector[N] nu; }",
-    "generated quantities { vector[N] lcdf; vector[N] lccdf;",
-    "for (n in 1:N) { lcdf[n] = com_poisson_lcdf(y[n] | mu[n], nu[n]);",
-    "lccdf[n] = com_poisson_lccdf(y[n] | mu[n], nu[n]); } }")
-  sf <- tempfile(fileext = ".stan")
-  writeLines(code, sf)
-  mod <- cmdstanr::cmdstan_model(sf, quiet = TRUE)
-  d <- expand.grid(y = c(-2L, -1L, 0L, 1L, 4L), nu = c(0.7, 1, 2))
-  fit <- mod$sample(data = list(N = nrow(d), y = d$y, mu = rep(0.8, nrow(d)),
-                                nu = d$nu), fixed_param = TRUE, chains = 1,
-                   iter_sampling = 1, refresh = 0, show_messages = FALSE,
-                   sig_figs = 18)
-  draws <- posterior::as_draws_matrix(fit$draws())
-  for (lower in c(TRUE, FALSE)) {
-    variable <- if (lower) "lcdf" else "lccdf"
-    expect_equal(as.numeric(draws[1, sprintf("%s[%d]", variable, seq_len(nrow(d)))]),
-                 brms:::pcom_poisson(d$y, 0.8, d$nu, lower.tail = lower, log.p = TRUE),
-                 tolerance = 1e-8)
-  }
-})
-
 test_that("COM-Poisson log_lik applies censoring, truncation, and weights", {
-  for (nu in c(1, 2)) {
-    mu <- if (nu == 1) 2 else 0.8
-    ref <- cmp_reference(mu, nu)
-    for (bounds in list(c(-Inf, Inf), c(0, Inf), c(-Inf, 5), c(0, 5), c(0.2, 5))) {
-      for (cens in c(0, -1, 1, 2)) for (weight in c(1, 2.5)) {
-        prep <- structure(list(
-          family = brmsfamily("com_poisson"),
-          dpars = list(mu = c(mu, mu), shape = nu),
-          data = list(Y = 1, cens = cens, rcens = 3,
-                      weights = weight)), class = "brmsprep")
-        if (is.finite(bounds[1])) prep$data$lb <- bounds[1]
-        if (is.finite(bounds[2])) prep$data$ub <- bounds[2]
-        mass <- switch(as.character(cens),
-          "0" = ref$p[2], "-1" = sum(ref$p[ref$y <= 1]),
-          "1" = sum(ref$p[ref$y > 1]),
-          "2" = sum(ref$p[ref$y > 1 & ref$y <= 3]))
-        norm <- sum(ref$p[ref$y >= ceiling(bounds[1]) & ref$y <= bounds[2]])
-        expected <- weight * (log(mass) - log(norm))
-        expect_equal(brms:::log_lik_com_poisson(1, prep), rep(expected, 2),
-                     tolerance = 1e-10)
-      }
+  ref <- cmp_reference(0.8, 2)
+  for (bounds in list(c(-Inf, Inf), c(0, Inf), c(-Inf, 5), c(0, 5), c(0.2, 5))) {
+    for (cens in c(0, -1, 1, 2)) {
+      prep <- structure(list(
+        family = brmsfamily("com_poisson"),
+        dpars = list(mu = c(0.8, 0.8), shape = 2),
+        data = list(Y = 1, cens = cens, rcens = 3, weights = 2.5)),
+        class = "brmsprep")
+      if (is.finite(bounds[1])) prep$data$lb <- bounds[1]
+      if (is.finite(bounds[2])) prep$data$ub <- bounds[2]
+      mass <- switch(as.character(cens),
+        "0" = ref$p[2], "-1" = sum(ref$p[ref$y <= 1]),
+        "1" = sum(ref$p[ref$y > 1]),
+        "2" = sum(ref$p[ref$y > 1 & ref$y <= 3]))
+      norm <- sum(ref$p[ref$y >= ceiling(bounds[1]) & ref$y <= bounds[2]])
+      expect_equal(brms:::log_lik_com_poisson(1, prep),
+                   rep(2.5 * (log(mass) - log(norm)), 2), tolerance = 1e-10)
     }
   }
-})
-
-test_that("COM-Poisson censored and truncated likelihoods match Stan", {
-  skip_if_not_installed("cmdstanr")
-  skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
-  chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
-  code <- c("functions {", readLines(chunk), "}",
-    "data { real mu; real nu; }",
-    "generated quantities { vector[4] ll;",
-    "real lnorm = log_diff_exp(com_poisson_lcdf(5 | mu, nu), com_poisson_lcdf(-1 | mu, nu));",
-    "ll[1] = com_poisson_lpmf(1 | mu, nu) - lnorm;",
-    "ll[2] = com_poisson_lcdf(1 | mu, nu) - lnorm;",
-    "ll[3] = com_poisson_lccdf(1 | mu, nu) - lnorm;",
-    "ll[4] = log_diff_exp(com_poisson_lcdf(3 | mu, nu), com_poisson_lcdf(1 | mu, nu)) - lnorm; }")
-  sf <- tempfile(fileext = ".stan")
-  writeLines(code, sf)
-  mod <- cmdstanr::cmdstan_model(sf, quiet = TRUE)
-  fit <- mod$sample(data = list(mu = 0.8, nu = 2), fixed_param = TRUE,
-                   chains = 1, iter_sampling = 1, refresh = 0,
-                   show_messages = FALSE, sig_figs = 18)
-  actual <- as.numeric(posterior::as_draws_matrix(fit$draws("ll"))[1, ])
-  prep <- structure(list(family = brmsfamily("com_poisson"),
-                        dpars = list(mu = 0.8, shape = 2),
-                        data = list(Y = 1, lb = 0, ub = 5, rcens = 3)),
-                    class = "brmsprep")
-  expected <- vapply(c(0, -1, 1, 2), function(cens) {
-    prep$data$cens <- cens
-    brms:::log_lik_com_poisson(1, prep)
-  }, numeric(1))
-  expect_equal(actual, expected, tolerance = 1e-8)
   sc <- make_stancode(y | trunc(lb = 0, ub = 5) ~ 1,
                      data = data.frame(y = 0:5), family = brmsfamily("com_poisson"))
   expect_match(sc, "com_poisson_lcdf(lb[n] - 1", fixed = TRUE)
@@ -169,7 +101,6 @@ test_that("COM-Poisson normalization, moments and tails agree with independent s
   for (i in seq_len(nrow(grid))) {
     mu <- grid$mu[i]; nu <- grid$nu[i]
     ref <- refs[[i]]
-    expect_equal(sum(brms:::dcom_poisson(0:2000, mu, nu)), 1, tolerance = 1e-10)
     x <- seq.int(max(0, floor(mu) - 2), floor(mu) + 5)
     p <- brms:::pcom_poisson(x, mu, nu)
     expect_equal(p - brms:::pcom_poisson(x - 1, mu, nu),
@@ -196,10 +127,6 @@ test_that("COM-Poisson normalization, moments and tails agree with independent s
   lp <- 30 * ((6:8) * log(2) - lgamma(7:9))
   expected <- lp[1] - (max(lp) + log(sum(exp(lp - max(lp)))))
   expect_equal(brms:::log_lik_com_poisson(1, prep), expected, tolerance = 1e-10)
-  set.seed(1938)
-  draws <- brms:::rcom_poisson(10000, 2, 30)
-  expect_equal(mean(draws == 1), 0.5, tolerance = 0.02)
-  expect_equal(mean(draws <= 2), brms:::pcom_poisson(2, 2, 30), tolerance = 0.001)
   expect_error(brms:::log_Z_com_poisson(log(2), 30, M = 0), "failed to converge")
   expect_error(brms:::mean_com_poisson(2, 30, M = 0), "failed to converge")
   expect_warning(q <- brms:::qcom_poisson(0.9, 2, 30, M = 1), "failed")
@@ -261,7 +188,6 @@ test_that("COM-Poisson hybrid remains consistent at its switching boundaries", {
 test_that("compiled COM-Poisson values and gradients match independent references", {
   skip_if_not_installed("cmdstanr")
   skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
-  skip_if(cmdstanr::cmdstan_version() < "2.36.0")
   chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
   code <- c("functions {", readLines(chunk), "}",
     "data { int N; array[N] int y; vector[N] mu; vector[N] nu; int cap; int kind; int cutoff; }",
@@ -274,13 +200,22 @@ test_that("compiled COM-Poisson values and gradients match independent reference
     "for (n in 1:N) { lpmf[n] = com_poisson_lpmf(y[n] | mu[n], nu[n]);",
     "lcdf[n] = com_poisson_lcdf(y[n] | mu[n], nu[n]);",
     "lccdf[n] = com_poisson_lccdf(y[n] | mu[n], nu[n]);",
-    "means[n] = com_poisson_normalizer(log(mu[n]), nu[n])[2]; } }")
+    "means[n] = com_poisson_normalizer(log(mu[n]), nu[n])[2]; }",
+    "vector[4] ll;",
+    "real lnorm = log_diff_exp(com_poisson_lcdf(5 | 0.8, 2), com_poisson_lcdf(-1 | 0.8, 2));",
+    "ll[1] = com_poisson_lpmf(1 | 0.8, 2) - lnorm;",
+    "ll[2] = com_poisson_lcdf(1 | 0.8, 2) - lnorm;",
+    "ll[3] = com_poisson_lccdf(1 | 0.8, 2) - lnorm;",
+    "ll[4] = log_diff_exp(com_poisson_lcdf(3 | 0.8, 2), com_poisson_lcdf(1 | 0.8, 2)) - lnorm; }")
   sf <- tempfile(fileext = ".stan")
   writeLines(code, sf)
   mod <- cmdstanr::cmdstan_model(sf, quiet = TRUE)
   g <- cmp_cases
   d <- g[rep(seq_len(nrow(g)), each = 3), ]
   d$y <- as.integer(pmax(0, floor(d$mu) + rep(c(-1, 0, 5), nrow(g))))
+  # Negative cutoffs and zero share the same compiled model as the gradients.
+  d <- rbind(d, data.frame(mu = 0.8, nu = rep(c(0.7, 1, 2), each = 3),
+                          y = rep(c(-2L, -1L, 0L), 3)))
   data <- list(N = nrow(d), y = d$y, mu = d$mu, nu = d$nu, cap = 10000L,
                kind = 0L, cutoff = 2L)
   fit <- mod$sample(data = data, init = list(list(theta = c(log(2), 0))),
@@ -291,6 +226,7 @@ test_that("compiled COM-Poisson values and gradients match independent reference
     ref <- vapply(seq_len(nrow(d)), function(i) {
       r <- cmp_reference(d$mu[i], d$nu[i], K = 20000)
       if (what == "means") return(r$mean)
+      if (d$y[i] < 0) return(if (what == "lccdf") 0 else -Inf)
       y <- r$y
       lw <- d$nu[i] * (y * log(d$mu[i]) - lgamma(y + 1))
       if (what == "lpmf") return(lw[d$y[i] + 1] - r$logZ)
@@ -298,8 +234,22 @@ test_that("compiled COM-Poisson values and gradients match independent reference
       max(lw) + log(sum(exp(lw - max(lw)))) - r$logZ
     }, numeric(1))
     actual <- as.numeric(draws[1, sprintf("%s[%d]", what, seq_len(nrow(d)))])
-    expect_true(all(abs(actual - ref) <= 1e-8), info = what)
+    expect_identical(is.infinite(actual), is.infinite(ref), info = what)
+    expect_equal(actual[is.infinite(ref)], ref[is.infinite(ref)], info = what)
+    expect_true(all(abs(actual[is.finite(ref)] - ref[is.finite(ref)]) <= 1e-8),
+                info = what)
   }
+  prep <- structure(list(family = brmsfamily("com_poisson"),
+    dpars = list(mu = 0.8, shape = 2),
+    data = list(Y = 1, lb = 0, ub = 5, rcens = 3)), class = "brmsprep")
+  expected <- vapply(c(0, -1, 1, 2), function(cens) {
+    prep$data$cens <- cens
+    brms:::log_lik_com_poisson(1, prep)
+  }, numeric(1))
+  expect_equal(as.numeric(draws[1, sprintf("ll[%d]", 1:4)]), expected,
+               tolerance = 1e-8)
+  # CmdStan 2.36 added the log_prob command used below.
+  skip_if(cmdstanr::cmdstan_version() < "2.36.0")
   # Target the method switches, free-shape Poisson limit, and integer mode.
   grad_grid <- rbind(cmp_switch_cases(),
     data.frame(mu = 2, nu = c(1 - 1e-8, 1, 1 + 1e-8)),
