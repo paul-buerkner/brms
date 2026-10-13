@@ -77,11 +77,26 @@ log_cdf <- function(x, link) {
     logit = log_inv_logit(x),
     probit = pnorm(x, log.p = TRUE),
     cauchit = pcauchy(x, log.p = TRUE),
-    cloglog = log1m_exp(-exp(x)),
+    # log(1 - exp(-exp(x))) is x to double precision below x = -37, where
+    # exp(x) loses precision and then underflows, making log1m_exp() NaN
+    cloglog = ifelse(x < -37, x, log1m_exp(-exp(x))),
     probit_approx = pnorm(x, log.p = TRUE),
     softit = log_inv_softit(x),
     stop2("Link '", link, "' is not supported.")
   )
+}
+
+# log[F(upper) - F(lower)] for unit interval link functions. Where F(lower)
+# exceeds 1/2 both log CDFs are near 0 and their difference cancels, so the
+# upper tail is used there instead, as in log_prob_interval() (#1899)
+# @param upper,lower vectors with upper >= lower
+# @param link a character string defining the link
+log_diff_cdf <- function(upper, lower, link) {
+  lcdf_lower <- log_cdf(lower, link)
+  out <- log_diff_exp(log_cdf(upper, link), lcdf_lower)
+  ut <- which(lcdf_lower > -log(2))
+  out[ut] <- log_diff_exp(log_ccdf(lower[ut], link), log_ccdf(upper[ut], link))
+  out
 }
 
 # log CCDF for unit interval link functions

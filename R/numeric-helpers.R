@@ -226,6 +226,12 @@ log_softmax <- function(x) {
   }
   dim_noncat <- dim(x)[-ndim]
   marg_noncat <- seq_along(dim(x))[-ndim]
+  # factoring out the largest category keeps exp() from overflowing above
+  # 709.78; a non-finite maximum is left in place, since shifting by it
+  # would turn the other categories into NaN
+  xmax <- apply(x, marg_noncat, max)
+  xmax[!is.finite(xmax)] <- 0
+  x <- sweep(x, marg_noncat, xmax, "-")
   catsum <- log(array(apply(exp(x), marg_noncat, sum), dim = dim_noncat))
   sweep(x, marg_noncat, catsum, "-")
 }

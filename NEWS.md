@@ -27,10 +27,12 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
-* Evaluate the logit link in `log_lik` of `cumulative`, `sratio`, `cratio`
-and `hurdle_cumulative` models on the log scale, as #1192 did for the other
-links; categories with probability below about 1e-16 gave `-Inf` or `NaN`.
-Thanks to Ahmed Eldeeb. (#1192)
+* Evaluate `log_lik` of ordinal models on the log scale throughout, so
+improbable categories no longer give `-Inf` or `NaN`, and stop it failing
+for two categories or a single draw. Thanks to Ahmed Eldeeb. (#1192)
+* Factor out the largest category in `log_softmax()`, which overflowed for
+linear predictors above 709.78 in categorical, multinomial and Dirichlet
+models. Thanks to Ahmed Eldeeb. (#1401)
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)

@@ -69,3 +69,17 @@ test_that("log_inv_logit and log1m_inv_logit stay exact in both tails", {
   m <- matrix(c(-50, 2, -0.5, 50), nrow = 2)
   expect_equal(dim(brms:::log1m_inv_logit(m)), c(2L, 2L))
 })
+
+test_that("log_softmax does not overflow", {
+  # exp() overflows above 709.78, which made every category -Inf; #1401
+  # routed softmax() through log_softmax() but did not shift it
+  x <- matrix(c(0, 800, 801), nrow = 1)
+  expect_equal(brms:::log_softmax(x), x - 801 - log1p(exp(-1)))
+  expect_equal(sum(brms:::softmax(x)), 1)
+  # draws x observations x categories, as inv_link_categorical() passes it
+  a <- array(c(0, 900, 0, 1, 2, 3), dim = c(1, 2, 3))
+  expect_equal(brms:::log_softmax(a)[1, 2, ], c(0, -899, -897))
+  # and it agrees with the unshifted form where that is accurate
+  x <- matrix(c(-1, 0.5, 2, 3, -2, 0), nrow = 2)
+  expect_equal(brms:::log_softmax(x), x - log(rowSums(exp(x))))
+})
