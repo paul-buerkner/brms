@@ -79,7 +79,35 @@ test_that("log_softmax does not overflow", {
   # draws x observations x categories, as inv_link_categorical() passes it
   a <- array(c(0, 900, 0, 1, 2, 3), dim = c(1, 2, 3))
   expect_equal(brms:::log_softmax(a)[1, 2, ], c(0, -899, -897))
-  # and it agrees with the unshifted form where that is accurate
+  # it underflowed too, giving +Inf, when every category was below -745
+  x <- matrix(c(-800, -801), nrow = 1)
+  expect_equal(brms:::log_softmax(x), x + 800 - log1p(exp(-1)))
+  # and it agrees with the unshifted form where that is accurate, including
+  # a non-finite maximum, which is left unshifted
   x <- matrix(c(-1, 0.5, 2, 3, -2, 0), nrow = 2)
   expect_equal(brms:::log_softmax(x), x - log(rowSums(exp(x))))
+  x <- matrix(c(Inf, 0), nrow = 1)
+  expect_identical(brms:::log_softmax(x), x - log(rowSums(exp(x))))
+  # the reshape keeps names, and zero categories pass through
+  x <- array(1:12, dim = c(2, 2, 3))
+  dimnames(x) <- list(NULL, NULL, c("a", "b", "c"))
+  expect_identical(dimnames(brms:::log_softmax(x)), dimnames(x))
+  expect_identical(dim(brms:::log_softmax(matrix(0, 4, 0))), c(4L, 0L))
+})
+
+test_that("the cloglog and softit log CDFs stay exact in the lower tail", {
+  # both formed exp(x) first, which is subnormal below -708.4 and 0 below
+  # -745.13; below -37 the log CDF is x to double precision
+  x <- c(-800, -746, -744, -720, -40)
+  expect_equal(brms:::log_cdf(x, "cloglog"), x)
+  expect_equal(brms:::log_inv_softit(x), x)
+  # above the cutoff the exact forms still apply
+  expect_equal(brms:::log_cdf(-10, "cloglog"), log(-expm1(-exp(-10))))
+  expect_equal(
+    brms:::log_inv_softit(c(-10, 0, 3)),
+    log(log1p(exp(c(-10, 0, 3)))) - log1p(log1p(exp(c(-10, 0, 3))))
+  )
+  # NaN stays NaN and empty input stays numeric
+  expect_true(is.nan(brms:::log_cdf(NaN, "cloglog")))
+  expect_identical(brms:::log_cdf(numeric(0), "cloglog"), numeric(0))
 })
