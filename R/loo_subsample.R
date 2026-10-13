@@ -28,6 +28,7 @@
 #' @export
 loo_subsample.brmsfit <- function(x, ..., compare = TRUE, resp = NULL,
                                   model_names = NULL) {
+  # group-level mixtures need no special handling: pointwise log_lik is per group
   args <- split_dots(x, ..., model_names = model_names)
   c(args) <- nlist(
     criterion = "loo_subsample", compare, resp,
