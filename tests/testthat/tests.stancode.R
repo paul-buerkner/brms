@@ -1074,6 +1074,16 @@ test_that("Stan code of hurdle cumulative model is correct", {
     "target += hurdle_cumulative_ordered_logistic_lpmf(Y[n] | mu[n], hu, disc, Intercept);"
   )
 
+  # a predicted disc rules out the builtin; the top category is coded as
+  # nthres + 1 in the data, and nthres + 2 indexed thres out of range
+  scode <- stancode(
+    bf(y ~ x1, disc ~ x2), dat, family = hurdle_cumulative("logit"),
+    prior = prior(normal(0, 2), Intercept)
+  )
+  expect_match2(scode, "real hurdle_cumulative_logit_lpmf(int y")
+  expect_match2(scode, "} else if (y == nthres + 1) {")
+  expect_false(grepl("y == nthres + 2", scode, fixed = TRUE))
+
   scode <- stancode(
     bf(y ~ x1, hu ~ x2), dat,
     hurdle_cumulative("probit", threshold = "equidistant"),

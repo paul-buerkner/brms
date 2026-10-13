@@ -1214,7 +1214,7 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
       "     }} else if (y == 1) {{\n",
       "       return log_inv_logit({th(1)}) +\n",
       "                bernoulli_lpmf(0 | hu);\n",
-      "     }} else if (y == nthres + 2) {{\n",
+      "     }} else if (y == nthres + 1) {{\n",
       "       return log1m_inv_logit({th('nthres')}) +\n",
       "                bernoulli_lpmf(0 | hu);\n",
       "     }} else {{\n",
