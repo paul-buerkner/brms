@@ -27,6 +27,9 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Index the top category as `nthres + 1` in the Stan code of logit
+`hurdle_cumulative` models with a predicted `disc` or `cs()` terms, which
+stopped sampling with an index error. Thanks to Ahmed Eldeeb. (#1952)
 * Improve numerical consistency of COM-Poisson probabilities and means.
 Refit models where the previous approximation was inaccurate. (#1938)
 * Account for censoring and truncation in COM-Poisson `log_lik()`. (#1938)
