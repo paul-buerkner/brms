@@ -157,8 +157,8 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+#> Chain 1: Gradient evaluation took 5.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.51 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -175,9 +175,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.384 seconds (Warm-up)
-#> Chain 1:                0.659 seconds (Sampling)
-#> Chain 1:                2.043 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.386 seconds (Warm-up)
+#> Chain 1:                0.656 seconds (Sampling)
+#> Chain 1:                2.042 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -200,9 +200,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.272 seconds (Warm-up)
-#> Chain 2:                0.67 seconds (Sampling)
-#> Chain 2:                1.942 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.265 seconds (Warm-up)
+#> Chain 2:                0.654 seconds (Sampling)
+#> Chain 2:                1.919 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -225,9 +225,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.381 seconds (Warm-up)
-#> Chain 3:                0.659 seconds (Sampling)
-#> Chain 3:                2.04 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.374 seconds (Warm-up)
+#> Chain 3:                0.655 seconds (Sampling)
+#> Chain 3:                2.029 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -250,9 +250,9 @@ fit <- brm(time | cens(censored) ~ age + sex + (1 + age || patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.369 seconds (Warm-up)
-#> Chain 4:                0.659 seconds (Sampling)
-#> Chain 4:                2.028 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.364 seconds (Warm-up)
+#> Chain 4:                0.655 seconds (Sampling)
+#> Chain 4:                2.019 seconds (Total)
 #> Chain 4: 
 
 ## predicted responses

@@ -38,6 +38,19 @@
 
 #### Bug Fixes
 
+- Index the top category as `nthres + 1` in the Stan code of logit
+  `hurdle_cumulative` models with a predicted `disc` or
+  [`cs()`](https://paulbuerkner.com/brms/reference/cs.md) terms, which
+  stopped sampling with an index error. Thanks to Ahmed Eldeeb.
+  ([\#1952](https://github.com/paul-buerkner/brms/issues/1952))
+- Improve numerical consistency of COM-Poisson probabilities and means.
+  Refit models where the previous approximation was inaccurate.
+  ([\#1938](https://github.com/paul-buerkner/brms/issues/1938))
+- Account for censoring and truncation in COM-Poisson
+  [`log_lik()`](https://paulbuerkner.com/brms/reference/log_lik.brmsfit.md).
+  ([\#1938](https://github.com/paul-buerkner/brms/issues/1938))
+- Fix COM-Poisson CDF vectorization and support boundaries.
+  ([\#1938](https://github.com/paul-buerkner/brms/issues/1938))
 - Return `-Inf` rather than `NaN` from `log_sum_exp()` when both
   arguments are `-Inf`, matching Stan. This also affects
   [`nlf()`](https://paulbuerkner.com/brms/reference/brmsformula-helpers.md)
