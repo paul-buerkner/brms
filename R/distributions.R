@@ -978,6 +978,12 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
   }
   args <- nlist(q, mu, shape)
   args <- do_call(expand, args)
+  # q outside (0, Inf) has a known value but would give NaN below, via
+  # sqrt(shape / q) for q < 0 and 0 * Inf for q = Inf. Evaluate those entries
+  # at a placeholder and overwrite them afterwards (NA stays NA)
+  q_low <- !is.na(args$q) & args$q <= 0
+  q_high <- !is.na(args$q) & args$q == Inf
+  args$q[q_low | q_high] <- 1
   # mirrors inv_gaussian_lcdf() in inst/chunks/fun_inv_gaussian.stan; taking
   # the sum on the log scale avoids overflow of exp(2 * shape / mu)
   if (lower.tail) {
@@ -998,6 +1004,9 @@ pinv_gaussian <- function(q, mu = 1, shape = 1, lower.tail = TRUE,
       log_diff_exp(pmax(lhs, rhs), rhs)
     })
   }
+  # log probabilities of the entries outside the support
+  out[q_low] <- if (lower.tail) -Inf else 0
+  out[q_high] <- if (lower.tail) 0 else -Inf
   if (!log.p) {
     out <- exp(out)
   }
