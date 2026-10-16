@@ -26,10 +26,6 @@ must be nested in levels of the \code{by} variable.}
 \item{cor}{Logical. If \code{TRUE} (the default), group-level terms will be
 modelled as correlated.}
 
-\item{s2z}{Logical. If \code{TRUE}, use the experimental physical
-sum-to-zero parameterization described in the section
-\dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.}
-
 \item{id}{Optional character string. All group-level terms across the model
 with the same \code{id} will be modeled as correlated (if \code{cor} is
 \code{TRUE}). See \code{\link{brmsformula}} for more details.}
@@ -48,6 +44,10 @@ of the same grouping factor are modeled as independent of each other.}
 
 \item{dist}{Name of the distribution of the group-level effects. Supported
 options are \code{"gaussian"} and \code{"student"}.}
+
+\item{s2z}{Logical. If \code{TRUE}, use the experimental physical
+sum-to-zero parameterization described in the section
+\dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.
@@ -77,6 +77,7 @@ group-level coefficients must run after their reconstruction in generated
 quantities. Add such code with
 \code{stanvar(..., block = "genquant", position = "end")}.
 }
+
 \examples{
 \dontrun{
 # model using basic lme4-style formula

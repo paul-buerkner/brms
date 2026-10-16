@@ -462,7 +462,7 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
       slice <- stan_slice(threads)
       # Physical zero-sum deviations absorb their omitted means into theta.
       # Both likelihood paths must therefore use theta in place of public b.
-      beta <- if (s2z) stan_re_s2z_coef(bframe) else glue("b{sfx_b}{p}")
+      beta <- str_if(s2z, stan_re_s2z_coef(bframe), glue("b{sfx_b}{p}"))
       eta_fe <- glue(" + X{sfx_X}{p}{slice} * {beta}")
     }
     str_add(out$eta) <- eta_fe
