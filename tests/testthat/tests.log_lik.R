@@ -814,3 +814,148 @@ test_that("truncated log_lik uses inclusive lower bounds for integers", {
     dnorm(0.5, 0, 1, log = TRUE) - log(pnorm(1) - pnorm(0))
   )
 })
+
+test_that("ordinal logit log_lik is finite for improbable categories", {
+  # with the latent mean far from the thresholds the logit cdf rounded to 1,
+  # so a middle category was log_diff_exp(0, 0) = -Inf and sratio and cratio
+  # returned -Inf or NaN. The generated Stan code for cumulative uses
+  # log_inv_logit_diff() there. See #1192
+  ord_prep <- function(family, mu, Y, thres = c(0, 2), ...) {
+    prep <- structure(list(ndraws = 2L, nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(mu = matrix(mu, nrow = 2, ncol = 1), disc = 1, ...)
+    prep$thres <- list(
+      thres = matrix(thres, nrow = 2, ncol = length(thres), byrow = TRUE)
+    )
+    prep$family <- family
+    prep$data <- list(Y = Y)
+    prep
+  }
+  # log F(x) for the logistic cdf, never forming a probability near 1
+  log_F <- function(x) ifelse(x > 0, -log1p(exp(-x)), x - log1p(exp(x)))
+  # cumulative: P(Y = 2) = F(2 - mu) - F(-mu) = F(mu) - F(mu - 2)
+  log_p2 <- function(mu) log_F(mu) + log(-expm1(log_F(mu - 2) - log_F(mu)))
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -40, 2)),
+    rep(log_p2(-40), 2)
+  )
+  # still finite at mu = -30, but 1.1e-3 off
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -30, 2)),
+    rep(log_p2(-30), 2)
+  )
+  expect_equal(
+    brms:::log_lik_cumulative(1, ord_prep(cumulative("logit"), -40, 3)),
+    rep(log_F(-42), 2)
+  )
+  # P(Y = 1) is F(-40) for both at mu = 40; these returned NaN
+  expect_equal(
+    brms:::log_lik_sratio(1, ord_prep(sratio("logit"), 40, 1)),
+    rep(log_F(-40), 2)
+  )
+  expect_equal(
+    brms:::log_lik_cratio(1, ord_prep(cratio("logit"), 40, 1)),
+    rep(log_F(-40), 2)
+  )
+  # hurdle_cumulative has its own copy of the cumulative code for Y > 0
+  expect_equal(
+    brms:::log_lik_hurdle_cumulative(
+      1, ord_prep(hurdle_cumulative("logit"), -40, 2, hu = 0.2)
+    ),
+    rep(log(0.8) + log_p2(-40), 2)
+  )
+})
+
+test_that("ordinal log_lik handles extremes, single draws and two categories", {
+  ord_prep <- function(family, mu, Y, thres = c(0, 2), ndraws = 2L, ...) {
+    prep <- structure(list(ndraws = ndraws, nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(
+      mu = matrix(mu, nrow = ndraws, ncol = 1), disc = 1, ...
+    )
+    prep$thres <- list(
+      thres = matrix(thres, nrow = ndraws, ncol = length(thres), byrow = TRUE)
+    )
+    prep$family <- family
+    prep$data <- list(Y = Y)
+    prep
+  }
+  ll <- function(f, link, ...) {
+    get(paste0("log_lik_", f), asNamespace("brms"))(
+      1, ord_prep(get(f)(link), ...)
+    )
+  }
+  log_F <- function(x) ifelse(x > 0, -log1p(exp(-x)), x - log1p(exp(x)))
+  # past |eta| = 745 both logit CDFs are exactly 0 on the log scale, so the
+  # middle category of cumulative and hurdle_cumulative needs the upper tail
+  p2_upper <- log_F(-750) + log(-expm1(log_F(-752) - log_F(-750)))
+  expect_equal(ll("cumulative", "logit", -750, 2), rep(p2_upper, 2))
+  expect_equal(
+    ll("hurdle_cumulative", "logit", -750, 2, hu = 0.2),
+    rep(log(0.8) + p2_upper, 2)
+  )
+  # while in the lower tail the log CDFs themselves hold the difference
+  expect_equal(
+    ll("cumulative", "logit", 750, 2),
+    rep(-748 + log(-expm1(-2)), 2)
+  )
+  # the softit log CDF cancels near F = 1 long before it is subnormal, so the
+  # upper tail is needed well inside the representable range
+  expect_equal(
+    ll("cumulative", "softit", -1e8, 2, thres = c(0, 1)),
+    rep(log(1 / (1 + 1e8) - 1 / (2 + 1e8)), 2)
+  )
+  # sratio and cratio took the complement of a log probability that had
+  # rounded to 0
+  expect_equal(ll("sratio", "logit", 750, 1), rep(-750, 2))
+  expect_equal(ll("cratio", "logit", 750, 1), rep(-750, 2))
+  # their middle categories, against the definitions: sratio passes the
+  # thresholds below y and stops at the y-th, cratio continues past them
+  expect_equal(
+    ll("sratio", "logit", 0.3, 2, thres = c(-1, 0, 1)),
+    rep(log_F(1.3) + log_F(-0.3), 2)
+  )
+  expect_equal(
+    ll("cratio", "logit", 0.3, 3, thres = c(-1, 0, 1)),
+    rep(log_F(1.3) + log_F(0.3) + log_F(0.7), 2)
+  )
+  # the cloglog and softit CDFs were NaN or -Inf once exp(eta) underflowed;
+  # their log is eta there
+  expect_equal(ll("cumulative", "cloglog", 750, 1), rep(-750, 2))
+  expect_equal(ll("cumulative", "softit", 750, 1), rep(-750, 2))
+  # acat summed exp() of partial sums of eta, which overflowed above 709.78
+  # even for the most probable category
+  thres <- 0:8
+  p <- cumsum(c(0, 85 - thres))
+  expect_equal(
+    ll("acat", "logit", 85, 10, thres = thres),
+    rep(p[10] - max(p) - log(sum(exp(p - max(p)))), 2)
+  )
+  # and its other links multiplied probabilities; the categories still sum
+  # to one far out, and match the product form where that is accurate
+  for (link in c("probit", "cloglog")) {
+    lp <- sapply(1:4, function(y) ll("acat", link, 40, y, thres = c(-1, 0, 1)))
+    expect_true(all(is.finite(lp)))
+    expect_equal(rowSums(exp(lp)), c(1, 1))
+  }
+  q <- pnorm(0.5 - c(-1, 0, 1))
+  prod_form <- c(
+    prod(1 - q), q[1] * prod(1 - q[2:3]), prod(q[1:2]) * (1 - q[3]), prod(q)
+  )
+  lp <- sapply(1:4, function(y) {
+    ll("acat", "probit", 0.5, y, thres = c(-1, 0, 1))[1]
+  })
+  expect_equal(lp, log(prod_form / sum(prod_form)))
+  # one draw keeps the draws x thresholds matrix instead of a vector
+  for (f in c("sratio", "cratio", "acat")) {
+    expect_equal(
+      ll(f, "logit", 0.3, 3, thres = c(-1, 0, 1), ndraws = 1L),
+      ll(f, "logit", 0.3, 3, thres = c(-1, 0, 1))[1]
+    )
+  }
+  # with two categories the top one was indexed as a middle category
+  expect_equal(
+    ll("sratio", "logit", 0.4, 2, thres = 0.3), rep(log_F(0.4 - 0.3), 2)
+  )
+  expect_equal(
+    ll("cratio", "logit", 0.4, 2, thres = 0.3), rep(log_F(0.4 - 0.3), 2)
+  )
+})
