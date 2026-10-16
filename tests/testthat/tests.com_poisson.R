@@ -186,6 +186,7 @@ test_that("COM-Poisson hybrid remains consistent at its switching boundaries", {
 })
 
 test_that("compiled COM-Poisson values and gradients match independent references", {
+  skip_on_cran()
   skip_if_not_installed("cmdstanr")
   skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
   chunk <- system.file("chunks", "fun_com_poisson.stan", package = "brms")
