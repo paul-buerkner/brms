@@ -4,7 +4,8 @@
 #' using Stan for full Bayesian inference. A wide range of distributions
 #' and link functions are supported, allowing users to fit -- among others --
 #' linear, robust linear, count data, survival, response times, ordinal,
-#' zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
+#' zero-inflated, hurdle, extended-support beta regression, and even
+#' self-defined mixture models all in a
 #' multilevel context. Further modeling options include non-linear and
 #' smooth terms, auto-correlation structures, censored data, meta-analytic
 #' standard errors, and quite a few more. In addition, all parameters of the
@@ -31,7 +32,8 @@
 #'   \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link{set_prior}} or related functions and combined using the
-#'   \code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
+#'   \code{c} method or the \code{+} operator. See also
+#'   \code{\link[brms:default_prior.default]{default_prior}}
 #'   for more help.
 #' @param data2 A named \code{list} of objects containing data, which
 #'   cannot be passed via argument \code{data}. Required for some objects

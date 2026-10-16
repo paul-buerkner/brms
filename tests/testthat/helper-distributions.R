@@ -553,13 +553,7 @@ dist_registry_populate <- function(reset = TRUE) {
       )
     },
     q_ref = 2,
-    flags = list(
-      truncation = TRUE,
-      skip_moments = TRUE,
-      skip_rng_cdf = TRUE,
-      skip_d_sums = TRUE,
-      pq_elementwise = TRUE
-    )
+    flags = list(truncation = TRUE)
   ))
 
   dist_registry_add(dist_entry(

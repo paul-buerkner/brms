@@ -27,6 +27,10 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Improve numerical consistency of COM-Poisson probabilities and means.
+Refit models where the previous approximation was inaccurate. (#1938)
+* Account for censoring and truncation in COM-Poisson `log_lik()`. (#1938)
+* Fix COM-Poisson CDF vectorization and support boundaries. (#1938)
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)
