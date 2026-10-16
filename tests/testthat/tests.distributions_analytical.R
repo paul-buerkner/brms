@@ -90,8 +90,8 @@ test_that("dcom_poisson matches the mode-parameterized series", {
 test_that("com_poisson Stan functions match the R implementation", {
   # Regression test for #1927. The Stan chunk and the R density must agree
   # away from shape == 1, where the mode and classical parameterizations
-  # coincide. mu = 1.2 stays on the exact series, mu = 3.4 takes the
-  # asymptotic branch; y = 1 exercises the first numerator term of the CDF.
+  # coincide. Both mu values use direct summation; y = 1 exercises the
+  # first nonzero-count term of the CDF numerator.
   skip_if_not_installed("cmdstanr")
   skip_if(is.null(tryCatch(cmdstanr::cmdstan_path(), error = function(e) NULL)))
 

@@ -553,13 +553,7 @@ dist_registry_populate <- function(reset = TRUE) {
       )
     },
     q_ref = 2,
-    flags = list(
-      truncation = TRUE,
-      skip_moments = TRUE,
-      skip_rng_cdf = TRUE,
-      skip_d_sums = TRUE,
-      pq_elementwise = TRUE
-    )
+    flags = list(truncation = TRUE)
   ))
 
   dist_registry_add(dist_entry(
@@ -1442,6 +1436,11 @@ expect_pq_inverse <- function(entry, p = c(0.01, 0.1, 0.5, 0.85, 0.99),
     entry$type == "mixture" ||
     isTRUE(entry$flags$has_atoms)
 
+  # F(q - 1) is only needed for the discrete support check below. Evaluating
+  # it for continuous families can leave their support.
+  need_qm1 <- isTRUE(entry$flags$discrete_support)
+  F_qm1 <- NULL
+
   if (elementwise) {
     q <- vapply(p, function(pj) {
       as.numeric(call_dist(entry$q, pj, entry$params))[1]
@@ -1449,13 +1448,17 @@ expect_pq_inverse <- function(entry, p = c(0.01, 0.1, 0.5, 0.85, 0.99),
     F_q <- vapply(q, function(qj) {
       as.numeric(call_dist(entry$p, qj, entry$params))[1]
     }, numeric(1))
-    F_qm1 <- vapply(q, function(qj) {
-      as.numeric(call_dist(entry$p, qj - 1, entry$params))[1]
-    }, numeric(1))
+    if (need_qm1) {
+      F_qm1 <- vapply(q, function(qj) {
+        as.numeric(call_dist(entry$p, qj - 1, entry$params))[1]
+      }, numeric(1))
+    }
   } else {
     q <- as.numeric(call_dist(entry$q, p, entry$params))
     F_q <- as.numeric(call_dist(entry$p, q, entry$params))
-    F_qm1 <- as.numeric(call_dist(entry$p, q - 1, entry$params))
+    if (need_qm1) {
+      F_qm1 <- as.numeric(call_dist(entry$p, q - 1, entry$params))
+    }
   }
 
   if (use_discrete_def) {
