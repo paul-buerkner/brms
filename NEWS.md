@@ -101,6 +101,9 @@ matrices. (#1939)
 
 ### Other Changes
 
+* Compute intercept-only distributional parameters (e.g., `sigma ~ 1`)
+once as scalars in the Stan code rather than as vectors over observations,
+which reduces the cost per gradient evaluation of such models.
 * Improve sampling efficiency of `beta_binomial` models. (#1703)
 * Improve efficiency of non-factorizable log-likelihoods 
 for Student-t models thanks to Seth Axen. (#1820)
