@@ -144,8 +144,8 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
 #> Chain 2:  Elapsed Time: 0.018 seconds (Warm-up)
-#> Chain 2:                0.016 seconds (Sampling)
-#> Chain 2:                0.034 seconds (Total)
+#> Chain 2:                0.018 seconds (Sampling)
+#> Chain 2:                0.036 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).

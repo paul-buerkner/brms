@@ -54,8 +54,8 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 9e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
+#> Chain 1: Gradient evaluation took 1.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -72,15 +72,15 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.09 seconds (Warm-up)
-#> Chain 1:                0.032 seconds (Sampling)
-#> Chain 1:                0.122 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.099 seconds (Warm-up)
+#> Chain 1:                0.035 seconds (Sampling)
+#> Chain 1:                0.134 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 2: Gradient evaluation took 4e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -97,9 +97,9 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.102 seconds (Warm-up)
-#> Chain 2:                0.04 seconds (Sampling)
-#> Chain 2:                0.142 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.109 seconds (Warm-up)
+#> Chain 2:                0.043 seconds (Sampling)
+#> Chain 2:                0.152 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -122,9 +122,9 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.09 seconds (Warm-up)
-#> Chain 3:                0.034 seconds (Sampling)
-#> Chain 3:                0.124 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.098 seconds (Warm-up)
+#> Chain 3:                0.037 seconds (Sampling)
+#> Chain 3:                0.135 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -147,9 +147,9 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.098 seconds (Warm-up)
-#> Chain 4:                0.036 seconds (Sampling)
-#> Chain 4:                0.134 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.108 seconds (Warm-up)
+#> Chain 4:                0.039 seconds (Sampling)
+#> Chain 4:                0.147 seconds (Total)
 #> Chain 4: 
 
 lp <- log_posterior(fit)

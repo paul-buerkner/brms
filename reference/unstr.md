@@ -44,8 +44,8 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.00015 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.5 seconds.
+#> Chain 1: Gradient evaluation took 0.000105 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.05 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -63,14 +63,14 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
 #> Chain 1:  Elapsed Time: 0.788 seconds (Warm-up)
-#> Chain 1:                0.557 seconds (Sampling)
-#> Chain 1:                1.345 seconds (Total)
+#> Chain 1:                0.555 seconds (Sampling)
+#> Chain 1:                1.343 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 6.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.63 seconds.
+#> Chain 2: Gradient evaluation took 5.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.53 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -87,9 +87,9 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.714 seconds (Warm-up)
-#> Chain 2:                0.616 seconds (Sampling)
-#> Chain 2:                1.33 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.715 seconds (Warm-up)
+#> Chain 2:                0.617 seconds (Sampling)
+#> Chain 2:                1.332 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -112,9 +112,9 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.766 seconds (Warm-up)
-#> Chain 3:                0.605 seconds (Sampling)
-#> Chain 3:                1.371 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.767 seconds (Warm-up)
+#> Chain 3:                0.61 seconds (Sampling)
+#> Chain 3:                1.377 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -137,9 +137,9 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.794 seconds (Warm-up)
-#> Chain 4:                0.633 seconds (Sampling)
-#> Chain 4:                1.427 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.795 seconds (Warm-up)
+#> Chain 4:                0.64 seconds (Sampling)
+#> Chain 4:                1.435 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 
