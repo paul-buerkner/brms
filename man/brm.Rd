@@ -242,12 +242,19 @@ values. Can be set globally for the current \R session via the
 \code{"brms.algorithm"} option (see \code{\link{options}}).}
 
 \item{backend}{Character string naming the package to use as the backend for
-fitting the Stan model. Options are \code{"rstan"} (the default) or
-\code{"cmdstanr"}. Can be set globally for the current \R session via the
+fitting the Stan model. Options are \code{"rstan"} (the default),
+\code{"cmdstanr"}, or \code{"stanli"}. Can be set globally for the
+current \R session via the
 \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
 \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-respectively. Additionally a \code{"mock"} backend is available to make
+respectively. The \code{"stanli"} backend runs the model with the
+\pkg{stanli} package (\url{https://github.com/seantalts/stanli}), which
+needs no C++ toolchain and has no compilation step. It supports
+every \code{algorithm}; \code{"pathfinder"} runs a single path whatever
+\code{chains} is. Install its runtime once with
+\code{stanli::stanli_install()}.
+Additionally a \code{"mock"} backend is available to make
 testing \pkg{brms} and packages that depend on it easier.
 The \code{"mock"} backend does not actually do any fitting, it only checks
 the generated Stan code for correctness and then returns whatever is passed
@@ -324,7 +331,11 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 For \code{backend = "rstan"} the arguments are passed to
 \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 For \code{backend = "cmdstanr"} the arguments are passed to the
-\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
+\code{cmdstanr::sample} or \code{cmdstanr::variational} method.
+For \code{backend = "stanli"} the arguments are passed to
+\code{stanli::sample_model}, \code{stanli::variational_model},
+\code{stanli::pathfinder_model} or \code{stanli::laplace_model},
+depending on \code{algorithm}.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior

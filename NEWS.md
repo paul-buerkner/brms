@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Fit models with the new `stanli` backend (`backend = "stanli"`), which
+needs no C++ toolchain or compilation step.
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

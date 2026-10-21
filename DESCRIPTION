@@ -58,6 +58,7 @@ Suggests:
     testthat (>= 3.1.9),
     emmeans (>= 1.4.2),
     cmdstanr (>= 0.5.0),
+    stanli (>= 0.23.1),
     projpred (>= 2.0.0),
     priorsense (>= 1.0.0),
     shinystan (>= 2.4.0),
@@ -109,7 +110,8 @@ License: GPL-2
 URL: https://github.com/paul-buerkner/brms, https://discourse.mc-stan.org/, https://paulbuerkner.com/brms/
 BugReports: https://github.com/paul-buerkner/brms/issues
 Additional_repositories:
-    https://stan-dev.r-universe.dev/
+    https://stan-dev.r-universe.dev/,
+    https://seantalts.r-universe.dev/
 SystemRequirements: pngquant
 VignetteBuilder:
     knitr,
