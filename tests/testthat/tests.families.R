@@ -105,6 +105,17 @@ test_that("mixture returns expected results and errors", {
   expect_null(mixture(gaussian, gaussian)$refcat)
   expect_error(mixture(gaussian, gaussian, refcat = 1),
                "'refcat' can only be NULL or NA")
+  # group-level mixtures store the grouping variable name on the family
+  expect_null(mixture(gaussian, gaussian)$mixgr_var)
+  expect_false(brms:::has_mix_groups(mixture(gaussian, gaussian)))
+  mix_gr <- mixture(gaussian, gaussian, gr = "ID")
+  expect_equal(mix_gr$mixgr_var, "ID")
+  expect_true(brms:::has_mix_groups(mix_gr))
+  # the grouping factor defines the group indices and log_lik column order
+  dat <- data.frame(ID = c("b", "a", "b", "c"))
+  gr <- brms:::mixgr_factor(mix_gr, dat)
+  expect_equal(levels(gr), c("a", "b", "c"))
+  expect_equal(as.integer(gr), c(2L, 1L, 2L, 3L))
 })
 
 test_that("response interval is defined correctly", {
