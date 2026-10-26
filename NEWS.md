@@ -33,6 +33,13 @@ probability is representable, and stop it failing for two categories or a
 single draw. Thanks to Ahmed Eldeeb. (#1192)
 * Factor out the largest category in `log_softmax()`, which overflowed or
 underflowed for large linear predictors. Thanks to Ahmed Eldeeb. (#1951)
+* Index the top category as `nthres + 1` in the Stan code of logit
+`hurdle_cumulative` models with a predicted `disc` or `cs()` terms, which
+stopped sampling with an index error. Thanks to Ahmed Eldeeb. (#1952)
+* Improve numerical consistency of COM-Poisson probabilities and means.
+Refit models where the previous approximation was inaccurate. (#1938)
+* Account for censoring and truncation in COM-Poisson `log_lik()`. (#1938)
+* Fix COM-Poisson CDF vectorization and support boundaries. (#1938)
 * Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
 are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
 Thanks to Ahmed Eldeeb. (#1899)

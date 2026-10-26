@@ -89,17 +89,28 @@ posterior_smooths.btl <- function(object, fit, smooth, newdata = NULL,
     fit, newdata, re_formula = NA, internal = TRUE,
     check_response = FALSE, req_vars = req_vars
   )
-  draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
-  draws <- as_draws_matrix(fit)
-  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
-  prep_args <- nlist(x = object, draws, sdata, data = fit$data)
-  prep <- do_call(prepare_predictions, prep_args)
-  # select subset of smooth parameters and design matrices
   i <- which(smterms %in% smooth)[1]
   J <- which(smframe$termnum == i)
-  scs <- unlist(attr(prep$sm$fe$Xs, "smcols")[J])
+  p <- usc(combine_prefix(object))
+  scs <- unlist(attr(sdata[[paste0("Xs", p)]], "smcols")[J])
+  Xs_names <- attr(smframe, "Xs_names")[scs]
+  pars <- character()
+  if (length(Xs_names)) {
+    pars <- paste0("^bs?", p, "_", escape_all(Xs_names), "$")
+  }
+  for (i in J) {
+	for (j in seq_len(smframe$nbases[i])) {
+      pars <- c(pars, paste0("^s", p, "_", escape_all(smframe$label[i]), "_", j, "\\["))
+	}
+  }
+  # select relevant parameters before expanding draws
+  draw_ids <- validate_draw_ids(fit, draw_ids, ndraws)
+  draws <- as_draws_list(fit, variable = pars, regex = TRUE)
+  draws <- suppressMessages(subset_draws(draws, draw = draw_ids))
+  draws <- as_draws_matrix(draws)
+  prep_args <- nlist(x = object, draws, sdata, data = fit$data)
+  prep <- do_call(prepare_predictions, prep_args)
   prep$sm$fe$Xs <- prep$sm$fe$Xs[, scs, drop = FALSE]
-  prep$sm$fe$bs <- prep$sm$fe$bs[, scs, drop = FALSE]
   prep$sm$re <- prep$sm$re[J]
   prep$family <- brmsfamily("gaussian")
   predictor(prep, i = NULL)
