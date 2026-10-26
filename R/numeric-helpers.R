@@ -210,6 +210,16 @@ log1m_inv_logit <- function(x) {
   plogis(x, lower.tail = FALSE, log.p = TRUE)
 }
 
+# log(inv_cloglog(x)) = log(1 - exp(-exp(x))), which is x to double precision
+# below x = -37; exp(x) is subnormal below -708.4 and 0 below -745.13, which
+# made log1m_exp() of it inaccurate and then NaN
+log_inv_cloglog <- function(x) {
+  out <- log1m_exp(-exp(x))
+  small <- which(x < -37)
+  out[small] <- x[small]
+  out
+}
+
 scale_unit <- function(x, lb = min(x), ub = max(x)) {
   (x - lb) / (ub - lb)
 }
