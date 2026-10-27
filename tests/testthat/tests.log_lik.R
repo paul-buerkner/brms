@@ -814,3 +814,29 @@ test_that("truncated log_lik uses inclusive lower bounds for integers", {
     dnorm(0.5, 0, 1, log = TRUE) - log(pnorm(1) - pnorm(0))
   )
 })
+
+test_that("ordinal log_lik is finite for improbable categories", {
+  ord_prep <- function(family, mu, Y, thres = c(0, 2), ndraws = 2L) {
+    prep <- structure(list(ndraws = ndraws, nobs = 1L), class = "brmsprep")
+    prep$dpars <- list(mu = matrix(mu, nrow = ndraws, ncol = 1), disc = 1)
+    prep$thres <- list(
+      thres = matrix(thres, nrow = ndraws, ncol = length(thres), byrow = TRUE)
+    )
+    prep$family <- family
+    prep$data <- list(Y = Y)
+    prep
+  }
+  ll <- function(f, ...) {
+    get(paste0("log_lik_", f), asNamespace("brms"))(1, ord_prep(get(f)(), ...))
+  }
+  # these were -Inf, NaN or -Inf respectively
+  expect_equal(ll("cumulative", -750, 2), rep(-750 + log1p(-exp(-2)), 2))
+  expect_equal(ll("sratio", 750, 1), rep(-750, 2))
+  expect_equal(ll("acat", 85, 10, thres = 0:8), rep(0, 2))
+  # two categories and a single draw used to fail
+  expect_equal(ll("cratio", 0.4, 2, thres = 0.3), rep(log(plogis(0.1)), 2))
+  expect_equal(
+    ll("sratio", 0.3, 3, thres = c(-1, 0, 1), ndraws = 1L),
+    ll("sratio", 0.3, 3, thres = c(-1, 0, 1))[1]
+  )
+})

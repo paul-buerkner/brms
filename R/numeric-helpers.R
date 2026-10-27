@@ -198,12 +198,26 @@ log_expm1 <- function(x) {
   ifelse(out < Inf, out, x)
 }
 
+# log(inv_logit(x)) and log(1 - inv_logit(x)), as Stan's built-ins compute
+# them. The naive forms round inv_logit(x) to 1 from x = 36.74, which makes
+# the first exactly 0 and the second -Inf, and to 0 below x = -709.78. These
+# back the logit link in log_cdf() and log_ccdf()
 log_inv_logit <- function(x) {
-  log(inv_logit(x))
+  plogis(x, log.p = TRUE)
 }
 
 log1m_inv_logit <- function(x) {
-  log(1 - inv_logit(x))
+  plogis(x, lower.tail = FALSE, log.p = TRUE)
+}
+
+# log(inv_cloglog(x)) = log(1 - exp(-exp(x))), which is x to double precision
+# below x = -37; exp(x) is subnormal below -708.4 and 0 below -745.13, which
+# made log1m_exp() of it inaccurate and then NaN
+log_inv_cloglog <- function(x) {
+  out <- log1m_exp(-exp(x))
+  small <- which(x < -37)
+  out[small] <- x[small]
+  out
 }
 
 scale_unit <- function(x, lb = min(x), ub = max(x)) {
@@ -220,10 +234,22 @@ log_softmax <- function(x) {
     x <- matrix(x, nrow = 1)
     ndim <- length(dim(x))
   }
-  dim_noncat <- dim(x)[-ndim]
-  marg_noncat <- seq_along(dim(x))[-ndim]
-  catsum <- log(array(apply(exp(x), marg_noncat, sum), dim = dim_noncat))
-  sweep(x, marg_noncat, catsum, "-")
+  dims <- dim(x)
+  dnames <- dimnames(x)
+  ncat <- dims[ndim]
+  # one row per cell of the other dimensions; column-major storage keeps
+  # each category contiguous, so this is a reshape rather than a copy
+  dim(x) <- c(prod(dims[-ndim]), ncat)
+  # factoring out the largest category keeps exp() from overflowing and
+  # underflowing; a non-finite maximum is left in place, since shifting by
+  # it would turn the other categories into NaN
+  xmax <- matrixStats::rowMaxs(x)
+  xmax[!is.finite(xmax)] <- 0
+  x <- x - xmax
+  x <- x - log(rowSums(exp(x)))
+  dim(x) <- dims
+  dimnames(x) <- dnames
+  x
 }
 
 softmax <- function(x) {
@@ -249,7 +275,12 @@ inv_softit <- function(x) {
 # inspired by inv_logit but with softplus instead of exp
 log_inv_softit <- function(x) {
   y <- log1p_exp(x)
-  log(y) - log1p(y)
+  out <- log(y) - log1p(y)
+  # this is x to double precision below x = -37, while log1p_exp(x) loses
+  # precision once exp(x) is subnormal and is 0 below x = -745.13
+  small <- which(x < -37)
+  out[small] <- x[small]
+  out
 }
 
 # inspired by inv_logit but with softplus instead of exp

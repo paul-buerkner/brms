@@ -750,10 +750,8 @@ log_lik_hurdle_cumulative <- function(i, prep) {
     out <- log_ccdf(eta[, y - 1L], prep$family$link) +
       dbinom(0, size = 1, prob = hu, log = TRUE)
   } else {
-    out <- log_diff_exp(
-      log_cdf(eta[, y], prep$family$link),
-      log_cdf(eta[, y - 1L], prep$family$link)
-    ) + dbinom(0, size = 1, prob = hu, log = TRUE)
+    out <- log_diff_cdf(eta[, y], eta[, y - 1L], prep$family$link) +
+      dbinom(0, size = 1, prob = hu, log = TRUE)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -891,10 +889,7 @@ log_lik_cumulative <- function(i, prep) {
   } else if (y == nthres + 1L) {
     out <- log_ccdf(eta[, y - 1L], prep$family$link)
   } else {
-    out <- log_diff_exp(
-      log_cdf(eta[, y], prep$family$link),
-      log_cdf(eta[, y - 1L], prep$family$link)
-    )
+    out <- log_diff_cdf(eta[, y], eta[, y - 1L], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -906,17 +901,18 @@ log_lik_sratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
-    function(k) log_ccdf(eta[, k], prep$family$link)
-  )
-  if (y == 1L) {
-    out <- log1m_exp(q[, 1L])
-  } else if (y == 2L) {
-    out <- log1m_exp(q[, 2L]) + q[, 1L]
-  } else if (y == nthres + 1L) {
-    out <- rowSums(q)
-  } else {
-    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
+  # log probabilities of passing each threshold below y. The first category
+  # passes none, and the p*() link functions drop the dimensions of an empty
+  # matrix, so it is skipped rather than summed
+  out <- 0
+  if (y > 1L) {
+    q <- eta[, seq_len(min(y - 1L, nthres)), drop = FALSE]
+    out <- rowSums(log_ccdf(q, prep$family$link))
+  }
+  if (y <= nthres) {
+    # and of stopping at the y-th, taken from the log CDF directly rather
+    # than as the complement of a log probability that rounds to 0
+    out <- out + log_cdf(eta[, y], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -928,17 +924,17 @@ log_lik_cratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
-    function(k) log_cdf(eta[, k], prep$family$link)
-  )
-  if (y == 1L) {
-    out <- log1m_exp(q[, 1L])
-  } else if (y == 2L) {
-    out <- log1m_exp(q[, 2L]) + q[, 1L]
-  } else if (y == nthres + 1L) {
-    out <- rowSums(q)
-  } else {
-    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
+  # log probabilities of continuing past each threshold below y, skipping
+  # the empty product for the first category as in log_lik_sratio()
+  out <- 0
+  if (y > 1L) {
+    q <- eta[, seq_len(min(y - 1L, nthres)), drop = FALSE]
+    out <- rowSums(log_cdf(q, prep$family$link))
+  }
+  if (y <= nthres) {
+    # and of stopping at the y-th, taken from the log CCDF directly rather
+    # than as the complement of a log probability that rounds to 0
+    out <- out + log_ccdf(eta[, y], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -950,29 +946,26 @@ log_lik_acat <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  # TODO: check if computation can be made more numerically stable
   if (prep$family$link == "logit") {
-    # more efficient computation for logit link
-    q <- sapply(1:nthres, function(k) eta[, k])
-    p <- cbind(rep(0, nrow(eta)), q[, 1],
-               matrix(0, nrow = nrow(eta), ncol = nthres - 1))
-    if (nthres > 1L) {
-      p[, 3:(nthres + 1)] <-
-        sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
+    # more efficient computation for logit link: the log category
+    # probabilities are a log-softmax of the cumulative sums of eta
+    p <- matrix(0, nrow = nrow(eta), ncol = nthres + 1)
+    for (k in seq_len(nthres)) {
+      p[, k + 1] <- p[, k] + eta[, k]
     }
-    out <- p[, y] - log(rowSums(exp(p)))
+    out <- log_softmax(p)[, y]
   } else {
-    q <- sapply(1:nthres, function(k)
-      inv_link(eta[, k], prep$family$link))
-    p <- cbind(apply(1 - q[, 1:nthres], 1, prod),
-               matrix(0, nrow = nrow(eta), ncol = nthres))
-    if (nthres > 1L) {
-      p[, 2:nthres] <- sapply(2:nthres, function(k)
-        apply(as.matrix(q[, 1:(k - 1)]), 1, prod) *
-          apply(as.matrix(1 - q[, k:nthres]), 1, prod))
+    # category k is proportional to prod(q[j < k]) * prod(1 - q[j >= k]),
+    # with q the inverse link of eta, so its log is a sum of log CDFs and
+    # log CCDFs; the products themselves underflow
+    lq <- log_cdf(eta, prep$family$link)
+    l1mq <- log_ccdf(eta, prep$family$link)
+    p <- matrix(0, nrow = nrow(eta), ncol = nthres + 1)
+    for (k in seq_len(nthres + 1)) {
+      p[, k] <- rowSums(lq[, seq_len(nthres) < k, drop = FALSE]) +
+        rowSums(l1mq[, seq_len(nthres) >= k, drop = FALSE])
     }
-    p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
-    out <- log(p[, y]) - log(apply(p, 1, sum))
+    out <- log_softmax(p)[, y]
   }
   log_lik_weight(out, i = i, prep = prep)
 }

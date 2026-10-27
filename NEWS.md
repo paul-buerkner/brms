@@ -27,6 +27,12 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Evaluate `log_lik` of ordinal models on the log scale throughout, so
+improbable categories no longer give `-Inf` or `NaN` where their log
+probability is representable, and stop it failing for two categories or a
+single draw. Thanks to Ahmed Eldeeb. (#1192)
+* Factor out the largest category in `log_softmax()`, which overflowed or
+underflowed for large linear predictors. Thanks to Ahmed Eldeeb. (#1951)
 * Index the top category as `nthres + 1` in the Stan code of logit
 `hurdle_cumulative` models with a predicted `disc` or `cs()` terms, which
 stopped sampling with an index error. Thanks to Ahmed Eldeeb. (#1952)

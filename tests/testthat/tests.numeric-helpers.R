@@ -48,3 +48,13 @@ test_that("log_diff_exp follows the edge cases of Stan", {
   expect_true(is.nan(brms:::log_diff_exp(Inf, Inf)))
   expect_equal(brms:::log_diff_exp(0, -Inf), 0)
 })
+
+test_that("the log-scale helpers stay exact in the tails", {
+  # each formed a probability or exp() before taking the log
+  expect_equal(brms:::log_inv_logit(-800), -800)
+  expect_equal(brms:::log1m_inv_logit(800), -800)
+  expect_equal(brms:::log_inv_cloglog(-800), -800)
+  expect_equal(brms:::log_inv_softit(-800), -800)
+  x <- matrix(c(0, 800, 801), nrow = 1)
+  expect_equal(brms:::log_softmax(x), x - 801 - log1p(exp(-1)))
+})
