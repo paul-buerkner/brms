@@ -1909,7 +1909,7 @@ test_that("sparse matrix multiplication is applied correctly", {
     "mu += csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b);"
   )
   expect_match2(scode,
-    "uX_sigma[size(csr_extract_u(X_sigma))] = csr_extract_u(X_sigma);"
+    "array[size(csr_extract_u(X_sigma))] int uX_sigma = csr_extract_u(X_sigma);"
   )
   expect_match2(scode,
     paste0(

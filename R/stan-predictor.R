@@ -306,7 +306,7 @@ stan_fe <- function(bframe, prior, stanvars, threads, primitive,
         " = csr_extract_w(X{p});\n",
         "  array[size(csr_extract_v(X{p}))] int vX{p}",
         " = csr_extract_v(X{p});\n",
-        "  int uX{p}[size(csr_extract_u(X{p}))]",
+        "  array[size(csr_extract_u(X{p}))] int uX{p}",
         " = csr_extract_u(X{p});\n"
       )
     }
