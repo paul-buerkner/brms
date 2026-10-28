@@ -233,6 +233,21 @@ test_that("projpred methods can be run", suppressWarnings({
   # expect_is(vs, "vsel")
 }))
 
+test_that("projpred K-fold reference models use the 'dis' of their refit",
+          suppressWarnings({
+  fit <- brm(count ~ zAge + zBase, data = epilepsy, refresh = 0)
+  # the refit without the first 20 rows stands in for a K-fold refit
+  fit_fold <- update(fit, newdata = epilepsy[-(1:20), ], refresh = 0)
+  sigma_fold <- as.data.frame(fit_fold, variable = "sigma")$sigma
+
+  ref <- projpred::get_refmodel(fit)
+  expect_equal(ref$cvrefbuilder(fit_fold)$dis, sigma_fold)
+
+  dis_user <- rep(1, ndraws(fit))
+  ref_user <- projpred::get_refmodel(fit, dis = dis_user)
+  expect_equal(ref_user$cvrefbuilder(fit_fold)$dis, dis_user)
+}))
+
 test_that("alternative algorithms can be used", suppressWarnings({
   fit <- brm(
     count ~ zBase, data = epilepsy,
