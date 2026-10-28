@@ -124,6 +124,9 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # LHS should only contain the response variable
   formula[[2]] <- bterms$respform[[2]]
 
+  # keep the user's `dis` (possibly `NULL`) for the K-fold refits, so that
+  # each refit computes its default `dis` from its own draws
+  dis_user <- dis
   # projpred requires the dispersion parameter if present
   if (is.null(dis) && !latent) {
     if (family$family == "gaussian") {
@@ -192,7 +195,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     } else {
       brms_seed_k <- brms_seed + cvfit$projpred_k
     }
-    projpred::get_refmodel(cvfit, resp = resp, dis = dis, latent = latent,
+    projpred::get_refmodel(cvfit, resp = resp, dis = dis_user, latent = latent,
                            brms_seed = brms_seed_k,
                            called_from_cvrefbuilder = TRUE, ...)
   }
