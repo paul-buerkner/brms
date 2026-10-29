@@ -20,6 +20,11 @@
   robust = FALSE,
   probs = c(0.025, 0.975),
   output = "random",
+  q = NULL,
+  p = NULL,
+  lower.tail = TRUE,
+  log.p = FALSE,
+  log = FALSE,
   ...
 )
 }
@@ -85,6 +90,27 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \code{"random"} (the default), \code{"probability"}, \code{"pit"},
 \code{"density"}, or \code{"quantile"}. See Details for more
 information.}
+
+\item{q}{Optional values at which to evaluate probabilities, PIT
+values, or densities. Only used if \code{output} is
+\code{"probability"}, \code{"pit"}, or \code{"density"}.
+Defaults to the observed responses. See Details.}
+
+\item{p}{Probabilities at which to evaluate quantiles. Only used
+and required if \code{output = "quantile"}.}
+
+\item{lower.tail}{Logical; If \code{TRUE} (default), return
+\eqn{P(X \le x)} or the corresponding lower-tail quantiles.
+Else, return \eqn{P(X > x)} or upper-tail quantiles.
+Only used if \code{output} is \code{"probability"}, \code{"pit"},
+or \code{"quantile"}.}
+
+\item{log.p}{Logical; If \code{TRUE}, probabilities are given and
+returned on the log scale. Only used if \code{output} is
+\code{"probability"}, \code{"pit"}, or \code{"quantile"}.}
+
+\item{log}{Logical; If \code{TRUE}, densities are returned on the
+log scale. Only used if \code{output = "density"}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

@@ -87,6 +87,18 @@
 #'   outputs other than \code{"random"} yet; requesting an unsupported
 #'   combination raises an error.
 #'
+#'   Cox predictions require fits from brms 2.23.2 or later with their stored
+#'   baseline spline. Beyond its upper boundary, \code{tail = "constant"}
+#'   (default) holds the baseline hazard constant; \code{"loglinear"} extends
+#'   log cumulative hazard linearly in log time, matching its boundary slope.
+#'   Both are extrapolation assumptions, not information identified by the
+#'   fitted spline. With \code{tail = "none"}, random draws and quantiles
+#'   beyond this boundary are right-censored there and encoded as negative
+#'   times. Use \code{\link{cox_decode}} to recover times and event indicators;
+#'   ordinary summaries of signed values are not survival-time summaries.
+#'   CDFs and densities beyond the boundary are undefined with no tail.
+#'   Censoring-aware plotting remains external to brms.
+#'
 #'   For truncated discrete models only: In the absence of any general
 #'   algorithm to sample from truncated discrete distributions, rejection
 #'   sampling is applied in this special case. This means that values are
@@ -319,7 +331,9 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
                             sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
                             robust = FALSE, probs = c(0.025, 0.975),
-                            output = "random", ...) {
+                            output = "random", q = NULL, p = NULL,
+                            lower.tail = TRUE, log.p = FALSE, log = FALSE,
+                            ...) {
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
@@ -329,7 +343,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   posterior_predict(
     prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs, output = output
+    probs = probs, output = output, q = q, p = p,
+    lower.tail = lower.tail, log.p = log.p, log = log
   )
 }
 
@@ -810,9 +825,28 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
   out
 }
 
-posterior_predict_cox <- function(i, prep, output = "random", ...) {
-  stop2("Cannot sample from the posterior predictive ",
-        "distribution for family 'cox'.")
+posterior_predict_cox <- function(i, prep, output = "random", q = NULL, ...) {
+  check_cox_prep(prep)
+  if (output %in% c("probability", "pit", "density") &&
+      is.null(q) && (is.null(prep$data$Y[i]) || is.na(prep$data$Y[i]))) {
+    stop2("Supply 'q' when no observed response is available.")
+  }
+  sbhaz <- prep$bhaz$sbhaz[[prep$bhaz$Jgrbhaz[i]]]
+  args <- list(
+    mu = get_dpar(prep, "mu", i), sbhaz = sbhaz,
+    basis = prep$bhaz$basis, tail = prep$bhaz$tail
+  )
+  if (any(!is.finite(args$mu) | args$mu <= 0)) {
+    stop2("Cox predictions require finite positive values of 'mu'.")
+  }
+  if (is.null(prep$data$lb) && is.null(prep$data$ub)) {
+    return(do_call(predict_continuous_helper,
+      c(list(i = i, prep = prep, output = output, distribution = "cox"),
+        args, list(q = q, ...))
+    ))
+  }
+  # Generic pp helpers subtract CDFs, which saturate for large Cox hazards.
+  posterior_predict_cox_trunc(i, prep, output, args, q = q, ...)
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, output = "random", ...) {

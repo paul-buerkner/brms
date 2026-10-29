@@ -1392,27 +1392,39 @@ dist_registry_populate <- function(reset = TRUE) {
     ))
   }
 
+  cox_basis <- if (requireNamespace("splines2", quietly = TRUE)) {
+    brms:::bhaz_basis_matrix(seq(0, 4, length.out = 30),
+      list(df = 5, intercept = TRUE, Boundary.knots = c(0, 4)))
+  } else {
+    NULL
+  }
   dist_registry_add(dist_entry(
     name = "cox",
     backend = "cox",
     type = "continuous",
-    d = NULL,
-    p = NULL,
-    q = NULL,
-    r = NULL,
-    params = list(),
+    d = brms:::dcox,
+    p = brms:::pcox,
+    q = brms:::qcox,
+    r = brms:::rcox,
+    params = list(mu = 2, sbhaz = matrix(0.2, 1, 5), basis = cox_basis),
     support = c(0, Inf),
-    pp_fun = NULL,
-    prep_builder = NULL,
-    outputs = character(0),
-    flags = list(
-      stub = TRUE,
-      truncation = FALSE,
-      skip_integrate = TRUE,
-      skip_moments = TRUE,
-      skip_rng_cdf = TRUE,
-      skip_pdf_fd = TRUE
-    )
+    ref = list(requires = "splines2"),
+    pp_fun = brms:::posterior_predict_cox,
+    prep_builder = function(ns = 25, nobs = 4, seed = NULL, ...) {
+      prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+      prep$family <- cox()
+      prep$family$fun <- "cox"
+      prep$dpars <- list(mu = matrix(2, ns, nobs))
+      prep$data <- list(Y = rep(1, nobs))
+      prep$bhaz <- list(
+        basis = cox_basis, sbhaz = list(matrix(0.2, ns, 5)),
+        Jgrbhaz = rep(1L, nobs), version = package_version("2.23.2"),
+        tail = "constant"
+      )
+      prep
+    },
+    q_ref = 1,
+    flags = list(numeric_q = TRUE, skip_moments = TRUE)
   ))
 
   invisible(.dist_registry_env$entries)

@@ -151,6 +151,18 @@ Besides random draws, related quantities such as CDF or PIT
   outputs other than \code{"random"} yet; requesting an unsupported
   combination raises an error.
 
+  Cox predictions require fits from brms 2.23.2 or later with their stored
+  baseline spline. Beyond its upper boundary, \code{tail = "constant"}
+  (default) holds the baseline hazard constant; \code{"loglinear"} extends
+  log cumulative hazard linearly in log time, matching its boundary slope.
+  Both are extrapolation assumptions, not information identified by the
+  fitted spline. With \code{tail = "none"}, random draws and quantiles
+  beyond this boundary are right-censored there and encoded as negative
+  times. Use \code{\link{cox_decode}} to recover times and event indicators;
+  ordinary summaries of signed values are not survival-time summaries.
+  CDFs and densities beyond the boundary are undefined with no tail.
+  Censoring-aware plotting remains external to brms.
+
   For truncated discrete models only: In the absence of any general
   algorithm to sample from truncated discrete distributions, rejection
   sampling is applied in this special case. This means that values are

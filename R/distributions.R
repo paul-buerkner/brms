@@ -1922,13 +1922,26 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
 }
 
 # density of the cox proportional hazards model
-# @param x currently ignored as the information is passed
-#   via 'bhaz' and 'cbhaz'. Before exporting the cox distribution
-#   functions, this needs to be refactored so that x is actually used
+# The precomputed bhaz/cbhaz route is retained for existing log_lik callers;
+# the time-aware prediction route uses the stored basis and simplex draws.
 # @param mu positive location parameter
 # @param bhaz baseline hazard
 # @param cbhaz cumulative baseline hazard
-dcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
+                 sbhaz = NULL, basis = NULL, tail = "constant",
+                 lb = NULL, ub = NULL) {
+  if (!is.null(basis)) {
+    H <- mu * bhaz_at(x, sbhaz, basis, tail, integrate = TRUE)
+    out <- log(mu) + log(bhaz_at(x, sbhaz, basis, tail)) - H
+    if (!is.null(lb) || !is.null(ub)) {
+      tr <- cox_truncation(mu, sbhaz, basis, tail, lb, ub)
+      out <- log(mu) + log(bhaz_at(x, sbhaz, basis, tail)) -
+        (H - tr$Hlo) - log1m_prob(-tr$width)
+      out[which(H < tr$Hlo | H > tr$Hup)] <- -Inf
+    }
+    out[which(H == Inf)] <- -Inf
+    return(if (log) out else exp(out))
+  }
   out <- hcox(x, mu, bhaz, cbhaz, log = TRUE) +
     pcox(x, mu, bhaz, cbhaz, lower.tail = FALSE, log.p = TRUE)
   if (!log) {
@@ -1938,7 +1951,11 @@ dcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
 }
 
 # hazard function of the cox model
-hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
+hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
+                 sbhaz = NULL, basis = NULL, tail = "constant") {
+  if (!is.null(basis)) {
+    bhaz <- bhaz_at(x, sbhaz, basis, tail)
+  }
   out <- log(bhaz) + log(mu)
   if (!log) {
     out <- exp(out)
@@ -1947,7 +1964,25 @@ hcox <- function(x, mu, bhaz, cbhaz, log = FALSE) {
 }
 
 # distribution function of the cox model
-pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
+pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL, lower.tail = TRUE,
+                 log.p = FALSE, sbhaz = NULL, basis = NULL, tail = "constant",
+                 lb = NULL, ub = NULL) {
+  if (!is.null(basis)) {
+    H <- mu * bhaz_at(q, sbhaz, basis, tail, integrate = TRUE)
+    if (is.null(lb) && is.null(ub)) {
+      out <- if (lower.tail) log1m_prob(-H) else -H
+    } else {
+      tr <- cox_truncation(mu, sbhaz, basis, tail, lb, ub)
+      a <- pmin(pmax(H - tr$Hlo, 0), tr$width)
+      out <- if (lower.tail) {
+        log1m_prob(-a) - log1m_prob(-tr$width)
+      } else {
+        -a + log1m_prob(-(tr$width - a)) - log1m_prob(-tr$width)
+      }
+      out[which(H >= tr$Hup)] <- if (lower.tail) 0 else -Inf
+    }
+    return(if (log.p) out else exp(out))
+  }
   log_surv <- -cbhaz * mu
   if (lower.tail) {
     if (log.p) {
@@ -1963,6 +1998,52 @@ pcox <- function(q, mu, bhaz, cbhaz, lower.tail = TRUE, log.p = FALSE) {
     }
   }
   out
+}
+
+qcox <- function(p, mu, sbhaz, basis, tail = "constant",
+                 lower.tail = TRUE, log.p = FALSE, lb = NULL, ub = NULL) {
+  tail <- match.arg(tail, c("constant", "loglinear", "none"))
+  target <- qexp(p, lower.tail = lower.tail, log.p = log.p)
+  if (nrow(sbhaz) == 1L) {
+    sbhaz <- sbhaz[rep(1L, max(length(p), length(mu))), , drop = FALSE]
+  }
+  if (!length(p) %in% c(1L, nrow(sbhaz)) ||
+      !length(mu) %in% c(1L, nrow(sbhaz))) {
+    stop2("Probabilities and 'mu' must have length 1 or the number of draws.")
+  }
+  target <- rep_len(target, nrow(sbhaz))
+  scale <- pmin(target, 1)
+  if (!is.null(lb) || !is.null(ub)) {
+    tr <- cox_truncation(mu, sbhaz, basis, tail, lb, ub)
+    increment <- -log1m_prob(
+      log1m_prob(-target) + log1m_prob(-tr$width)
+    )
+    # Survival-scale addition retains information in both extreme tails.
+    large <- which(target > log(2) & tr$width > log(2))
+    increment[large] <- -log_sum_exp(
+      -tr$width[large], -target[large] + log1m_prob(-tr$width[large])
+    )
+    scale <- pmin(increment, -expm1(-tr$width))
+    target <- tr$Hlo + increment
+  }
+  out <- qcox_baseline(target / mu, sbhaz, basis, tail,
+                       tol = 1e-10 * scale / mu, lb = lb, ub = ub)
+  take <- which(out >= 0)
+  if (!is.null(lb)) out[take] <- pmax(out[take], rep_len(lb, length(out))[take])
+  if (!is.null(ub)) out[take] <- pmin(out[take], rep_len(ub, length(out))[take])
+  out
+}
+
+rcox <- function(n, mu, sbhaz, basis, tail = "constant",
+                 lb = NULL, ub = NULL) {
+  n <- check_n_rdist(n, mu, sbhaz)
+  if (nrow(sbhaz) == 1L) {
+    sbhaz <- sbhaz[rep(1L, n), , drop = FALSE]
+  }
+  if (n != nrow(sbhaz)) {
+    stop2("'n' must match the number of baseline draws.")
+  }
+  qcox(runif(n), mu, sbhaz, basis, tail, lb = lb, ub = ub)
 }
 
 # ensures that posterior_predict and friends can safely find these functions

@@ -1,5 +1,24 @@
 context("Native Cox predictions")
 
+cox_test_prep <- function(ns = 20L, nobs = 3L, tail = "constant") {
+  basis <- brms:::bhaz_basis_matrix(
+    seq(0, 4, length.out = 30),
+    list(df = 5, intercept = TRUE, Boundary.knots = c(0, 4))
+  )
+  sb <- matrix(rep(c(0.1, 0.15, 0.2, 0.25, 0.3), each = ns), ns)
+  fam <- cox()
+  fam$fun <- "cox"
+  structure(list(
+    ndraws = ns, nobs = nobs, family = fam,
+    dpars = list(mu = matrix(seq(0.5, 3, length.out = ns), ns, nobs)),
+    data = list(Y = as.array(rep(1, nobs))),
+    bhaz = list(
+      basis = basis, sbhaz = list(sb), Jgrbhaz = rep(1L, nobs),
+      version = package_version("2.23.2"), tail = tail
+    )
+  ), class = "brmsprep")
+}
+
 test_that("Cox Stan data use response-specific names", {
   skip_if_not_installed("splines2")
   dat <- data.frame(y = 1:10, y2 = 2:11, x = seq_len(10))
@@ -22,6 +41,7 @@ test_that("Cox Stan data use response-specific names", {
   )
   expect_equal(prep$resps$y$bhaz$basis, fit$basis$resps$y$bhaz$basis_matrix)
   expect_equal(prep$resps$y2$bhaz$basis, fit$basis$resps$y2$bhaz$basis_matrix)
+  expect_equal(dim(posterior_predict(prep)), c(3L, 10L, 2L))
 })
 
 test_that("Cox preparation preserves singleton and absent strata", {
@@ -60,4 +80,181 @@ test_that("Unchecked Cox responses do not extrapolate the spline", {
   ))
   expect_true(all(is.na(sdata$Y)))
   expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 0))
+})
+
+test_that("Cox preparation uses native links and nonlinear parameter dispatch", {
+  skip_if_not_installed("splines2")
+  dat <- data.frame(y = 1:10, x = seq_len(10))
+  for (link in c("log", "identity", "softplus", "squareplus")) {
+    fit <- brm(y ~ 0 + Intercept, dat, family = cox(link), empty = TRUE)
+    frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+    pars <- c("b_Intercept", paste0("sbhaz[", 1:5, "]"))
+    draws <- posterior::as_draws_matrix(
+      matrix(rep(c(2, rep(0.2, 5)), each = 3), 3,
+             dimnames = list(NULL, pars))
+    )
+    prep <- prepare_predictions(
+      frame, draws = draws, sdata = standata(fit),
+      cox_version = fit$version$brms, tail = "constant"
+    )
+    expect_equal(brms:::get_dpar(prep, "mu"),
+                 matrix(brms:::inv_link(2, link), 3, 10))
+    expect_true(all(is.finite(posterior_predict(prep))))
+  }
+  fit <- brm(bf(y ~ exp(a), a ~ 1, nl = TRUE), dat,
+             family = cox(), empty = TRUE)
+  frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+  pars <- c("b_a_Intercept", paste0("sbhaz[", 1:5, "]"))
+  draws <- posterior::as_draws_matrix(
+    matrix(rep(c(0.2, rep(0.2, 5)), each = 3), 3,
+           dimnames = list(NULL, pars))
+  )
+  prep <- prepare_predictions(
+    frame, draws = draws, sdata = standata(fit),
+    cox_version = fit$version$brms, tail = "constant"
+  )
+  expect_equal(prep$bhaz$basis, fit$basis$bhaz$basis_matrix)
+  expect_true(all(is.finite(posterior_predict(prep))))
+})
+
+test_that("Cox inversion and tails agree with independent forward evaluation", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  sb <- prep$bhaz$sbhaz[[1]]
+  basis <- prep$bhaz$basis
+  mu <- prep$dpars$mu[, 1]
+  probs <- seq(0.01, 0.99, length.out = prep$ndraws)
+  for (tail in c("constant", "loglinear")) {
+    q <- brms:::qcox(probs, mu, sb, basis, tail)
+    expect_equal(brms:::pcox(q, mu, sbhaz = sb, basis = basis, tail = tail),
+                 probs, tolerance = 1e-8)
+    at <- c(0.2, 1, 2, 3.9)
+    for (t in at) {
+      expected <- mu * as.vector(sb %*%
+        as.vector(brms:::bhaz_basis_matrix(t, basis = basis, integrate = TRUE)))
+      expect_equal(brms:::pcox(t, mu, sbhaz = sb, basis = basis,
+                               log.p = TRUE, lower.tail = FALSE), -expected)
+    }
+    f <- function(x) brms:::dcox(
+      x, mu = 1, sbhaz = sb[1, , drop = FALSE], basis = basis, tail = tail
+    )
+    expect_equal(integrate(f, 0, Inf)$value, 1, tolerance = 1e-6)
+  }
+  q <- brms:::qcox(0.99, mu, sb, basis, "none")
+  expect_true(all(q < 0))
+  expect_equal(cox_decode(q)$time, rep(4, length(mu)))
+  expect_true(all(is.na(brms:::pcox(
+    5, mu, sbhaz = sb, basis = basis, tail = "none"
+  ))))
+  expect_equal(brms:::qcox(0, mu, sb, basis), rep(0, length(mu)))
+  expect_true(all(is.infinite(brms:::qcox(1, mu, sb, basis))))
+  expect_warning(q <- brms:::qcox(c(-0.1, NA, rep(0.5, 18)), mu, sb, basis),
+                 "NaNs produced")
+  expect_true(all(is.na(q[1:2])))
+  expect_equal(brms:::dcox(Inf, mu, sbhaz = sb, basis = basis,
+                           tail = "loglinear"), rep(0, length(mu)))
+  rate <- 1 / as.vector(brms:::bhaz_basis_matrix(4, basis = basis))[5] / 4
+  flat <- matrix(c(rep((1 - rate) / 4, 4), rate), 1)
+  expect_equal(brms:::hcox(Inf, 1, sbhaz = flat, basis = basis,
+                           tail = "loglinear"), 0.25)
+})
+
+test_that("Native Cox outputs and stable truncation use the same distribution", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  pred <- posterior_predict(prep)
+  expect_equal(dim(pred), c(20L, 3L))
+  expect_true(all(pred >= 0))
+  for (output in c("probability", "pit", "density", "quantile")) {
+    args <- list(prep, output = output, sort = FALSE, p = 0.5)
+    got <- do.call(posterior_predict, args)
+    expect_equal(dim(got), c(20L, 3L))
+    expect_true(all(is.finite(got)))
+  }
+  prep$dpars$mu[] <- 100
+  prep$data$lb <- rep(1, 3)
+  prep$data$ub <- rep(2, 3)
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_true(all(q > 1 & q < 2))
+  expect_equal(unname(posterior_predict(prep, output = "probability", q = q[, 1])),
+               matrix(0.5, 20, 3), tolerance = 1e-7)
+  expect_true(all(is.finite(posterior_predict(
+    prep, output = "density", q = q[, 1], log = TRUE
+  ))))
+  expect_equal(unname(posterior_predict(prep, output = "quantile", p = 1)),
+               matrix(2, 20, 3), tolerance = 1e-8)
+  prep$bhaz$tail <- "none"
+  prep$data$ub[] <- 5
+  expect_error(posterior_predict(prep), "truncation bounds")
+  prep$data <- list(Y = rep(1, 3))
+  prep$bhaz$version <- package_version("2.23.1")
+  expect_error(posterior_predict(prep), "Please refit")
+  prep$bhaz$version <- package_version("2.23.2")
+  prep$bhaz$basis <- NULL
+  expect_error(posterior_predict(prep), "Please refit")
+  prep <- cox_test_prep()
+  prep$family <- mixture(cox(), cox())
+  prep$dpars <- list(mu1 = prep$dpars$mu, mu2 = prep$dpars$mu)
+  prep$bhaz <- list(mu1 = prep$bhaz, mu2 = prep$bhaz)
+  child <- brms:::pseudo_prep_for_mixture(prep, 1)
+  expect_error(posterior_predict(child), "non-mixture")
+})
+
+test_that("Cox inversion controls probability error and narrow truncation", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep(ns = 3L, nobs = 1L)
+  prep$dpars$mu[, 1] <- c(1e2, 1e6, 1e10)
+  prep$bhaz$sbhaz[[1]][] <- rep(
+    c(1e-10, 1e-6, 0.01, 0.1, 0.8899989999), each = 3
+  )
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1]
+  )), rep(0.5, 3), tolerance = 1e-8)
+
+  prep <- cox_test_prep(nobs = 1L)
+  prep$dpars$mu[] <- 1
+  prep$data$lb <- 1.0259159159159161
+  prep$data$ub <- prep$data$lb + 1e-10
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_true(all(q >= prep$data$lb & q <= prep$data$ub))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1]
+  )), rep(0.5, 20), tolerance = 1e-5)
+  draws <- posterior_predict(prep)
+  expect_true(all(draws >= prep$data$lb & draws <= prep$data$ub))
+})
+
+test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep(nobs = 1L)
+  prep$dpars$mu[] <- 1
+  rate <- brms:::bhaz_at(
+    4, prep$bhaz$sbhaz[[1]], prep$bhaz$basis
+  )
+  cases <- list(
+    list(p = -100, lower.tail = FALSE, log.p = TRUE),
+    list(p = -1e-20, lower.tail = TRUE, log.p = TRUE),
+    list(p = 1e-20, lower.tail = FALSE, log.p = FALSE)
+  )
+  for (args in cases) {
+    q <- do.call(posterior_predict,
+                 c(list(prep, output = "quantile"), args))
+    H <- do.call(qexp, args)
+    expect_equal(as.vector(q), 4 + (H - 1) / rate, tolerance = 1e-10)
+  }
+  q <- posterior_predict(prep, output = "quantile", p = -500, log.p = TRUE)
+  expect_true(all(is.finite(q) & q > 0))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1], log.p = TRUE
+  )), rep(-500, 20), tolerance = 1e-8)
+  prep$dpars$mu[] <- 1e4
+  prep$data$lb <- 1
+  prep$data$ub <- 3
+  q <- posterior_predict(prep, output = "quantile", p = -1000,
+                         lower.tail = FALSE, log.p = TRUE)
+  expect_true(all(is.finite(q) & q >= 1 & q <= 3))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1], lower.tail = FALSE, log.p = TRUE
+  )), rep(-1000, 20), tolerance = 1e-7)
 })
