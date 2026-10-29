@@ -2,6 +2,11 @@
 
 ### New Features
 
+* Add native Cox predictive draws, CDFs, densities, and quantiles with explicit
+tail extrapolation policies; survival quantities, restricted mean survival
+time with a required horizon, and censoring-aware numerical diagnostics.
+Cox plots remain external and `pp_check` continues to delegate to bayesplot.
+
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -2350,5 +2355,4 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-
 

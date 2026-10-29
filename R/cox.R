@@ -349,6 +349,231 @@ cox_curve <- function(times, prep, probs = NULL, sort = FALSE) {
   out
 }
 
+#' Apply Censoring to Cox Predictive Draws
+#'
+#' @param yrep A draws by observations matrix of sign-encoded predictions.
+#' @param cens_times Positive censoring times: a common value, one per
+#'   observation, a matrix matching \code{yrep}, or \code{"reverse_km"}
+#'   to simulate them
+#'   using \code{\link{cox_censor_times}}. \code{Inf} means no censoring.
+#' @param y,status Observed times and binary event indicators, required for
+#'   reverse Kaplan-Meier simulation.
+#' @return A matrix with right-censored times encoded as negative values.
+#' @details Censoring is applied explicitly, not inferred automatically by
+#'   \code{posterior_predict}. Plotting these censored replications requires
+#'   an external plotting function that understands their event indicators.
+#' @export
+cox_censor <- function(yrep, cens_times, y = NULL, status = NULL) {
+  if (!is.matrix(yrep) || !is.numeric(yrep) || anyNA(yrep)) {
+    stop2("'yrep' must be a numeric matrix without missing values.")
+  }
+  if (is.character(cens_times)) {
+    match.arg(cens_times, "reverse_km")
+    ct <- matrix(cox_censor_times(y, status, length(yrep)), nrow(yrep))
+  } else if (is.matrix(cens_times)) {
+    if (!identical(dim(cens_times), dim(yrep))) {
+      stop2("'cens_times' must have the same dimensions as 'yrep'.")
+    }
+    ct <- cens_times
+  } else {
+    if (!length(cens_times) %in% c(1L, ncol(yrep))) {
+      stop2("'cens_times' must have length 1 or the number of observations.")
+    }
+    ct <- matrix(cens_times, nrow(yrep), ncol(yrep), byrow = TRUE)
+  }
+  if (!is.numeric(ct) || anyNA(ct) || any(ct <= 0)) {
+    stop2("Censoring times must be positive, with Inf for no censoring.")
+  }
+  time <- pmin(abs(yrep), ct)
+  ifelse(yrep < 0 | abs(yrep) > ct, -time, time)
+}
+
+#' Simulate Censoring Times from a Reverse Kaplan-Meier Estimate
+#'
+#' @param y Positive finite observed times.
+#' @param status Binary event indicators (1 for an event, 0 for censoring).
+#' @param n Number of censoring times to simulate.
+#' @return Positive censoring times, with \code{Inf} for draws beyond the
+#'   observed censoring distribution.
+#' @details Uses the optional \pkg{prodlim} package. No KM plotting
+#'   implementation is provided by brms.
+#' @export
+cox_censor_times <- function(y, status, n = length(y)) {
+  y <- as.numeric(y)
+  status <- as.numeric(status)
+  n <- as_one_integer(n)
+  if (!length(y) || length(y) != length(status) || anyNA(status) ||
+      any(!status %in% 0:1) || any(!is.finite(y) | y <= 0) || n < 0L) {
+    stop2("Supply positive finite 'y', matching binary 'status', and n >= 0.")
+  }
+  if (all(status == 1)) return(rep(Inf, n))
+  require_package("prodlim")
+  dat <- data.frame(time = y, status = status)
+  fit <- prodlim::prodlim(prodlim::Hist(time, status) ~ 1, data = dat,
+                          reverse = TRUE)
+  jumps <- sort(unique(y))
+  G <- as.vector(predict(fit, times = jumps))
+  if (anyNA(G)) {
+    stop2("The reverse Kaplan-Meier estimate is undefined at observed times.")
+  }
+  index <- findInterval(-runif(n), -G) + 1L
+  out <- jumps[pmin(index, length(jumps))]
+  out[index > length(jumps)] <- Inf
+  out
+}
+
+randomize_cox_pit <- function(p, cens, upper = NULL) {
+  if (is.null(cens)) return(p)
+  if (anyNA(cens) || any(!cens %in% c(-1, 0, 1, 2))) {
+    stop2("Invalid Cox censoring indicators.")
+  }
+  cm <- data2draws(cens, dim(p))
+  lo <- hi <- p
+  lo[cm == -1] <- 0
+  hi[cm == 1] <- 1
+  if (any(cm == 2)) {
+    if (is.null(upper)) {
+      stop2("Interval-censored PIT requires upper endpoints 'rcens'.")
+    }
+    hi[cm == 2] <- upper[cm == 2]
+  }
+  if (anyNA(lo) || anyNA(hi) || any(lo > hi)) {
+    stop2("The censoring interval has undefined or invalid CDF endpoints.")
+  }
+  lo + data2draws(runif(ncol(p)), dim(p)) * (hi - lo)
+}
+
+#' Censoring-Aware Cox Calibration Diagnostics
+#'
+#' @inheritParams cox_survival
+#' @param randomize_cens Randomize CDFs within observed censoring intervals.
+#' @param average Aggregate over posterior draws before randomization.
+#'   If \code{FALSE}, return draws by observations conditional values.
+#' @return \code{cox_pit} returns one PIT value per observation if
+#'   \code{average = TRUE}, otherwise a draws by observations matrix.
+#'   \code{cox_snell} returns a draws by observations residual matrix.
+#' @details These are numerical diagnostics, not plotting functions.
+#'   Unlike \code{posterior_predict(output = "pit")}, censoring-aware PIT
+#'   randomizes right-, left-, and interval-censored observations within
+#'   their possible CDF intervals. Randomization uses one uniform per
+#'   observation, shared across draws; it must not be averaged away.
+#'   Cox-Snell residuals subtract the cumulative hazard at a left-truncation
+#'   bound. They are not provided for finite upper truncation.
+#' @name cox_diagnostics
+NULL
+
+#' @rdname cox_diagnostics
+#' @export
+cox_pit <- function(object, randomize_cens = TRUE, average = TRUE,
+                     sort = FALSE, ...) {
+  prep <- prepare_cox_predictions(object, ..., check_response = TRUE)
+  randomize_cens <- as_one_logical(randomize_cens)
+  average <- as_one_logical(average)
+  p <- posterior_predict(prep, output = "probability", sort = TRUE)
+  cens <- if (randomize_cens) prep$data$cens else NULL
+  upper <- NULL
+  if (any(cens == 2)) {
+    if (is.null(prep$data$rcens)) {
+      stop2("Interval-censored PIT requires upper endpoints 'rcens'.")
+    }
+    upper <- vapply(seq_len(prep$nobs), function(i) {
+      posterior_predict_cox(i, prep, output = "probability",
+                            q = prep$data$rcens[i])
+    }, numeric(prep$ndraws))
+    dim(upper) <- c(prep$ndraws, prep$nobs)
+  }
+  if (average) {
+    p <- matrix(colMeans(p), nrow = 1L)
+    if (!is.null(upper)) upper <- matrix(colMeans(upper), nrow = 1L)
+  }
+  p <- randomize_cox_pit(p, cens, upper)
+  p <- reorder_obs(p, prep$old_order, sort)
+  if (average) as.vector(p) else p
+}
+
+#' @rdname cox_diagnostics
+#' @export
+cox_snell <- function(object, sort = FALSE, ...) {
+  prep <- prepare_cox_predictions(object, ..., check_response = TRUE)
+  if (any(is.finite(prep$data$ub))) {
+    stop2("Cox-Snell residuals are not provided for finite upper truncation.")
+  }
+  out <- matrix(NA_real_, prep$ndraws, prep$nobs)
+  for (i in seq_len(prep$nobs)) {
+    mu <- prep$dpars$mu[, i]
+    sb <- prep$bhaz$sbhaz[[prep$bhaz$Jgrbhaz[i]]]
+    tr <- cox_truncation(mu, sb, prep$bhaz$basis, prep$bhaz$tail,
+                         prep$data$lb[i], prep$data$ub[i])
+    out[, i] <- pmax(mu * bhaz_at(prep$data$Y[i], sb, prep$bhaz$basis,
+                                 prep$bhaz$tail, integrate = TRUE) - tr$Hlo, 0)
+  }
+  reorder_obs(out, prep$old_order, sort)
+}
+
+#' @rdname cox_diagnostics
+#' @param loo_obj Optional \code{loo} result computed with
+#'   \code{save_psis = TRUE} from the same fit, response, and all its draws
+#'   in their original order. Subsets and reordered draws require recomputing
+#'   PSIS rather than reusing incompatible weights. Precomputed weights
+#'   require the original data: do not supply \code{newdata}.
+#' @param ndraws,draw_ids See \code{\link{prepare_predictions}}.
+#' @param newdata,resp See \code{\link{prepare_predictions}}.
+#' @details \code{loo_pit_cox} returns PSIS-weighted CDFs randomized after
+#'   weighting. Truncated and interval-censored fits are rejected because
+#'   the existing Cox likelihood path does not evaluate arbitrary bounds.
+#'   When computing weights, the likelihood and predictive CDFs use one
+#'   shared preparation, including any simulated new-group effects.
+#' @export
+loo_pit_cox <- function(object, loo_obj = NULL, randomize_cens = TRUE,
+                         ndraws = NULL, draw_ids = NULL,
+                         newdata = NULL, resp = NULL, ...) {
+  if (!is.brmsfit(object)) {
+    stop2("'loo_pit_cox' requires a fitted brms model.")
+  }
+  if (!is.null(loo_obj) && !is.null(newdata)) {
+    stop2("Precomputed PSIS weights require the original data; ",
+          "do not supply 'newdata'.")
+  }
+  ids <- validate_draw_ids(object, draw_ids, ndraws) %||%
+    seq_len(posterior::ndraws(object))
+  prep <- prepare_cox_predictions(
+    object, newdata = newdata, resp = resp, draw_ids = ids, ...,
+    check_response = TRUE
+  )
+  if (is_trunc(prep) || any(prep$data$cens == 2)) {
+    stop2("Cox LOO-PIT is not supported for truncated or interval-censored ",
+          "models by the existing likelihood implementation.")
+  }
+  if (is.null(loo_obj)) {
+    ll <- log_lik(prep, ...)
+    r_eff <- r_eff_log_lik(ll[order(ids), , drop = FALSE], fit = object)
+    loo_obj <- loo::loo(ll, r_eff = r_eff, save_psis = TRUE, ...)
+  } else {
+    if (!identical(ids, seq_len(posterior::ndraws(object)))) {
+      stop2("Recompute PSIS for draw subsets or reordered draws; ",
+            "do not supply 'loo_obj'.")
+    }
+    if (!identical(attr(loo_obj, "yhash"), hash_response(object, resp = resp))) {
+      stop2("'loo_obj' does not match the requested response and observations.")
+    }
+  }
+  if (is.null(loo_obj$psis_object)) {
+    stop2("'loo_obj' must be computed with save_psis = TRUE.")
+  }
+  w <- weights(loo_obj$psis_object, normalize = TRUE, log = FALSE)
+  p <- posterior_predict(prep, output = "probability", sort = FALSE)
+  if (!identical(dim(w), dim(p))) {
+    stop2("PSIS weights do not match the requested response and draws.")
+  }
+  p <- matrix(colSums(w * p), nrow = 1L)
+  cens <- if (as_one_logical(randomize_cens) && !is.null(prep$data$cens)) {
+    as.vector(reorder_obs(matrix(prep$data$cens, nrow = 1L), prep$old_order))
+  } else {
+    NULL
+  }
+  as.vector(randomize_cox_pit(p, cens))
+}
+
 #' Decode Censored Cox Predictions
 #'
 #' @param x A numeric vector or matrix of Cox predictive draws.
