@@ -18,6 +18,8 @@
   summary = TRUE,
   robust = FALSE,
   probs = c(0.025, 0.975),
+  horizon = NULL,
+  nodes = 64,
   ...
 )
 }
@@ -74,6 +76,14 @@ Only used if \code{summary} is \code{TRUE}.}
 
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
+
+\item{horizon}{For Cox response predictions, a required finite nonnegative
+restriction horizon. Returns restricted mean survival time
+\eqn{E[\min(T, horizon)]}, not the unrestricted mean. No horizon is
+chosen implicitly. Ignored for other families and parameter predictions.}
+
+\item{nodes}{Number of Gauss-Legendre nodes per integration panel for Cox
+restricted mean survival time (default 64). Requires \pkg{statmod}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

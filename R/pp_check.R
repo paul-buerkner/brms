@@ -239,6 +239,9 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
 
   # most ... arguments are meant for the prediction function
   for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
+  if (is_cox(family)) {
+    for_pred <- for_pred | names(dots) %in% c("horizon", "nodes")
+  }
   ppc_args <- c(ppc_args, dots[!for_pred])
 
   do_call(ppc_fun, ppc_args)

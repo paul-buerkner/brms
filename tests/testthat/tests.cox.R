@@ -42,6 +42,9 @@ test_that("Cox Stan data use response-specific names", {
   expect_equal(prep$resps$y$bhaz$basis, fit$basis$resps$y$bhaz$basis_matrix)
   expect_equal(prep$resps$y2$bhaz$basis, fit$basis$resps$y2$bhaz$basis_matrix)
   expect_equal(dim(posterior_predict(prep)), c(3L, 10L, 2L))
+  expect_equal(dim(posterior_epred(
+    prep, horizon = 2, dpar = NULL, nlpar = NULL, sort = FALSE
+  )), c(3L, 10L, 2L))
 })
 
 test_that("Cox preparation preserves singleton and absent strata", {
@@ -229,9 +232,7 @@ test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
   skip_if_not_installed("splines2")
   prep <- cox_test_prep(nobs = 1L)
   prep$dpars$mu[] <- 1
-  rate <- brms:::bhaz_at(
-    4, prep$bhaz$sbhaz[[1]], prep$bhaz$basis
-  )
+  rate <- cox_bhaz(4, prep)[, 1]
   cases <- list(
     list(p = -100, lower.tail = FALSE, log.p = TRUE),
     list(p = -1e-20, lower.tail = TRUE, log.p = TRUE),
@@ -257,4 +258,80 @@ test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
   expect_equal(as.vector(posterior_predict(
     prep, output = "probability", q = q[, 1], lower.tail = FALSE, log.p = TRUE
   )), rep(-1000, 20), tolerance = 1e-7)
+})
+
+test_that("Cox survival curves and streaming summaries agree", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  times <- c(0, 1, 4)
+  curves <- cox_surv_curve(times, prep)
+  expect_equal(dim(curves), c(20L, 3L, 3L))
+  expect_equal(curves[, 3, 1], exp(-prep$dpars$mu[, 1]))
+  expect_equal(cox_surv(1, prep)[, 1], curves[, 2, 1])
+  summary <- cox_surv_summary(times, prep, probs = c(0.1, 0.5))
+  expect_equal(summary[, 1, 1], apply(curves[, , 1], 2, quantile, probs = 0.1))
+  expect_equal(as.vector(cox_cumbhaz(c(0, 4), prep)[, 2]), rep(1, 20))
+  prep$old_order <- c(3L, 1L, 2L)
+  expect_equal(cox_surv(c(0.5, 1.5, 2.5), prep),
+               exp(-prep$dpars$mu * cox_cumbhaz(c(0.5, 1.5, 2.5), prep)))
+  expect_equal(cox_surv(1, prep), brms:::reorder_obs(cox_surv(1, prep,
+    sort = TRUE), prep$old_order))
+  expect_error(cox_surv_curve(numeric(0), prep), "times")
+  expect_error(cox_surv(1:2, prep), "length")
+})
+
+test_that("Cox RMST agrees with independent integration and truncation", {
+  skip_if_not_installed("splines2")
+  skip_if_not_installed("statmod")
+  prep <- cox_test_prep(ns = 3L, nobs = 1L)
+  sb <- prep$bhaz$sbhaz[[1]][1, , drop = FALSE]
+  basis <- prep$bhaz$basis
+  for (horizon in c(0, 2, 6)) {
+    got <- posterior_epred(prep, horizon = horizon, dpar = NULL,
+                            nlpar = NULL, sort = FALSE)
+    for (i in seq_len(3)) {
+      mu <- prep$dpars$mu[i, 1]
+      reference <- integrate(function(t) {
+        H <- as.vector(brms:::bhaz_basis_matrix(
+          pmin(t, 4), basis = basis, integrate = TRUE
+        ) %*% as.vector(sb))
+        rate <- as.vector(brms:::bhaz_basis_matrix(4, basis = basis) %*%
+                            as.vector(sb))
+        exp(-mu * (H + pmax(t - 4, 0) * rate))
+      }, 0, horizon, rel.tol = 1e-10, subdivisions = 1000)$value
+      expect_equal(got[i, 1], reference, tolerance = 1e-7)
+    }
+  }
+  prep$data$lb <- 1
+  prep$data$ub <- 2
+  expect_equal(as.vector(posterior_epred(
+    prep, horizon = 0.5, dpar = NULL, nlpar = NULL, sort = FALSE
+  )), rep(0.5, 3))
+  set.seed(42)
+  pred <- replicate(2000, posterior_predict(prep)[1, 1])
+  got <- posterior_epred(prep, horizon = 1.5, dpar = NULL,
+                          nlpar = NULL, sort = FALSE)
+  expect_equal(got[1, 1], mean(pmin(pred, 1.5)), tolerance = 0.02)
+  expect_error(posterior_epred(prep, dpar = NULL, nlpar = NULL,
+                               sort = FALSE), "horizon")
+  prep$bhaz$tail <- "none"
+  expect_error(posterior_epred(prep, horizon = 5, dpar = NULL,
+                               nlpar = NULL, sort = FALSE), "support")
+  prep <- cox_test_prep(ns = 2L)
+  prep$data$lb <- c(0.25, 1, 2)
+  prep$data$ub <- c(2.5, 3.5, Inf)
+  prep$bhaz$tail <- "loglinear"
+  got <- posterior_epred(prep, horizon = 6, dpar = NULL, nlpar = NULL,
+                          sort = FALSE)
+  for (i in seq_len(prep$nobs)) {
+    ref <- integrate(function(t) brms:::pcox(
+      t, prep$dpars$mu[1, i], sbhaz = prep$bhaz$sbhaz[[1]][1, , drop = FALSE],
+      basis = prep$bhaz$basis, tail = "loglinear", lower.tail = FALSE,
+      lb = prep$data$lb[i], ub = prep$data$ub[i]
+    ), 0, 6, subdivisions = 1000, rel.tol = 1e-9)$value
+    expect_equal(got[1, i], ref, tolerance = 1e-7)
+  }
+  prep$dpars$mu[] <- -1
+  expect_error(posterior_epred(prep, horizon = 6, dpar = NULL, nlpar = NULL,
+                               sort = FALSE), "finite positive")
 })

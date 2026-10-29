@@ -195,6 +195,160 @@ posterior_predict_cox_trunc <- function(i, prep, output, args, q = NULL,
   )
 }
 
+prepare_cox_predictions <- function(object, ..., check_response = FALSE) {
+  if (is.brmsprep(object)) {
+    if (length(list(...))) {
+      stop2("Prediction arguments must be supplied when preparing the object.")
+    }
+    prep <- object
+  } else {
+    prep <- prepare_predictions(object, check_response = check_response, ...)
+  }
+  if (!is.brmsprep(prep)) {
+    stop2("Please select a single Cox response via 'resp'.")
+  }
+  check_cox_prep(prep)
+  prep$dpars$mu <- get_dpar(prep, "mu")
+  if (is.null(dim(prep$dpars$mu))) {
+    prep$dpars$mu <- matrix(prep$dpars$mu, prep$ndraws, prep$nobs)
+  }
+  if (any(!is.finite(prep$dpars$mu) | prep$dpars$mu <= 0)) {
+    stop2("Cox predictions require finite positive values of 'mu'.")
+  }
+  prep
+}
+
+#' Cox Baseline and Conditional Survival Quantities
+#'
+#' Evaluate the fitted baseline or conditional hazard, cumulative hazard,
+#' and survival function without changing the fitted spline basis.
+#'
+#' @param t Times, either a scalar or one per prediction observation.
+#'   Baseline functions accept a common vector of times.
+#' @param object A Cox \code{brmsfit}, or a single-response
+#'   \code{brmsprep} returned by \code{\link{prepare_predictions}}.
+#' @param stratum Index of the baseline hazard stratum.
+#' @param sort See \code{\link{posterior_predict.brmsfit}}.
+#' @param ... For fitted objects, arguments passed to
+#'   \code{\link{prepare_predictions}}, including \code{newdata},
+#'   \code{resp}, \code{re_formula}, \code{draw_ids}, and \code{tail}.
+#' @return Baseline functions return draws by times matrices.
+#'   Conditional functions return draws by observations matrices.
+#' @details The tail policy is described in
+#'   \code{\link{posterior_predict.brmsfit}}. Conditional quantities are for
+#'   the untruncated event-time distribution; RMST and predictive CDFs
+#'   additionally condition on any model truncation bounds.
+#' @name cox_survival
+NULL
+
+#' @rdname cox_survival
+#' @export
+cox_bhaz <- function(t, object, stratum = 1L, ...) {
+  prep <- prepare_cox_predictions(object, ...)
+  stratum <- as_one_integer(stratum)
+  if (stratum < 1L || stratum > length(prep$bhaz$sbhaz)) {
+    stop2("Invalid baseline hazard stratum.")
+  }
+  bhaz_at(t, prep$bhaz$sbhaz[[stratum]], prep$bhaz$basis,
+           prep$bhaz$tail, paired = FALSE)
+}
+
+#' @rdname cox_survival
+#' @export
+cox_cumbhaz <- function(t, object, stratum = 1L, ...) {
+  prep <- prepare_cox_predictions(object, ...)
+  stratum <- as_one_integer(stratum)
+  if (stratum < 1L || stratum > length(prep$bhaz$sbhaz)) {
+    stop2("Invalid baseline hazard stratum.")
+  }
+  bhaz_at(t, prep$bhaz$sbhaz[[stratum]], prep$bhaz$basis,
+           prep$bhaz$tail, integrate = TRUE, paired = FALSE)
+}
+
+cox_quantity <- function(t, prep, integrate, sort) {
+  if (!length(t) %in% c(1L, prep$nobs)) {
+    stop2("'t' must have length 1 or the number of observations.")
+  }
+  t <- rep_len(t, prep$nobs)
+  if (!sort && length(prep$old_order)) t <- t[order(prep$old_order)]
+  out <- matrix(NA_real_, prep$ndraws, prep$nobs)
+  for (s in seq_along(prep$bhaz$sbhaz)) {
+    take <- which(prep$bhaz$Jgrbhaz == s)
+    if (!length(take)) next
+    out[, take] <- bhaz_at(
+      t[take], prep$bhaz$sbhaz[[s]], prep$bhaz$basis, prep$bhaz$tail,
+      integrate = integrate, paired = FALSE
+    ) * prep$dpars$mu[, take, drop = FALSE]
+  }
+  reorder_obs(out, prep$old_order, sort = sort)
+}
+
+#' @rdname cox_survival
+#' @export
+cox_hazard <- function(t, object, sort = FALSE, ...) {
+  cox_quantity(t, prepare_cox_predictions(object, ...), FALSE, sort)
+}
+
+#' @rdname cox_survival
+#' @export
+cox_cumhaz <- function(t, object, sort = FALSE, ...) {
+  cox_quantity(t, prepare_cox_predictions(object, ...), TRUE, sort)
+}
+
+#' @rdname cox_survival
+#' @export
+cox_surv <- function(t, object, sort = FALSE, ...) {
+  exp(-cox_cumhaz(t, object, sort = sort, ...))
+}
+
+#' @rdname cox_survival
+#' @param times A common vector of finite nonnegative times.
+#' @param probs Posterior quantiles for streaming survival summaries.
+#' @return \code{cox_surv_curve} returns a draws by times by observations
+#'   array; \code{cox_surv_summary} returns a times by quantiles by observations
+#'   array without materializing the full curve array.
+#' @export
+cox_surv_curve <- function(times, object, sort = FALSE, ...) {
+  prep <- prepare_cox_predictions(object, ...)
+  cox_curve(times, prep, sort = sort)
+}
+
+#' @rdname cox_survival
+#' @export
+cox_surv_summary <- function(times, object, probs = c(0.025, 0.5, 0.975),
+                              sort = FALSE, ...) {
+  if (!length(probs) || anyNA(probs) || any(probs < 0 | probs > 1)) {
+    stop2("'probs' must be a non-empty vector of probabilities.")
+  }
+  prep <- prepare_cox_predictions(object, ...)
+  cox_curve(times, prep, probs = probs, sort = sort)
+}
+
+cox_curve <- function(times, prep, probs = NULL, sort = FALSE) {
+  if (!length(times) || anyNA(times) || any(!is.finite(times) | times < 0)) {
+    stop2("'times' must be a non-empty vector of finite nonnegative times.")
+  }
+  if (is.null(probs)) {
+    out <- array(NA_real_, c(prep$ndraws, length(times), prep$nobs))
+  } else {
+    out <- array(NA_real_, c(length(probs), length(times), prep$nobs))
+  }
+  for (s in seq_along(prep$bhaz$sbhaz)) {
+    H0 <- bhaz_at(times, prep$bhaz$sbhaz[[s]], prep$bhaz$basis,
+                  prep$bhaz$tail, integrate = TRUE, paired = FALSE)
+    for (i in which(prep$bhaz$Jgrbhaz == s)) {
+      S <- exp(-H0 * prep$dpars$mu[, i])
+      out[, , i] <- if (is.null(probs)) S else
+        t(matrixStats::colQuantiles(S, probs = probs, drop = FALSE))
+    }
+  }
+  # reorder_obs expects observations in the second dimension.
+  out <- aperm(reorder_obs(aperm(out, c(1, 3, 2)), prep$old_order, sort),
+               c(1, 3, 2))
+  if (!is.null(probs)) out <- aperm(out, c(2, 1, 3))
+  out
+}
+
 #' Decode Censored Cox Predictions
 #'
 #' @param x A numeric vector or matrix of Cox predictive draws.

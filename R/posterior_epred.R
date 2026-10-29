@@ -17,6 +17,12 @@
 #'  If specified, expected predictions of this parameters are returned.
 #' @param nlpar Optional name of a predicted non-linear parameter.
 #'  If specified, expected predictions of this parameters are returned.
+#' @param horizon For Cox response predictions, a required finite nonnegative
+#'   restriction horizon. Returns restricted mean survival time
+#'   \eqn{E[\min(T, horizon)]}, not the unrestricted mean. No horizon is
+#'   chosen implicitly. Ignored for other families and parameter predictions.
+#' @param nodes Number of Gauss-Legendre nodes per integration panel for Cox
+#'   restricted mean survival time (default 64). Requires \pkg{statmod}.
 #'
 #' @return An \code{array} of draws. For
 #'   categorical and ordinal models, the output is an S x N x C array.
@@ -47,7 +53,8 @@
 posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     re.form = NULL, resp = NULL, dpar = NULL,
                                     nlpar = NULL, ndraws = NULL, draw_ids = NULL,
-                                    sort = FALSE, ...) {
+                                    sort = FALSE, horizon = NULL, nodes = 64,
+                                    ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
@@ -60,7 +67,7 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   posterior_epred(
     prep,  dpar = dpar, nlpar = nlpar, sort = sort,
-    scale = "response", summary = FALSE
+    scale = "response", summary = FALSE, horizon = horizon, nodes = nodes
   )
 }
 
@@ -75,7 +82,8 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
                                      scale = "response", incl_thres = NULL,
                                      summary = FALSE, robust = FALSE,
-                                     probs = c(0.025, 0.975), ...) {
+                                     probs = c(0.025, 0.975),
+                                     horizon = NULL, nodes = 64, ...) {
   summary <- as_one_logical(summary)
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
@@ -140,7 +148,9 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
       for (dp in dpars) {
         object$dpars[[dp]] <- get_dpar(object, dpar = dp)
       }
-      if (is_trunc(object)) {
+      if (is_cox(object$family) && !is.mixfamily(object$family)) {
+        out <- posterior_epred_cox(object, horizon = horizon, nodes = nodes)
+      } else if (is_trunc(object)) {
         out <- posterior_epred_trunc(object)
       } else {
         posterior_epred_fun <- paste0("posterior_epred_", object$family$family)
@@ -253,7 +263,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            resp = NULL, dpar = NULL, nlpar = NULL,
                            ndraws = NULL, draw_ids = NULL, sort = FALSE,
                            summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), ...) {
+                           probs = c(0.025, 0.975), horizon = NULL, nodes = 64,
+                           ...) {
   scale <- match.arg(scale)
   summary <- as_one_logical(summary)
   contains_draws(object)
@@ -264,7 +275,8 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   posterior_epred(
     prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale,
-    summary = summary, robust = robust, probs = probs
+    summary = summary, robust = robust, probs = probs,
+    horizon = horizon, nodes = nodes
   )
 }
 
@@ -479,9 +491,82 @@ posterior_epred_zero_inflated_asym_laplace <- function(prep) {
   posterior_epred_asym_laplace(prep) * (1 - prep$dpars$zi)
 }
 
-posterior_epred_cox <- function(prep) {
-  stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'cox'.")
+posterior_epred_cox <- function(prep, horizon = NULL, nodes = 64) {
+  prep <- prepare_cox_predictions(prep)
+  if (is.null(horizon)) {
+    stop2("Please supply 'horizon' to compute Cox restricted mean survival ",
+          "time E[min(T, horizon)]. The unrestricted mean is not returned.")
+  }
+  horizon <- as_one_numeric(horizon)
+  nodes <- as_one_integer(nodes)
+  if (!is.finite(horizon) || horizon < 0 || nodes < 2L) {
+    stop2("'horizon' must be finite and nonnegative; 'nodes' must be >= 2.")
+  }
+  bounds <- attr(prep$bhaz$basis, "Boundary.knots")
+  if (prep$bhaz$tail == "none" && horizon > bounds[2]) {
+    stop2("'horizon' is beyond the spline support with tail = 'none'.")
+  }
+  require_package("statmod")
+  rule <- statmod::gauss.quad(nodes, kind = "legendre")
+  # Shared panels avoid reevaluating the same spline for each observation.
+  breaks0 <- c(0, horizon, bounds, attr(prep$bhaz$basis, "knots"))
+  breaks0 <- sort(unique(breaks0[is.finite(breaks0) &
+                                  breaks0 >= 0 & breaks0 <= horizon]))
+  panels <- seq_len(length(breaks0) - 1L)
+  grids <- lapply(panels, function(j) {
+    (breaks0[j + 1L] + breaks0[j]) / 2 +
+      (breaks0[j + 1L] - breaks0[j]) / 2 * rule$nodes
+  })
+  weights <- lapply(panels, function(j) {
+    (breaks0[j + 1L] - breaks0[j]) / 2 * rule$weights
+  })
+  out <- matrix(0, prep$ndraws, prep$nobs)
+  for (s in seq_along(prep$bhaz$sbhaz)) {
+    take <- which(prep$bhaz$Jgrbhaz == s)
+    if (!length(take)) next
+    sb <- prep$bhaz$sbhaz[[s]]
+    H0 <- lapply(grids, bhaz_at, sbhaz = sb, basis = prep$bhaz$basis,
+                 tail = prep$bhaz$tail, integrate = TRUE, paired = FALSE)
+    if (!is_trunc(prep)) {
+      mu <- prep$dpars$mu[, take, drop = FALSE]
+      acc <- matrix(0, prep$ndraws, length(take))
+      for (j in seq_along(H0)) {
+        for (g in seq_len(nodes)) {
+          acc <- acc + exp(-H0[[j]][, g] * mu) * weights[[j]][g]
+        }
+      }
+      out[, take] <- acc
+      next
+    }
+    for (i in take) {
+      mu <- prep$dpars$mu[, i]
+      lb <- prep$data$lb[i]
+      ub <- prep$data$ub[i]
+      tr <- cox_truncation(mu, sb, prep$bhaz$basis, prep$bhaz$tail, lb, ub)
+      breaks <- c(breaks0, lb, ub)
+      breaks <- sort(unique(breaks[is.finite(breaks) &
+                                    breaks >= 0 & breaks <= horizon]))
+      for (j in seq_len(length(breaks) - 1L)) {
+        k <- match(breaks[j], breaks0)
+        if (!is.na(k) && breaks[j + 1L] == breaks0[k + 1L]) {
+          H <- H0[[k]] * mu
+          w <- weights[[k]]
+        } else {
+          # Only panels cut by observation-specific truncation need new nodes.
+          half <- (breaks[j + 1L] - breaks[j]) / 2
+          grid <- (breaks[j + 1L] + breaks[j]) / 2 + half * rule$nodes
+          H <- bhaz_at(grid, sb, prep$bhaz$basis, prep$bhaz$tail,
+                       integrate = TRUE, paired = FALSE) * mu
+          w <- half * rule$weights
+        }
+        a <- pmin(pmax(H - tr$Hlo, 0), tr$width)
+        logS <- -a + log1m_prob(-(tr$width - a)) - log1m_prob(-tr$width)
+        logS[which(H >= tr$Hup)] <- -Inf
+        out[, i] <- out[, i] + as.vector(exp(logS) %*% w)
+      }
+    }
+  }
+  out
 }
 
 posterior_epred_hurdle_poisson <- function(prep) {
