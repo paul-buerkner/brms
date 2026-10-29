@@ -125,7 +125,7 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     sdata_gr_global <- data_gr_global(bframe, data2 = data2)
     c(out) <- data_predictor(
       bframe, data = data, prior = prior, data2 = data2,
-      sdata = sdata_gr_global
+      sdata = sdata_gr_global, check_response = check_response
     )
     c(out) <- sdata_gr_global
     c(out) <- data_Xme(bframe, data = data)

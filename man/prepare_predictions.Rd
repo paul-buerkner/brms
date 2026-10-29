@@ -26,6 +26,7 @@
   new_objects = NULL,
   point_estimate = NULL,
   ndraws_point_estimate = 1,
+  tail = "constant",
   ...
 )
 
@@ -117,6 +118,10 @@ method.}
 \item{ndraws_point_estimate}{Only used if \code{point_estimate} is not
 \code{NULL}. How often shall the point estimate's value be repeated?
 Defaults to \code{1}.}
+
+\item{tail}{Cox prediction-time extrapolation beyond the fitted spline's
+upper boundary: \code{"constant"} (default), \code{"loglinear"}, or
+\code{"none"}. See \code{\link{posterior_predict.brmsfit}}.}
 
 \item{...}{Further arguments passed to \code{\link{validate_newdata}}.}
 }

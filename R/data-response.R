@@ -462,7 +462,7 @@ data_mixture <- function(bframe, data2, prior) {
 }
 
 # data for the baseline functions of Cox models
-data_bhaz <- function(bframe, data, data2, prior) {
+data_bhaz <- function(bframe, data, data2, prior, check_response = TRUE) {
   out <- list()
   if (!is_cox(bframe$family)) {
     return(out)
@@ -479,6 +479,13 @@ data_bhaz <- function(bframe, data, data2, prior) {
     # define the basis (and its knots) here; on the newdata path, the stored
     # basis is passed in via 'brmsframe' and only evaluated below
     bs <- bhaz_basis(bframe, data, args = bhaz$args)
+  }
+  if (!check_response) {
+    # These matrices are unused for prediction at arbitrary times. Missing
+    # or out-of-support new responses must not extrapolate the I-spline.
+    bounds <- attr(bs, "Boundary.knots")
+    y[is.na(y)] <- bounds[1]
+    y <- pmin(pmax(y, bounds[1]), bounds[2])
   }
   out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
   out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
@@ -506,6 +513,7 @@ data_bhaz <- function(bframe, data, data2, prior) {
     con_sbhaz <- eval_dirichlet(sbhaz_prior$prior, out$Kbhaz, data2)
     out$con_sbhaz <- as.array(con_sbhaz)
   }
+  names(out) <- paste0(names(out), usc(bframe$resp))
   out
 }
 
