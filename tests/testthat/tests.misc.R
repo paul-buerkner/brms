@@ -1,5 +1,20 @@
 context("Tests for miscellaneous functions")
 
+test_that("require_package checks loaded namespace versions", {
+  requireNamespace("stats", quietly = TRUE)
+  read_version <- utils::packageVersion
+  testthat::local_mocked_bindings(
+    packageVersion = function(pkg, ...) {
+      if (pkg == "stats") stop("Unexpected package metadata lookup.")
+      read_version(pkg, ...)
+    },
+    .package = "utils"
+  )
+  expect_true(require_package("stats", version = getNamespaceVersion("stats")))
+  expect_error(require_package("stats", version = "999.0.0"),
+               "Please install package 'stats' version")
+})
+
 test_that("p performs correct indexing", {
   expect_equal(p(1:10), 1:10)
   x <- rnorm(10)

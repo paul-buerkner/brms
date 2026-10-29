@@ -575,7 +575,7 @@ require_package <- function(package, version = NULL) {
   }
   if (!is.null(version)) {
     version <- as.package_version(version)
-    if (utils::packageVersion(package) < version) {
+    if (getNamespaceVersion(package) < version) {
       stop2("Please install package '", package,
             "' version ", version, " or higher.")
     }
