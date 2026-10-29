@@ -146,8 +146,8 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 5.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.54 seconds.
+#> Chain 1: Gradient evaluation took 4.4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -164,15 +164,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.577 seconds (Warm-up)
-#> Chain 1:                0.759 seconds (Sampling)
-#> Chain 1:                2.336 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.345 seconds (Warm-up)
+#> Chain 1:                0.684 seconds (Sampling)
+#> Chain 1:                2.029 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4.4e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
+#> Chain 2: Gradient evaluation took 3.9e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -189,15 +189,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.51 seconds (Warm-up)
-#> Chain 2:                0.754 seconds (Sampling)
-#> Chain 2:                2.264 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.214 seconds (Warm-up)
+#> Chain 2:                0.64 seconds (Sampling)
+#> Chain 2:                1.854 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4.5e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.45 seconds.
+#> Chain 3: Gradient evaluation took 3.9e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -214,15 +214,15 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.579 seconds (Warm-up)
-#> Chain 3:                0.759 seconds (Sampling)
-#> Chain 3:                2.338 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.282 seconds (Warm-up)
+#> Chain 3:                0.639 seconds (Sampling)
+#> Chain 3:                1.921 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 4.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
+#> Chain 4: Gradient evaluation took 3.9e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -239,21 +239,24 @@ fit <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.655 seconds (Warm-up)
-#> Chain 4:                0.754 seconds (Sampling)
-#> Chain 4:                2.409 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.31 seconds (Warm-up)
+#> Chain 4:                0.643 seconds (Sampling)
+#> Chain 4:                1.953 seconds (Total)
 #> Chain 4: 
+#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#tail-ess
 
 ## compute expected predictions
 fitted_values <- fitted(fit)
 head(fitted_values)
 #>      Estimate Est.Error      Q2.5    Q97.5
-#> [1,] 1.203823 0.2146653 0.7774631 1.617767
-#> [2,] 1.204475 0.2131137 0.7750120 1.627070
-#> [3,] 1.198250 0.2166810 0.7412610 1.602561
-#> [4,] 1.199921 0.2209145 0.7452845 1.627845
-#> [5,] 1.200266 0.2116506 0.7595375 1.605907
-#> [6,] 1.205254 0.2217596 0.7573821 1.620766
+#> [1,] 1.205346 0.2174566 0.7548715 1.607874
+#> [2,] 1.205107 0.2143281 0.7723946 1.610692
+#> [3,] 1.201102 0.2126055 0.7779823 1.595668
+#> [4,] 1.204346 0.2221040 0.7504472 1.625799
+#> [5,] 1.197484 0.2227375 0.7486859 1.628392
+#> [6,] 1.205724 0.2199582 0.7458278 1.619191
 
 ## plot expected predictions against actual response
 dat <- as.data.frame(cbind(Y = standata(fit)$Y, fitted_values))

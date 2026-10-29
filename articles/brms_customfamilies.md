@@ -83,14 +83,14 @@ summary(fit1)
     Multilevel Hyperparameters:
     ~herd (Number of levels: 15) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.76      0.22     0.40     1.27 1.00     1299     2197
+    sd(Intercept)     0.75      0.23     0.39     1.27 1.00     1323     2015
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -1.40      0.26    -1.92    -0.89 1.00     1953     2024
-    period2      -1.00      0.31    -1.63    -0.40 1.00     3673     2738
-    period3      -1.14      0.34    -1.83    -0.51 1.00     4149     3118
-    period4      -1.61      0.45    -2.52    -0.78 1.00     4009     2914
+    Intercept    -1.40      0.27    -1.94    -0.87 1.00     1790     1748
+    period2      -0.99      0.31    -1.62    -0.40 1.00     4738     3153
+    period3      -1.14      0.33    -1.78    -0.53 1.00     4458     3244
+    period4      -1.61      0.44    -2.52    -0.83 1.00     4304     2890
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -226,18 +226,18 @@ summary(fit2)
     Multilevel Hyperparameters:
     ~herd (Number of levels: 15) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.38      0.25     0.02     0.93 1.00      913     1614
+    sd(Intercept)     0.39      0.26     0.01     0.98 1.00      930     1308
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -1.35      0.26    -1.88    -0.85 1.00     3450     2994
-    period2      -1.00      0.42    -1.84    -0.20 1.00     3788     2927
-    period3      -1.27      0.46    -2.24    -0.42 1.00     3395     2523
-    period4      -1.54      0.52    -2.64    -0.55 1.00     2921     2490
+    Intercept    -1.35      0.27    -1.91    -0.83 1.00     2251     1954
+    period2      -0.99      0.42    -1.83    -0.14 1.00     2926     2389
+    period3      -1.25      0.45    -2.19    -0.40 1.00     3068     2696
+    period4      -1.53      0.53    -2.63    -0.55 1.00     2408     2345
 
     Further Distributional Parameters:
         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    phi    17.37     16.63     5.50    55.70 1.00     1301      965
+    phi    17.51     16.35     5.52    56.56 1.00     1368     1140
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -281,8 +281,8 @@ expose_functions(fit2, vectorize = TRUE)
 ```
 
     Running /opt/R/4.6.1/lib/R/bin/R CMD SHLIB foo.c
-    using C compiler: ‘gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0’
-    gcc -std=gnu2x -I"/opt/R/4.6.1/lib/R/include" -DNDEBUG   -I"/home/runner/work/_temp/Library/Rcpp/include/"  -I"/home/runner/work/_temp/Library/RcppEigen/include/"  -I"/home/runner/work/_temp/Library/RcppEigen/include/unsupported"  -I"/home/runner/work/_temp/Library/BH/include" -I"/home/runner/work/_temp/Library/StanHeaders/include/src/"  -I"/home/runner/work/_temp/Library/StanHeaders/include/"  -I"/home/runner/work/_temp/Library/RcppParallel/include/" -DRCPP_PARALLEL_USE_TBB=1 -DTBB_INTERFACE_NEW -I/home/runner/work/_temp/Library/RcppParallel/include -I"/home/runner/work/_temp/Library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/runner/work/_temp/Library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o
+    using C compiler: ‘gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0’
+    gcc -I"/opt/R/4.6.1/lib/R/include" -DNDEBUG   -I"/home/runner/work/_temp/Library/Rcpp/include/"  -I"/home/runner/work/_temp/Library/RcppEigen/include/"  -I"/home/runner/work/_temp/Library/RcppEigen/include/unsupported"  -I"/home/runner/work/_temp/Library/BH/include" -I"/home/runner/work/_temp/Library/StanHeaders/include/src/"  -I"/home/runner/work/_temp/Library/StanHeaders/include/"  -I"/home/runner/work/_temp/Library/RcppParallel/include/" -DRCPP_PARALLEL_USE_TBB=1 -DTBB_INTERFACE_NEW -I/home/runner/work/_temp/Library/RcppParallel/include -I"/home/runner/work/_temp/Library/rstan/include" -DEIGEN_NO_DEBUG  -DBOOST_DISABLE_ASSERTS  -DBOOST_PENDING_INTEGER_LOG2_HPP  -DSTAN_THREADS  -DUSE_STANC3 -DSTRICT_R_HEADERS  -DBOOST_PHOENIX_NO_VARIADIC_EXPRESSION  -D_HAS_AUTO_PTR_ETC=0  -include '/home/runner/work/_temp/Library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp'  -D_REENTRANT -DRCPP_PARALLEL_USE_TBB=1   -I/usr/local/include    -fpic  -g -O2  -c foo.c -o foo.o
     In file included from <command-line>:
     /home/runner/work/_temp/Library/StanHeaders/include/stan/math/prim/fun/Eigen.hpp:3:10: fatal error: stdexcept: No such file or directory
         3 | #include <stdexcept>
@@ -321,18 +321,18 @@ loo(fit1, fit2)
     Computed from 4000 by 56 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -100.0 10.1
-    p_loo        22.1  4.3
-    looic       200.0 20.2
+    elpd_loo    -99.7 10.0
+    p_loo        21.9  4.1
+    looic       199.4 20.0
     ------
     MCSE of elpd_loo is NA.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.5, 1.5]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.5, 1.6]).
 
     Pareto k diagnostic values:
                              Count Pct.    Min. ESS
-    (-Inf, 0.7]   (good)     52    92.9%   185     
-       (0.7, 1]   (bad)       3     5.4%   <NA>    
-       (1, Inf)   (very bad)  1     1.8%   <NA>    
+    (-Inf, 0.7]   (good)     50    89.3%   249     
+       (0.7, 1]   (bad)       6    10.7%   <NA>    
+       (1, Inf)   (very bad)  0     0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
 
     Output of model 'fit2':
@@ -340,16 +340,16 @@ loo(fit1, fit2)
     Computed from 4000 by 56 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo    -94.7  8.3
-    p_loo        10.5  1.9
-    looic       189.5 16.5
+    elpd_loo    -94.8  8.3
+    p_loo        10.7  2.1
+    looic       189.6 16.5
     ------
     MCSE of elpd_loo is NA.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.3]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.3, 1.2]).
 
     Pareto k diagnostic values:
                              Count Pct.    Min. ESS
-    (-Inf, 0.7]   (good)     55    98.2%   175     
+    (-Inf, 0.7]   (good)     55    98.2%   203     
        (0.7, 1]   (bad)       1     1.8%   <NA>    
        (1, Inf)   (very bad)  0     0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
@@ -357,7 +357,7 @@ loo(fit1, fit2)
     Model comparisons:
      model elpd_diff se_diff p_worse diag_diff      diag_elpd
       fit2       0.0     0.0      NA           1 k_psis > 0.7
-      fit1      -5.2     4.3    0.89   N < 100 4 k_psis > 0.7
+      fit1      -4.9     4.1    0.88   N < 100 6 k_psis > 0.7
 
 Since larger `ELPD` values indicate better fit, we see that the
 beta-binomial model fits somewhat better, although the corresponding

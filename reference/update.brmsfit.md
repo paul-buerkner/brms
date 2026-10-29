@@ -66,9 +66,12 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 1: Rejecting initial value:
 #> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 1:   Stan can't start sampling from this initial value.
+#> Chain 1: Rejecting initial value:
+#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 1:   Stan can't start sampling from this initial value.
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 1: Gradient evaluation took 3.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.31 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -85,18 +88,54 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.082 seconds (Warm-up)
-#> Chain 1:                0.052 seconds (Sampling)
-#> Chain 1:                0.134 seconds (Total)
+#> Chain 1:  Elapsed Time: 10.935 seconds (Warm-up)
+#> Chain 1:                12.023 seconds (Sampling)
+#> Chain 1:                22.958 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: Rejecting initial value:
 #> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
+#> Chain 2: Rejecting initial value:
+#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 2:   Stan can't start sampling from this initial value.
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 2: Gradient evaluation took 1.7e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -113,15 +152,105 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.18 seconds (Warm-up)
-#> Chain 2:                0.259 seconds (Sampling)
-#> Chain 2:                0.439 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.182 seconds (Warm-up)
+#> Chain 2:                0.183 seconds (Sampling)
+#> Chain 2:                0.365 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
+#> Chain 3: Rejecting initial value:
+#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 3:   Stan can't start sampling from this initial value.
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 3: Gradient evaluation took 1.7e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -138,9 +267,9 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.207 seconds (Warm-up)
-#> Chain 3:                0.152 seconds (Sampling)
-#> Chain 3:                0.359 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.077 seconds (Warm-up)
+#> Chain 3:                0.056 seconds (Sampling)
+#> Chain 3:                0.133 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -171,9 +300,15 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 4: Rejecting initial value:
 #> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.8e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 4: Gradient evaluation took 1.7e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -190,17 +325,19 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.243 seconds (Warm-up)
-#> Chain 4:                0.091 seconds (Sampling)
-#> Chain 4:                0.334 seconds (Total)
+#> Chain 4:  Elapsed Time: 10.919 seconds (Warm-up)
+#> Chain 4:                12.03 seconds (Sampling)
+#> Chain 4:                22.949 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 3248 divergent transitions after warmup. See
+#> Warning: There were 1520 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
-#> Warning: There were 3 chains where the estimated Bayesian Fraction of Missing Information was low. See
+#> Warning: There were 2000 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+#> https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded
+#> Warning: There were 1 chains where the estimated Bayesian Fraction of Missing Information was low. See
 #> https://mc-stan.org/misc/warnings.html#bfmi-low
 #> Warning: Examine the pairs() plot to diagnose sampling problems
-#> Warning: The largest R-hat is 5.75, indicating chains have not mixed.
+#> Warning: The largest R-hat is 18.67, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See
 #> https://mc-stan.org/misc/warnings.html#r-hat
 #> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
@@ -211,7 +348,7 @@ fit1 <- brm(time | cens(censored) ~ age * sex + disease + (1|patient),
 #> https://mc-stan.org/misc/warnings.html#tail-ess
 summary(fit1)
 #> Warning: Inference for the model posterior has not converged (some Rhats are > 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.
-#> Warning: There were 3248 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 1520 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: gaussian 
 #>   Links: mu = log 
 #> Formula: time | cens(censored) ~ age * sex + disease + (1 | patient) 
@@ -221,22 +358,22 @@ summary(fit1)
 #> 
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 38) 
-#>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     1.91      1.38     0.23     3.95 5.28        4       NA
+#>               Estimate Est.Error l-95% CI u-95% CI  Rhat Bulk_ESS Tail_ESS
+#> sd(Intercept)     2.89      1.25     1.59     4.78 18.66        4       NA
 #> 
 #> Regression Coefficients:
-#>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept         2.81     10.05   -14.53     9.43 5.76        4        4
-#> age              -0.60      0.31    -0.87    -0.07 5.76        4       NA
-#> sexfemale        -0.02      1.83    -1.93     1.90 5.42        4       NA
-#> diseaseGN        -0.31      1.48    -1.90     1.77 3.93        4        4
-#> diseaseAN        -1.31      0.70    -1.78    -0.11 5.16        4       NA
-#> diseasePKD        0.03      0.44    -0.72     0.44 4.17        5       22
-#> age:sexfemale     0.72      0.11     0.57     0.87 5.72        4        4
+#>               Estimate Est.Error l-95% CI u-95% CI  Rhat Bulk_ESS Tail_ESS
+#> Intercept        -8.50     17.24   -31.40     9.83 18.66        4        4
+#> age              -0.46      0.53    -1.06     0.25 18.66        4       NA
+#> sexfemale         0.71      0.46     0.27     1.38 18.66        4       NA
+#> diseaseGN        -0.19      0.77    -1.24     0.77  6.20        4       NA
+#> diseaseAN         0.17      0.30    -0.22     0.47 16.34        4        4
+#> diseasePKD        0.06      0.91    -0.84     1.58 12.51        4       NA
+#> age:sexfemale     0.84      0.23     0.57     1.20 18.66        4       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.38      0.96     1.60     4.01 5.51        4       NA
+#> sigma     3.37      0.91     1.86     4.24 6.21        4       NA
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -259,24 +396,9 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 1: Rejecting initial value:
 #> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 1:   Stan can't start sampling from this initial value.
-#> Chain 1: Rejecting initial value:
-#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 1:   Stan can't start sampling from this initial value.
-#> Chain 1: Rejecting initial value:
-#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 1:   Stan can't start sampling from this initial value.
-#> Chain 1: Rejecting initial value:
-#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 1:   Stan can't start sampling from this initial value.
-#> Chain 1: Rejecting initial value:
-#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 1:   Stan can't start sampling from this initial value.
-#> Chain 1: Rejecting initial value:
-#> Chain 1:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 1:   Stan can't start sampling from this initial value.
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 1: Gradient evaluation took 2.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -293,78 +415,18 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.189 seconds (Warm-up)
-#> Chain 1:                0.135 seconds (Sampling)
-#> Chain 1:                0.324 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.183 seconds (Warm-up)
+#> Chain 1:                1.61 seconds (Sampling)
+#> Chain 1:                1.793 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: Rejecting initial value:
 #> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
-#> Chain 2: Rejecting initial value:
-#> Chain 2:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 2:   Stan can't start sampling from this initial value.
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 2: Gradient evaluation took 1.7e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -381,9 +443,9 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.076 seconds (Warm-up)
-#> Chain 2:                0.051 seconds (Sampling)
-#> Chain 2:                0.127 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.237 seconds (Warm-up)
+#> Chain 2:                0.521 seconds (Sampling)
+#> Chain 2:                0.758 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -432,57 +494,9 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 3: Rejecting initial value:
 #> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
-#> Chain 3: Rejecting initial value:
-#> Chain 3:   Log probability evaluates to log(0), i.e. negative infinity.
-#> Chain 3:   Stan can't start sampling from this initial value.
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 3: Gradient evaluation took 1.6e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -499,9 +513,9 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.176 seconds (Warm-up)
-#> Chain 3:                0.457 seconds (Sampling)
-#> Chain 3:                0.633 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.56 seconds (Warm-up)
+#> Chain 3:                1.415 seconds (Sampling)
+#> Chain 3:                2.975 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -538,9 +552,36 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 4: Rejecting initial value:
 #> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
 #> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
+#> Chain 4: Rejecting initial value:
+#> Chain 4:   Log probability evaluates to log(0), i.e. negative infinity.
+#> Chain 4:   Stan can't start sampling from this initial value.
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.8e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 4: Gradient evaluation took 1.7e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -557,17 +598,17 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.076 seconds (Warm-up)
-#> Chain 4:                0.064 seconds (Sampling)
-#> Chain 4:                0.14 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.065 seconds (Warm-up)
+#> Chain 4:                0.047 seconds (Sampling)
+#> Chain 4:                0.112 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 2510 divergent transitions after warmup. See
+#> Warning: There were 2328 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: There were 2 chains where the estimated Bayesian Fraction of Missing Information was low. See
 #> https://mc-stan.org/misc/warnings.html#bfmi-low
 #> Warning: Examine the pairs() plot to diagnose sampling problems
-#> Warning: The largest R-hat is Inf, indicating chains have not mixed.
+#> Warning: The largest R-hat is 4.7, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See
 #> https://mc-stan.org/misc/warnings.html#r-hat
 #> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
@@ -578,7 +619,7 @@ fit2 <- update(fit1, formula. = ~ . - disease)
 #> https://mc-stan.org/misc/warnings.html#tail-ess
 summary(fit2)
 #> Warning: Inference for the model posterior has not converged (some Rhats are > 1.05). Be careful when analysing the results! We recommend running more iterations or setting stronger priors.
-#> Warning: There were 2510 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 2328 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: gaussian 
 #>   Links: mu = log 
 #> Formula: time | cens(censored) ~ age + sex + (1 | patient) + age:sex 
@@ -588,19 +629,19 @@ summary(fit2)
 #> 
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 38) 
-#>               Estimate Est.Error l-95% CI u-95% CI  Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     2.08      1.69     0.41     4.62 12.76        4       NA
+#>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> sd(Intercept)     0.74      0.43     0.15     1.26 2.49        5       11
 #> 
 #> Regression Coefficients:
-#>               Estimate Est.Error l-95% CI u-95% CI  Rhat Bulk_ESS Tail_ESS
-#> Intercept       -28.30     39.42   -79.50    11.58 13.15        4        4
-#> age               0.14      0.97    -0.93     1.45 13.15        4       NA
-#> sexfemale         0.12      1.10    -1.08     1.77  9.40        4       NA
-#> age:sexfemale     0.67      0.14     0.49     0.87  5.97        4        4
+#>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> Intercept        -3.83     11.95   -22.14     4.64 2.67        5        4
+#> age              -0.11      0.28    -0.38     0.24 2.99        5       11
+#> sexfemale         1.81      6.04    -1.71    14.61 2.88        5        4
+#> age:sexfemale     0.27      0.23    -0.22     0.46 3.90        4       NA
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     4.91      2.23     2.00     7.54 5.97        4       11
+#> sigma    30.44     42.79     4.74   125.00 4.02        4        4
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -616,8 +657,8 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
+#> Chain 1: Gradient evaluation took 1.7e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -634,15 +675,15 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.994 seconds (Warm-up)
-#> Chain 1:                4.446 seconds (Sampling)
-#> Chain 1:                7.44 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.589 seconds (Warm-up)
+#> Chain 1:                3.935 seconds (Sampling)
+#> Chain 1:                6.524 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 9e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
+#> Chain 2: Gradient evaluation took 8e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -659,15 +700,15 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.502 seconds (Warm-up)
-#> Chain 2:                5.003 seconds (Sampling)
-#> Chain 2:                5.505 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.376 seconds (Warm-up)
+#> Chain 2:                4.373 seconds (Sampling)
+#> Chain 2:                6.749 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 3: Gradient evaluation took 9e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -684,15 +725,15 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.121 seconds (Warm-up)
-#> Chain 3:                3.739 seconds (Sampling)
-#> Chain 3:                3.86 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.149 seconds (Warm-up)
+#> Chain 3:                5.082 seconds (Sampling)
+#> Chain 3:                7.231 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 4: Gradient evaluation took 8e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -709,16 +750,14 @@ fit3 <- update(fit1, formula. = ~ . - (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.66 seconds (Warm-up)
-#> Chain 4:                4.761 seconds (Sampling)
-#> Chain 4:                7.421 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.424 seconds (Warm-up)
+#> Chain 4:                4.913 seconds (Sampling)
+#> Chain 4:                7.337 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 2598 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
+#> Warning: There were 3026 transitions after warmup that exceeded the maximum treedepth. Increase max_treedepth above 10. See
 #> https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded
-#> Warning: There were 2 chains where the estimated Bayesian Fraction of Missing Information was low. See
-#> https://mc-stan.org/misc/warnings.html#bfmi-low
 #> Warning: Examine the pairs() plot to diagnose sampling problems
-#> Warning: The largest R-hat is 2.35, indicating chains have not mixed.
+#> Warning: The largest R-hat is 2.13, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See
 #> https://mc-stan.org/misc/warnings.html#r-hat
 #> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
@@ -738,17 +777,17 @@ summary(fit3)
 #> 
 #> Regression Coefficients:
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept       -53.42    104.09  -363.93    10.53 1.36       10       84
-#> age              -0.19      2.36    -6.37     3.72 1.28       20       40
-#> sexfemale        58.96    104.12    -4.90   369.67 1.37        9       84
-#> diseaseGN        -4.92     14.60   -58.97     0.22 1.45        8       11
-#> diseaseAN      -177.68    382.81 -1335.14    -1.18 1.60        7       13
-#> diseasePKD     -157.22    403.90 -1606.74     0.07 1.93        6       20
-#> age:sexfemale     0.19      2.36    -3.73     6.36 1.29       20       40
+#> Intercept      -617.18    691.42 -2270.84    19.05 1.77        6       31
+#> age               5.74     14.71   -34.24    34.20 2.14        5       11
+#> sexfemale       622.74    691.39   -13.48  2276.45 1.77        6       31
+#> diseaseGN       -34.56     90.14  -371.29     0.25 1.25       12       13
+#> diseaseAN      -295.00    373.57 -1412.84    -1.94 1.61        7       19
+#> diseasePKD    -1115.12   1502.26 -5261.27    -1.87 1.74        6       11
+#> age:sexfemale    -5.75     14.71   -34.20    34.22 2.14        5       11
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma   109.56     38.01     1.48   154.88 1.47        8       11
+#> sigma   125.35     16.93    97.94   161.80 1.08       47      434
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -763,8 +802,8 @@ fit4 <- update(fit1, family = weibull(), init = "0",
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+#> Chain 1: Gradient evaluation took 3.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -781,15 +820,15 @@ fit4 <- update(fit1, family = weibull(), init = "0",
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.466 seconds (Warm-up)
-#> Chain 1:                0.595 seconds (Sampling)
-#> Chain 1:                2.061 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.376 seconds (Warm-up)
+#> Chain 1:                0.55 seconds (Sampling)
+#> Chain 1:                1.926 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 2: Gradient evaluation took 3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -806,15 +845,15 @@ fit4 <- update(fit1, family = weibull(), init = "0",
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.59 seconds (Warm-up)
-#> Chain 2:                0.586 seconds (Sampling)
-#> Chain 2:                2.176 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.435 seconds (Warm-up)
+#> Chain 2:                0.555 seconds (Sampling)
+#> Chain 2:                1.99 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4.9e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
+#> Chain 3: Gradient evaluation took 2.3e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -831,15 +870,15 @@ fit4 <- update(fit1, family = weibull(), init = "0",
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.505 seconds (Warm-up)
-#> Chain 3:                0.592 seconds (Sampling)
-#> Chain 3:                2.097 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.379 seconds (Warm-up)
+#> Chain 3:                0.565 seconds (Sampling)
+#> Chain 3:                1.944 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.4e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+#> Chain 4: Gradient evaluation took 2.2e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -856,9 +895,9 @@ fit4 <- update(fit1, family = weibull(), init = "0",
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.701 seconds (Warm-up)
-#> Chain 4:                0.59 seconds (Sampling)
-#> Chain 4:                2.291 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.497 seconds (Warm-up)
+#> Chain 4:                0.546 seconds (Sampling)
+#> Chain 4:                2.043 seconds (Total)
 #> Chain 4: 
 summary(fit4)
 #>  Family: weibull 
@@ -871,21 +910,21 @@ summary(fit4)
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 38) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.54      0.25     0.04     1.00 1.01      573      691
+#> sd(Intercept)     0.51      0.25     0.04     1.00 1.01      605      996
 #> 
 #> Regression Coefficients:
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept         2.88      0.93     1.13     4.74 1.00     2123     2676
-#> age               0.02      0.02    -0.03     0.07 1.00     1703     2509
-#> sexfemale         2.77      1.10     0.56     4.87 1.00     2106     2416
-#> diseaseGN        -0.27      0.50    -1.28     0.71 1.00     2531     2835
-#> diseaseAN        -0.57      0.47    -1.52     0.37 1.00     2509     2631
-#> diseasePKD        0.75      0.72    -0.69     2.12 1.00     2285     2604
-#> age:sexfemale    -0.03      0.03    -0.08     0.02 1.00     1945     2244
+#> Intercept         2.87      0.92     1.15     4.76 1.00     2320     2260
+#> age               0.02      0.02    -0.03     0.06 1.00     1981     2187
+#> sexfemale         2.79      1.06     0.68     4.88 1.00     2239     2248
+#> diseaseGN        -0.27      0.48    -1.22     0.67 1.00     2609     2816
+#> diseaseAN        -0.58      0.47    -1.52     0.34 1.00     2378     2355
+#> diseasePKD        0.77      0.73    -0.69     2.25 1.00     2056     2652
+#> age:sexfemale    -0.03      0.02    -0.08     0.02 1.00     2126     1978
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     1.12      0.16     0.86     1.46 1.00     1251     2546
+#> shape     1.12      0.16     0.85     1.46 1.00     1092     2086
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -1011,7 +1050,7 @@ upd_cmdstanr <- update(fit_cmdstanr,
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.7 seconds.
+#> Total execution time: 1.8 seconds.
 #> 
 
 # the updated fit will use a random seed unless specified, even if the
@@ -1025,8 +1064,8 @@ fit_seed <- brm(rate ~ conc + state,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.11 seconds.
+#> Chain 1: Gradient evaluation took 1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -1068,15 +1107,15 @@ fit_seed <- brm(rate ~ conc + state,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.049 seconds (Warm-up)
-#> Chain 2:                0.011 seconds (Sampling)
-#> Chain 2:                0.06 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.041 seconds (Warm-up)
+#> Chain 2:                0.012 seconds (Sampling)
+#> Chain 2:                0.053 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 3: Gradient evaluation took 2e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -1093,9 +1132,9 @@ fit_seed <- brm(rate ~ conc + state,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.041 seconds (Warm-up)
-#> Chain 3:                0.013 seconds (Sampling)
-#> Chain 3:                0.054 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.04 seconds (Warm-up)
+#> Chain 3:                0.012 seconds (Sampling)
+#> Chain 3:                0.052 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -1118,9 +1157,9 @@ fit_seed <- brm(rate ~ conc + state,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.042 seconds (Warm-up)
-#> Chain 4:                0.014 seconds (Sampling)
-#> Chain 4:                0.056 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.045 seconds (Warm-up)
+#> Chain 4:                0.013 seconds (Sampling)
+#> Chain 4:                0.058 seconds (Total)
 #> Chain 4: 
 
 update_seed <- update(fit_seed,
@@ -1130,8 +1169,8 @@ update_seed <- update(fit_seed,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 6e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
+#> Chain 1: Gradient evaluation took 5e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -1148,15 +1187,15 @@ update_seed <- update(fit_seed,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.032 seconds (Warm-up)
-#> Chain 1:                0.01 seconds (Sampling)
-#> Chain 1:                0.042 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.037 seconds (Warm-up)
+#> Chain 1:                0.011 seconds (Sampling)
+#> Chain 1:                0.048 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 2: Gradient evaluation took 2e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -1173,15 +1212,15 @@ update_seed <- update(fit_seed,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.037 seconds (Warm-up)
-#> Chain 2:                0.011 seconds (Sampling)
-#> Chain 2:                0.048 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.035 seconds (Warm-up)
+#> Chain 2:                0.012 seconds (Sampling)
+#> Chain 2:                0.047 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 3e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 3: Gradient evaluation took 2e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -1198,15 +1237,15 @@ update_seed <- update(fit_seed,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.034 seconds (Warm-up)
+#> Chain 3:  Elapsed Time: 0.032 seconds (Warm-up)
 #> Chain 3:                0.011 seconds (Sampling)
-#> Chain 3:                0.045 seconds (Total)
+#> Chain 3:                0.043 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 3e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 4: Gradient evaluation took 2e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -1223,9 +1262,9 @@ update_seed <- update(fit_seed,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.028 seconds (Warm-up)
-#> Chain 4:                0.011 seconds (Sampling)
-#> Chain 4:                0.039 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.026 seconds (Warm-up)
+#> Chain 4:                0.008 seconds (Sampling)
+#> Chain 4:                0.034 seconds (Total)
 #> Chain 4: 
 # }
 ```

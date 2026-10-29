@@ -53,8 +53,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
+#> Chain 1: Gradient evaluation took 2.9e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.29 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -71,15 +71,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.02 seconds (Warm-up)
-#> Chain 1:                1.528 seconds (Sampling)
-#> Chain 1:                3.548 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.969 seconds (Warm-up)
+#> Chain 1:                1.398 seconds (Sampling)
+#> Chain 1:                3.367 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 2: Gradient evaluation took 2.4e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -96,9 +96,9 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.238 seconds (Warm-up)
-#> Chain 2:                1.525 seconds (Sampling)
-#> Chain 2:                3.763 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.93 seconds (Warm-up)
+#> Chain 2:                1.362 seconds (Sampling)
+#> Chain 2:                3.292 seconds (Total)
 #> Chain 2: 
 summary(fit)
 #>  Family: poisson 
@@ -111,15 +111,15 @@ summary(fit)
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.58      0.07     0.46     0.73 1.00      577      945
+#> sd(Intercept)     0.59      0.07     0.47     0.74 1.01      301      726
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.76      0.12     1.54     1.99 1.01      363      727
-#> zAge           0.09      0.08    -0.07     0.25 1.00      358      639
-#> zBase          0.70      0.12     0.48     0.93 1.00      380      706
-#> Trt1          -0.26      0.16    -0.57     0.04 1.01      311      794
-#> zBase:Trt1     0.05      0.16    -0.27     0.37 1.00      395      832
+#> Intercept      1.77      0.12     1.53     2.01 1.01      322      572
+#> zAge           0.10      0.09    -0.07     0.28 1.01      357      644
+#> zBase          0.69      0.12     0.45     0.92 1.00      394      709
+#> Trt1          -0.25      0.17    -0.60     0.07 1.01      306      673
+#> zBase:Trt1     0.06      0.16    -0.24     0.38 1.00      520      842
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

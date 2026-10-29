@@ -69,8 +69,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 6.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.66 seconds.
+#> Chain 1: Gradient evaluation took 5.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.58 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -87,15 +87,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.711 seconds (Warm-up)
-#> Chain 1:                0.432 seconds (Sampling)
-#> Chain 1:                1.143 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.684 seconds (Warm-up)
+#> Chain 1:                0.476 seconds (Sampling)
+#> Chain 1:                1.16 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.42 seconds.
+#> Chain 2: Gradient evaluation took 3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -112,14 +112,17 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.742 seconds (Warm-up)
-#> Chain 2:                0.422 seconds (Sampling)
-#> Chain 2:                1.164 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.687 seconds (Warm-up)
+#> Chain 2:                0.456 seconds (Sampling)
+#> Chain 2:                1.143 seconds (Total)
 #> Chain 2: 
-#> Warning: There were 44 divergent transitions after warmup. See
+#> Warning: There were 13 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
+#> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
+#> Running the chains for more iterations may help. See
+#> https://mc-stan.org/misc/warnings.html#bulk-ess
 #> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
 #> Running the chains for more iterations may help. See
 #> https://mc-stan.org/misc/warnings.html#tail-ess
@@ -127,42 +130,42 @@ VarCorr(fit)
 #> $visit
 #> $visit$sd
 #>           Estimate Est.Error       Q2.5    Q97.5
-#> Intercept 1.140915  1.094191 0.03764509 4.261134
-#> Trt1      1.345855  1.266183 0.04438976 4.851442
+#> Intercept 1.080664  1.034120 0.03847027 3.840012
+#> Trt1      1.288489  1.201186 0.04339668 4.500772
 #> 
 #> $visit$cor
 #> , , Intercept
 #> 
-#>             Estimate Est.Error       Q2.5     Q97.5
-#> Intercept  1.0000000 0.0000000  1.0000000 1.0000000
-#> Trt1      -0.1217731 0.6009979 -0.9743096 0.9333658
+#>             Estimate Est.Error       Q2.5    Q97.5
+#> Intercept  1.0000000 0.0000000  1.0000000 1.000000
+#> Trt1      -0.1020936 0.5969135 -0.9722148 0.930569
 #> 
 #> , , Trt1
 #> 
-#>             Estimate Est.Error       Q2.5     Q97.5
-#> Intercept -0.1217731 0.6009979 -0.9743096 0.9333658
-#> Trt1       1.0000000 0.0000000  1.0000000 1.0000000
+#>             Estimate Est.Error       Q2.5    Q97.5
+#> Intercept -0.1020936 0.5969135 -0.9722148 0.930569
+#> Trt1       1.0000000 0.0000000  1.0000000 1.000000
 #> 
 #> 
 #> $visit$cov
 #> , , Intercept
 #> 
-#>             Estimate Est.Error          Q2.5     Q97.5
-#> Intercept  2.4983440  4.938207   0.001417192 18.157265
-#> Trt1      -0.7692375  3.509571 -11.125638255  2.243856
+#>             Estimate Est.Error         Q2.5     Q97.5
+#> Intercept  2.2367048  4.422377  0.001479961 14.745690
+#> Trt1      -0.4111766  2.346923 -6.616013103  2.794164
 #> 
 #> , , Trt1
 #> 
-#>             Estimate Est.Error          Q2.5     Q97.5
-#> Intercept -0.7692375  3.509571 -11.125638255  2.243856
-#> Trt1       3.4137435  7.023089   0.001970522 23.536494
+#>             Estimate Est.Error         Q2.5     Q97.5
+#> Intercept -0.4111766  2.346923 -6.616013103  2.794164
+#> Trt1       3.1023291  6.327188  0.001883295 20.256954
 #> 
 #> 
 #> 
 #> $residual__
 #> $residual__$sd
-#>  Estimate Est.Error     Q2.5    Q97.5
-#>  7.637655 0.3460858 7.007586 8.346337
+#>  Estimate Est.Error     Q2.5   Q97.5
+#>  7.638709 0.3561765 6.989299 8.39198
 #> 
 #> 
 # }

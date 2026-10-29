@@ -118,9 +118,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.018 seconds (Warm-up)
-#> Chain 1:                0.019 seconds (Sampling)
-#> Chain 1:                0.037 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.017 seconds (Warm-up)
+#> Chain 1:                0.017 seconds (Sampling)
+#> Chain 1:                0.034 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -143,15 +143,15 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.018 seconds (Warm-up)
-#> Chain 2:                0.018 seconds (Sampling)
-#> Chain 2:                0.036 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.016 seconds (Warm-up)
+#> Chain 2:                0.013 seconds (Sampling)
+#> Chain 2:                0.029 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 3e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 3: Gradient evaluation took 2e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -168,15 +168,15 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.02 seconds (Warm-up)
-#> Chain 3:                0.017 seconds (Sampling)
-#> Chain 3:                0.037 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.017 seconds (Warm-up)
+#> Chain 3:                0.014 seconds (Sampling)
+#> Chain 3:                0.031 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 3e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 4: Gradient evaluation took 2e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -193,9 +193,9 @@ fit <- brm(mpg ~ wt + cyl, data = mtcars)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.018 seconds (Warm-up)
-#> Chain 4:                0.014 seconds (Sampling)
-#> Chain 4:                0.032 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.016 seconds (Warm-up)
+#> Chain 4:                0.015 seconds (Sampling)
+#> Chain 4:                0.031 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 
@@ -207,25 +207,25 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept    39.68      1.76    36.15    43.12 1.00     4976     3155
-#> wt           -3.21      0.80    -4.79    -1.65 1.00     1988     2316
-#> cyl          -1.50      0.43    -2.34    -0.64 1.00     2049     2147
+#> Intercept    39.67      1.72    36.26    43.13 1.00     5026     3044
+#> wt           -3.19      0.81    -4.76    -1.54 1.00     2028     2206
+#> cyl          -1.51      0.44    -2.40    -0.64 1.00     2210     2346
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.67      0.38     2.06     3.53 1.00     2892     2395
+#> sigma     2.67      0.38     2.07     3.54 1.00     2927     2507
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
 loo_R2(fit)
-#>     Estimate  Est.Error      Q2.5    Q97.5
-#> R2 0.7874155 0.05415555 0.6633882 0.876111
+#>     Estimate  Est.Error     Q2.5   Q97.5
+#> R2 0.7884096 0.05355423 0.664187 0.87628
 
 # compute R2 with new data
 nd <- data.frame(mpg = c(10, 20, 30), wt = c(4, 3, 2), cyl = c(8, 6, 4))
 loo_R2(fit, newdata = nd)
-#>     Estimate    Est.Error      Q2.5     Q97.5
-#> R2 0.8326837 9.412796e-05 0.8324707 0.8328943
+#>    Estimate    Est.Error      Q2.5     Q97.5
+#> R2 0.833467 0.0003987836 0.8325598 0.8343515
 # }
 ```

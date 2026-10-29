@@ -66,8 +66,8 @@ fit1 <- brm(time | cens(censored) ~ age + sex + disease,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.2 seconds.
+#> Chain 1: Gradient evaluation took 2.6e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -84,15 +84,15 @@ fit1 <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.237 seconds (Warm-up)
-#> Chain 1:                0.101 seconds (Sampling)
-#> Chain 1:                0.338 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.199 seconds (Warm-up)
+#> Chain 1:                0.113 seconds (Sampling)
+#> Chain 1:                0.312 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
+#> Chain 2: Gradient evaluation took 1.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -109,15 +109,15 @@ fit1 <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.211 seconds (Warm-up)
-#> Chain 2:                0.096 seconds (Sampling)
-#> Chain 2:                0.307 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.265 seconds (Warm-up)
+#> Chain 2:                0.111 seconds (Sampling)
+#> Chain 2:                0.376 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.7e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
+#> Chain 3: Gradient evaluation took 1.6e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -134,9 +134,9 @@ fit1 <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.212 seconds (Warm-up)
-#> Chain 3:                0.107 seconds (Sampling)
-#> Chain 3:                0.319 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.24 seconds (Warm-up)
+#> Chain 3:                0.115 seconds (Sampling)
+#> Chain 3:                0.355 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -159,9 +159,9 @@ fit1 <- brm(time | cens(censored) ~ age + sex + disease,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.206 seconds (Warm-up)
+#> Chain 4:  Elapsed Time: 0.247 seconds (Warm-up)
 #> Chain 4:                0.12 seconds (Sampling)
-#> Chain 4:                0.326 seconds (Total)
+#> Chain 4:                0.367 seconds (Total)
 #> Chain 4: 
 summary(fit1)
 #>  Family: weibull 
@@ -173,16 +173,16 @@ summary(fit1)
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      3.79      0.53     2.80     4.86 1.00     4705     3366
-#> age           -0.00      0.01    -0.02     0.02 1.00     3238     2725
-#> sexfemale      1.60      0.34     0.92     2.29 1.00     3304     3019
-#> diseaseGN     -0.05      0.42    -0.89     0.79 1.00     2352     2804
-#> diseaseAN     -0.51      0.40    -1.33     0.27 1.00     2656     2689
-#> diseasePKD     1.35      0.60     0.20     2.58 1.00     2660     2954
+#> Intercept      3.77      0.51     2.79     4.83 1.00     5647     3027
+#> age           -0.00      0.01    -0.02     0.02 1.00     3085     3056
+#> sexfemale      1.60      0.34     0.91     2.25 1.00     3496     2381
+#> diseaseGN     -0.05      0.42    -0.85     0.77 1.00     2589     3095
+#> diseaseAN     -0.52      0.41    -1.30     0.28 1.00     2566     3091
+#> diseasePKD     1.35      0.60     0.19     2.53 1.00     2356     2544
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     0.98      0.10     0.79     1.18 1.00     3751     3008
+#> shape     0.98      0.10     0.79     1.18 1.00     3549     2936
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -200,8 +200,8 @@ fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.2e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
+#> Chain 1: Gradient evaluation took 3.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.31 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -218,15 +218,15 @@ fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.934 seconds (Warm-up)
-#> Chain 1:                0.271 seconds (Sampling)
-#> Chain 1:                1.205 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.987 seconds (Warm-up)
+#> Chain 1:                0.366 seconds (Sampling)
+#> Chain 1:                1.353 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 2: Gradient evaluation took 2.1e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.21 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -243,15 +243,15 @@ fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.948 seconds (Warm-up)
-#> Chain 2:                0.531 seconds (Sampling)
-#> Chain 2:                1.479 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.979 seconds (Warm-up)
+#> Chain 2:                0.497 seconds (Sampling)
+#> Chain 2:                1.476 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.2e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
+#> Chain 3: Gradient evaluation took 2e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.2 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -268,15 +268,15 @@ fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.019 seconds (Warm-up)
-#> Chain 3:                0.526 seconds (Sampling)
-#> Chain 3:                1.545 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.917 seconds (Warm-up)
+#> Chain 3:                0.422 seconds (Sampling)
+#> Chain 3:                1.339 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.3e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 4: Gradient evaluation took 2.1e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.21 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -293,16 +293,16 @@ fit2 <- brm(time | cens(censored) ~ age + sex + disease + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.911 seconds (Warm-up)
-#> Chain 4:                0.481 seconds (Sampling)
-#> Chain 4:                1.392 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.883 seconds (Warm-up)
+#> Chain 4:                0.482 seconds (Sampling)
+#> Chain 4:                1.365 seconds (Total)
 #> Chain 4: 
-#> Warning: There were 3 divergent transitions after warmup. See
+#> Warning: There were 2 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
 summary(fit2)
-#> Warning: There were 3 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 2 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: weibull 
 #>   Links: mu = log 
 #> Formula: time | cens(censored) ~ age + sex + disease + (1 | patient) 
@@ -313,20 +313,20 @@ summary(fit2)
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 38) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.54      0.25     0.06     1.01 1.00      708     1145
+#> sd(Intercept)     0.55      0.24     0.06     1.01 1.00      838     1602
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      3.75      0.59     2.63     4.89 1.00     3565     2962
-#> age           -0.00      0.01    -0.03     0.02 1.00     2214     2190
-#> sexfemale      1.61      0.38     0.86     2.36 1.00     2961     2482
-#> diseaseGN     -0.09      0.48    -1.01     0.84 1.00     2229     2523
-#> diseaseAN     -0.51      0.46    -1.43     0.40 1.00     2274     2450
-#> diseasePKD     1.00      0.71    -0.40     2.34 1.00     1869     2625
+#> Intercept      3.74      0.57     2.63     4.93 1.00     3361     2714
+#> age           -0.00      0.01    -0.03     0.02 1.00     2128     2227
+#> sexfemale      1.62      0.40     0.81     2.40 1.00     2538     2454
+#> diseaseGN     -0.12      0.48    -1.06     0.86 1.00     2184     2094
+#> diseaseAN     -0.53      0.47    -1.45     0.42 1.00     2158     1845
+#> diseasePKD     0.98      0.73    -0.43     2.42 1.00     1740     1829
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     1.12      0.16     0.84     1.45 1.00     1086     1828
+#> shape     1.12      0.15     0.84     1.45 1.00     1323     2455
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

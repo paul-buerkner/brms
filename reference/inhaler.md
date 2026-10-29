@@ -56,8 +56,8 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000166 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.66 seconds.
+#> Chain 1: Gradient evaluation took 0.000159 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.59 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -74,15 +74,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.362 seconds (Warm-up)
-#> Chain 1:                1.158 seconds (Sampling)
-#> Chain 1:                2.52 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.25 seconds (Warm-up)
+#> Chain 1:                1.182 seconds (Sampling)
+#> Chain 1:                2.432 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000161 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.61 seconds.
+#> Chain 2: Gradient evaluation took 0.000146 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.46 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -99,15 +99,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.325 seconds (Warm-up)
-#> Chain 2:                1.259 seconds (Sampling)
-#> Chain 2:                2.584 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.251 seconds (Warm-up)
+#> Chain 2:                1.168 seconds (Sampling)
+#> Chain 2:                2.419 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 0.000161 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.61 seconds.
+#> Chain 3: Gradient evaluation took 0.000144 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.44 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -124,15 +124,15 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.375 seconds (Warm-up)
-#> Chain 3:                1.215 seconds (Sampling)
-#> Chain 3:                2.59 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.258 seconds (Warm-up)
+#> Chain 3:                1.089 seconds (Sampling)
+#> Chain 3:                2.347 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000159 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.59 seconds.
+#> Chain 4: Gradient evaluation took 0.000143 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.43 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -149,9 +149,9 @@ fit1 <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.417 seconds (Warm-up)
-#> Chain 4:                1.321 seconds (Sampling)
-#> Chain 4:                2.738 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.246 seconds (Warm-up)
+#> Chain 4:                1.137 seconds (Sampling)
+#> Chain 4:                2.383 seconds (Total)
 #> Chain 4: 
 summary(fit1)
 #>  Family: sratio 
@@ -163,12 +163,12 @@ summary(fit1)
 #> 
 #> Regression Coefficients:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept[1]     0.55      0.09     0.38     0.73 1.00     5099     3142
-#> Intercept[2]     2.26      0.22     1.84     2.72 1.00     5273     2512
-#> Intercept[3]     1.10      0.44     0.26     2.00 1.00     5583     2729
-#> treat           -0.75      0.23    -1.19    -0.30 1.00     3408     3189
-#> period           0.22      0.16    -0.10     0.54 1.00     5284     3162
-#> carry           -0.22      0.17    -0.54     0.09 1.00     3381     3050
+#> Intercept[1]     0.55      0.09     0.38     0.73 1.00     4940     2872
+#> Intercept[2]     2.26      0.22     1.84     2.73 1.00     6163     3002
+#> Intercept[3]     1.10      0.43     0.29     1.95 1.00     5338     2942
+#> treat           -0.75      0.23    -1.21    -0.30 1.00     3269     2628
+#> period           0.21      0.17    -0.12     0.55 1.00     5756     2623
+#> carry           -0.22      0.17    -0.54     0.12 1.00     3347     2847
 #> 
 #> Further Distributional Parameters:
 #>      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -191,8 +191,8 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000252 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.52 seconds.
+#> Chain 1: Gradient evaluation took 0.000223 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.23 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -209,15 +209,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 5.665 seconds (Warm-up)
-#> Chain 1:                3.928 seconds (Sampling)
-#> Chain 1:                9.593 seconds (Total)
+#> Chain 1:  Elapsed Time: 5.013 seconds (Warm-up)
+#> Chain 1:                3.126 seconds (Sampling)
+#> Chain 1:                8.139 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000242 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 2.42 seconds.
+#> Chain 2: Gradient evaluation took 0.000192 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.92 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -234,15 +234,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 5.682 seconds (Warm-up)
-#> Chain 2:                3.952 seconds (Sampling)
-#> Chain 2:                9.634 seconds (Total)
+#> Chain 2:  Elapsed Time: 4.478 seconds (Warm-up)
+#> Chain 2:                3.12 seconds (Sampling)
+#> Chain 2:                7.598 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 0.000265 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 2.65 seconds.
+#> Chain 3: Gradient evaluation took 0.000192 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.92 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -259,15 +259,15 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 5.646 seconds (Warm-up)
-#> Chain 3:                3.936 seconds (Sampling)
-#> Chain 3:                9.582 seconds (Total)
+#> Chain 3:  Elapsed Time: 4.391 seconds (Warm-up)
+#> Chain 3:                3.112 seconds (Sampling)
+#> Chain 3:                7.503 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000245 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 2.45 seconds.
+#> Chain 4: Gradient evaluation took 0.00019 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.9 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -284,9 +284,9 @@ fit2 <- brm(rating ~ treat + period + carry + (1|subject),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 5.883 seconds (Warm-up)
-#> Chain 4:                3.934 seconds (Sampling)
-#> Chain 4:                9.817 seconds (Total)
+#> Chain 4:  Elapsed Time: 4.424 seconds (Warm-up)
+#> Chain 4:                3.126 seconds (Sampling)
+#> Chain 4:                7.55 seconds (Total)
 #> Chain 4: 
 summary(fit2)
 #>  Family: cumulative 
@@ -299,16 +299,16 @@ summary(fit2)
 #> Multilevel Hyperparameters:
 #> ~subject (Number of levels: 286) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     1.20      0.25     0.71     1.68 1.01      607     1240
+#> sd(Intercept)     1.20      0.24     0.73     1.67 1.00      729      964
 #> 
 #> Regression Coefficients:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept[1]     0.70      0.14     0.45     0.98 1.00     2765     2969
-#> Intercept[2]     3.85      0.32     3.26     4.51 1.00     1423     2631
-#> Intercept[3]     5.14      0.46     4.31     6.10 1.00     1680     2398
-#> treat           -1.04      0.32    -1.68    -0.42 1.00     2375     2650
-#> period           0.23      0.19    -0.15     0.61 1.00     7051     2938
-#> carry           -0.25      0.25    -0.74     0.25 1.00     2188     2666
+#> Intercept[1]     0.70      0.14     0.44     0.97 1.00     2906     3109
+#> Intercept[2]     3.85      0.32     3.25     4.49 1.00     1376     1812
+#> Intercept[3]     5.14      0.45     4.31     6.07 1.00     2091     2043
+#> treat           -1.05      0.32    -1.70    -0.46 1.00     3103     2943
+#> period           0.23      0.20    -0.17     0.62 1.00     8225     2733
+#> carry           -0.25      0.25    -0.73     0.23 1.00     3091     2961
 #> 
 #> Further Distributional Parameters:
 #>      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS

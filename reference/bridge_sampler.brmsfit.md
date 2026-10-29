@@ -70,8 +70,8 @@ fit1 <- brm(
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.31 seconds.
+#> Chain 1: Gradient evaluation took 6.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.68 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -88,154 +88,15 @@ fit1 <- brm(
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.121 seconds (Warm-up)
-#> Chain 1:                0.12 seconds (Sampling)
-#> Chain 1:                0.241 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.115 seconds (Warm-up)
+#> Chain 1:                0.116 seconds (Sampling)
+#> Chain 1:                0.231 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
-#> Chain 2: Adjust your expectations accordingly!
-#> Chain 2: 
-#> Chain 2: 
-#> Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
-#> Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#> Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#> Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#> Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#> Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#> Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#> Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
-#> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.121 seconds (Warm-up)
-#> Chain 2:                0.123 seconds (Sampling)
-#> Chain 2:                0.244 seconds (Total)
-#> Chain 2: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
-#> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.6e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
-#> Chain 3: Adjust your expectations accordingly!
-#> Chain 3: 
-#> Chain 3: 
-#> Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
-#> Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#> Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#> Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#> Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#> Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#> Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#> Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#> Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#> Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
-#> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.126 seconds (Warm-up)
-#> Chain 3:                0.128 seconds (Sampling)
-#> Chain 3:                0.254 seconds (Total)
-#> Chain 3: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
-#> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.4e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
-#> Chain 4: Adjust your expectations accordingly!
-#> Chain 4: 
-#> Chain 4: 
-#> Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
-#> Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#> Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#> Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#> Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#> Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#> Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#> Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#> Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#> Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
-#> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.123 seconds (Warm-up)
-#> Chain 4:                0.131 seconds (Sampling)
-#> Chain 4:                0.254 seconds (Total)
-#> Chain 4: 
-summary(fit1)
-#>  Family: negbinomial 
-#>   Links: mu = log 
-#> Formula: count ~ zAge + zBase + Trt 
-#>    Data: epilepsy (Number of observations: 236) 
-#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
-#>          total post-warmup draws = 4000
-#> 
-#> Regression Coefficients:
-#>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     1.89      0.07     1.75     2.04 1.00     4575     3273
-#> zAge          0.11      0.05     0.01     0.21 1.00     4323     3277
-#> zBase         0.72      0.06     0.61     0.83 1.00     4440     2896
-#> Trt1         -0.18      0.10    -0.38     0.01 1.00     4687     3171
-#> 
-#> Further Distributional Parameters:
-#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     2.36      0.32     1.80     3.07 1.00     4758     2933
-#> 
-#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
-#> and Tail_ESS are effective sample size measures, and Rhat is the potential
-#> scale reduction factor on split chains (at convergence, Rhat = 1).
-bridge_sampler(fit1)
-#> Iteration: 1
-#> Iteration: 2
-#> Iteration: 3
-#> Iteration: 4
-#> Bridge sampling estimate of the log marginal likelihood: -672.2959
-#> Estimate obtained in 4 iteration(s) via method "normal".
-
-# model without the treatment effect
-fit2 <- brm(
-  count ~ zAge + zBase,
-  data = epilepsy, family = negbinomial(),
-  prior = prior(normal(0, 1), class = b),
-  save_pars = save_pars(all = TRUE)
-)
-#> Compiling Stan program...
-#> Start sampling
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
-#> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
-#> Chain 1: Adjust your expectations accordingly!
-#> Chain 1: 
-#> Chain 1: 
-#> Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
-#> Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
-#> Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
-#> Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
-#> Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
-#> Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
-#> Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
-#> Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
-#> Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
-#> Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
-#> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
-#> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.12 seconds (Warm-up)
-#> Chain 1:                0.131 seconds (Sampling)
-#> Chain 1:                0.251 seconds (Total)
-#> Chain 1: 
-#> 
-#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
-#> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.27 seconds.
+#> Chain 2: Gradient evaluation took 2.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -253,14 +114,14 @@ fit2 <- brm(
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
 #> Chain 2:  Elapsed Time: 0.115 seconds (Warm-up)
-#> Chain 2:                0.124 seconds (Sampling)
-#> Chain 2:                0.239 seconds (Total)
+#> Chain 2:                0.126 seconds (Sampling)
+#> Chain 2:                0.241 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.4e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
+#> Chain 3: Gradient evaluation took 4.9e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -277,15 +138,15 @@ fit2 <- brm(
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.107 seconds (Warm-up)
-#> Chain 3:                0.113 seconds (Sampling)
-#> Chain 3:                0.22 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.113 seconds (Warm-up)
+#> Chain 3:                0.11 seconds (Sampling)
+#> Chain 3:                0.223 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 4: Gradient evaluation took 2.2e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -302,9 +163,148 @@ fit2 <- brm(
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.114 seconds (Warm-up)
-#> Chain 4:                0.116 seconds (Sampling)
-#> Chain 4:                0.23 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.116 seconds (Warm-up)
+#> Chain 4:                0.117 seconds (Sampling)
+#> Chain 4:                0.233 seconds (Total)
+#> Chain 4: 
+summary(fit1)
+#>  Family: negbinomial 
+#>   Links: mu = log 
+#> Formula: count ~ zAge + zBase + Trt 
+#>    Data: epilepsy (Number of observations: 236) 
+#>   Draws: 4 chains, each with iter = 2000; warmup = 1000; thin = 1;
+#>          total post-warmup draws = 4000
+#> 
+#> Regression Coefficients:
+#>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> Intercept     1.89      0.07     1.75     2.04 1.00     4394     3210
+#> zAge          0.11      0.05     0.01     0.21 1.00     4859     3241
+#> zBase         0.72      0.05     0.61     0.83 1.00     4399     3019
+#> Trt1         -0.19      0.10    -0.39     0.01 1.00     4295     3013
+#> 
+#> Further Distributional Parameters:
+#>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
+#> shape     2.35      0.32     1.80     3.06 1.00     4066     3210
+#> 
+#> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
+#> and Tail_ESS are effective sample size measures, and Rhat is the potential
+#> scale reduction factor on split chains (at convergence, Rhat = 1).
+bridge_sampler(fit1)
+#> Iteration: 1
+#> Iteration: 2
+#> Iteration: 3
+#> Iteration: 4
+#> Bridge sampling estimate of the log marginal likelihood: -672.2953
+#> Estimate obtained in 4 iteration(s) via method "normal".
+
+# model without the treatment effect
+fit2 <- brm(
+  count ~ zAge + zBase,
+  data = epilepsy, family = negbinomial(),
+  prior = prior(normal(0, 1), class = b),
+  save_pars = save_pars(all = TRUE)
+)
+#> Compiling Stan program...
+#> Start sampling
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
+#> Chain 1: 
+#> Chain 1: Gradient evaluation took 2.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 1: Adjust your expectations accordingly!
+#> Chain 1: 
+#> Chain 1: 
+#> Chain 1: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 1: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 1: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 1: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 1: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 1: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 1: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 1: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 1: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 1: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 1: 
+#> Chain 1:  Elapsed Time: 0.107 seconds (Warm-up)
+#> Chain 1:                0.096 seconds (Sampling)
+#> Chain 1:                0.203 seconds (Total)
+#> Chain 1: 
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
+#> Chain 2: 
+#> Chain 2: Gradient evaluation took 2.8e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
+#> Chain 2: Adjust your expectations accordingly!
+#> Chain 2: 
+#> Chain 2: 
+#> Chain 2: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 2: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 2: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 2: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 2: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 2: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 2: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 2: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 2: 
+#> Chain 2:  Elapsed Time: 0.105 seconds (Warm-up)
+#> Chain 2:                0.107 seconds (Sampling)
+#> Chain 2:                0.212 seconds (Total)
+#> Chain 2: 
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
+#> Chain 3: 
+#> Chain 3: Gradient evaluation took 2e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.2 seconds.
+#> Chain 3: Adjust your expectations accordingly!
+#> Chain 3: 
+#> Chain 3: 
+#> Chain 3: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 3: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 3: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 3: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 3: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 3: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 3: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 3: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 3: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 3: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 3: 
+#> Chain 3:  Elapsed Time: 0.101 seconds (Warm-up)
+#> Chain 3:                0.119 seconds (Sampling)
+#> Chain 3:                0.22 seconds (Total)
+#> Chain 3: 
+#> 
+#> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
+#> Chain 4: 
+#> Chain 4: Gradient evaluation took 2.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 4: Adjust your expectations accordingly!
+#> Chain 4: 
+#> Chain 4: 
+#> Chain 4: Iteration:    1 / 2000 [  0%]  (Warmup)
+#> Chain 4: Iteration:  200 / 2000 [ 10%]  (Warmup)
+#> Chain 4: Iteration:  400 / 2000 [ 20%]  (Warmup)
+#> Chain 4: Iteration:  600 / 2000 [ 30%]  (Warmup)
+#> Chain 4: Iteration:  800 / 2000 [ 40%]  (Warmup)
+#> Chain 4: Iteration: 1000 / 2000 [ 50%]  (Warmup)
+#> Chain 4: Iteration: 1001 / 2000 [ 50%]  (Sampling)
+#> Chain 4: Iteration: 1200 / 2000 [ 60%]  (Sampling)
+#> Chain 4: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#> Chain 4: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
+#> Chain 4: 
+#> Chain 4:  Elapsed Time: 0.103 seconds (Warm-up)
+#> Chain 4:                0.104 seconds (Sampling)
+#> Chain 4:                0.207 seconds (Total)
 #> Chain 4: 
 summary(fit2)
 #>  Family: negbinomial 
@@ -316,13 +316,13 @@ summary(fit2)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     1.80      0.05     1.70     1.90 1.00     4424     3235
-#> zAge          0.13      0.05     0.02     0.23 1.00     4412     3112
-#> zBase         0.72      0.06     0.62     0.84 1.00     5170     3167
+#> Intercept     1.80      0.05     1.70     1.90 1.00     4665     3241
+#> zAge          0.13      0.05     0.02     0.23 1.00     4317     3255
+#> zBase         0.72      0.06     0.62     0.84 1.00     4529     3103
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     2.32      0.31     1.77     2.99 1.00     4495     3086
+#> shape     2.33      0.32     1.78     3.02 1.00     3962     3009
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -333,7 +333,7 @@ bridge_sampler(fit2)
 #> Iteration: 3
 #> Iteration: 4
 #> Iteration: 5
-#> Bridge sampling estimate of the log marginal likelihood: -671.6812
+#> Bridge sampling estimate of the log marginal likelihood: -671.6805
 #> Estimate obtained in 5 iteration(s) via method "normal".
 # }
 ```

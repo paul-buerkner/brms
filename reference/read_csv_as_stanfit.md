@@ -85,37 +85,12 @@ stanfit <- mod$sample(data = sdata)
 #> Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
 #> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 1 
 #> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 1 
-#> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 1 
-#> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 1 
-#> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 1 
-#> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 1 
-#> Chain 1 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 1 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 1 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 1 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 1 
@@ -143,7 +118,22 @@ stanfit <- mod$sample(data = sdata)
 #> Chain 2 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 2 Iteration: 2000 / 2000 [100%]  (Sampling) 
 #> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 2 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 2 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
+#> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+#> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+#> Chain 2 
+#> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+#> Chain 2 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
+#> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+#> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+#> Chain 2 
+#> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+#> Chain 2 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
+#> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+#> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+#> Chain 2 
+#> Chain 2 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+#> Chain 2 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 2 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 2 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 2 
@@ -171,37 +161,32 @@ stanfit <- mod$sample(data = sdata)
 #> Chain 3 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 3 Iteration: 2000 / 2000 [100%]  (Sampling) 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
 #> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
-#> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
-#> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
-#> Chain 3 
-#> Chain 3 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 3 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 3 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 3 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 3 
@@ -229,32 +214,37 @@ stanfit <- mod$sample(data = sdata)
 #> Chain 4 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 4 Iteration: 2000 / 2000 [100%]  (Sampling) 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
 #> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
-#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/Rtmp5l6R3i/model-226267a43081.stan', line 35, column 4 to column 62)
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
+#> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
+#> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
+#> Chain 4 
+#> Chain 4 Informational Message: The current Metropolis proposal is about to be rejected because of the following issue:
+#> Chain 4 Exception: normal_id_glm_lpdf: Scale vector is inf, but must be positive finite! (in '/tmp/RtmpuEchAX/model-2486113d1c3b.stan', line 35, column 4 to column 62)
 #> Chain 4 If this warning occurs sporadically, such as for highly constrained variable types like covariance matrices, then the sampler is fine,
 #> Chain 4 but if this warning occurs often then your model may be either severely ill-conditioned or misspecified.
 #> Chain 4 
@@ -262,7 +252,7 @@ stanfit <- mod$sample(data = sdata)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.5 seconds.
+#> Total execution time: 1.7 seconds.
 #> 
 
 # feed the Stan model back into brms
@@ -279,12 +269,12 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     8.45      1.15     6.18    10.72 1.00     4038     2842
-#> Trt1         -0.64      1.62    -3.78     2.52 1.00     4095     3013
+#> Intercept     8.43      1.18     6.21    10.78 1.00     4231     2988
+#> Trt1         -0.62      1.61    -3.67     2.50 1.00     4371     3179
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma    12.36      0.55    11.36    13.46 1.00     4302     3204
+#> sigma    12.36      0.56    11.33    13.52 1.00     3904     2995
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

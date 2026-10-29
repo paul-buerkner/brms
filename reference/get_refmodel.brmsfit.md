@@ -107,8 +107,8 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+#> Chain 1: Gradient evaluation took 1.7e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.17 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -125,15 +125,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.1 seconds (Warm-up)
-#> Chain 1:                0.095 seconds (Sampling)
-#> Chain 1:                0.195 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.098 seconds (Warm-up)
+#> Chain 1:                0.109 seconds (Sampling)
+#> Chain 1:                0.207 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 2: Gradient evaluation took 8e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -150,15 +150,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.109 seconds (Warm-up)
-#> Chain 2:                0.109 seconds (Sampling)
-#> Chain 2:                0.218 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.106 seconds (Warm-up)
+#> Chain 2:                0.122 seconds (Sampling)
+#> Chain 2:                0.228 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4.6e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
+#> Chain 3: Gradient evaluation took 9e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -175,15 +175,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.099 seconds (Warm-up)
-#> Chain 3:                0.103 seconds (Sampling)
-#> Chain 3:                0.202 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.097 seconds (Warm-up)
+#> Chain 3:                0.099 seconds (Sampling)
+#> Chain 3:                0.196 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 4: Gradient evaluation took 8e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -200,9 +200,9 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.103 seconds (Warm-up)
-#> Chain 4:                0.098 seconds (Sampling)
-#> Chain 4:                0.201 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.102 seconds (Warm-up)
+#> Chain 4:                0.088 seconds (Sampling)
+#> Chain 4:                0.19 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: poisson 
@@ -214,11 +214,11 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.94      0.04     1.87     2.01 1.00     3010     3251
-#> zAge           0.15      0.03     0.10     0.20 1.00     3024     2299
-#> zBase          0.57      0.02     0.52     0.62 1.00     2349     2345
-#> Trt1          -0.20      0.05    -0.30    -0.09 1.00     2836     2733
-#> zBase:Trt1     0.05      0.03    -0.01     0.10 1.00     2416     2224
+#> Intercept      1.94      0.04     1.86     2.01 1.00     2756     2459
+#> zAge           0.15      0.03     0.10     0.20 1.00     2949     2708
+#> zBase          0.57      0.02     0.52     0.62 1.00     2128     2067
+#> Trt1          -0.20      0.05    -0.30    -0.09 1.00     2831     2244
+#> zBase:Trt1     0.05      0.03    -0.01     0.11 1.00     2019     2459
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -251,11 +251,11 @@ summary(vs)
 #> 
 #> Submodel performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
 #>  size ranking_fulldata cv_proportions_diag  elpd elpd.se elpd.diff elpd.diff.se
-#>     0      (Intercept)                  NA -1634     237  -781.713        213.0
-#>     1            zBase                  NA  -885      95   -32.733         19.9
-#>     2             zAge                  NA  -861      89    -9.184          8.4
-#>     3              Trt                  NA  -854      85    -1.934          2.9
-#>     4        zBase:Trt                  NA  -852      85     0.067          0.2
+#>     0      (Intercept)                  NA -1633     237   -780.75       212.42
+#>     1            zBase                  NA  -885      94    -32.48        19.78
+#>     2             zAge                  NA  -861      89     -9.06         8.27
+#>     3              Trt                  NA  -854      85     -1.92         2.94
+#>     4        zBase:Trt                  NA  -852      85      0.14         0.15
 #> 
 #> Reference model performance evaluation summary with `deltas = FALSE`:
 #>    elpd elpd.se 
@@ -265,6 +265,8 @@ plot(vs)
 
 # perform variable selection with cross-validation
 cv_vs <- cv_varsel(fit)
+#> Warning: Some Pareto k diagnostic values are too high. See help('pareto-k-diagnostic') for details.
+#> Warning: Some (1 / 236) Pareto k's for the reference model's PSIS-LOO weights are > 0.7.
 summary(cv_vs)
 #> 
 #> Family: poisson 
@@ -282,11 +284,11 @@ summary(cv_vs)
 #> 
 #> Submodel performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
 #>  size ranking_fulldata cv_proportions_diag  elpd elpd.se elpd.diff elpd.diff.se
-#>     0      (Intercept)                  NA -1638     239   -763.99       211.36
-#>     1            zBase                   1  -894      96    -19.36        18.22
-#>     2             zAge                   1  -875      91     -0.86         7.55
-#>     3              Trt                   1  -874      89      0.49         2.78
-#>     4        zBase:Trt                   1  -874      90     -0.15         0.23
+#>     0      (Intercept)                  NA -1638     238   -763.48       210.88
+#>     1            zBase                   1  -894      97    -19.89        18.34
+#>     2             zAge                   1  -876      92     -1.17         7.67
+#>     3              Trt                   1  -874      90      0.46         2.88
+#>     4        zBase:Trt                   1  -875      90     -0.51         0.34
 #> 
 #> Reference model performance evaluation summary with `deltas = FALSE`:
 #>    elpd elpd.se 

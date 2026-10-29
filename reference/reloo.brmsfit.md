@@ -158,8 +158,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.7e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.47 seconds.
+#> Chain 1: Gradient evaluation took 5e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.5 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -176,15 +176,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.119 seconds (Warm-up)
-#> Chain 1:                1.929 seconds (Sampling)
-#> Chain 1:                4.048 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.942 seconds (Warm-up)
+#> Chain 1:                1.369 seconds (Sampling)
+#> Chain 1:                3.311 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 2.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 2: Gradient evaluation took 2.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -201,15 +201,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.915 seconds (Warm-up)
-#> Chain 2:                1.426 seconds (Sampling)
-#> Chain 2:                3.341 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.964 seconds (Warm-up)
+#> Chain 2:                1.597 seconds (Sampling)
+#> Chain 2:                3.561 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.5e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
+#> Chain 3: Gradient evaluation took 2.4e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -226,15 +226,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.042 seconds (Warm-up)
-#> Chain 3:                1.638 seconds (Sampling)
-#> Chain 3:                3.68 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.866 seconds (Warm-up)
+#> Chain 3:                1.422 seconds (Sampling)
+#> Chain 3:                3.288 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.5e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
+#> Chain 4: Gradient evaluation took 2.4e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -251,67 +251,64 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.963 seconds (Warm-up)
-#> Chain 4:                1.426 seconds (Sampling)
-#> Chain 4:                3.389 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.868 seconds (Warm-up)
+#> Chain 4:                1.383 seconds (Sampling)
+#> Chain 4:                3.251 seconds (Total)
 #> Chain 4: 
 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
-#> Warning: Found 7 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 6 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
 #> 
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -670.4 36.0
-#> p_loo        93.3 14.2
-#> looic      1340.8 72.1
+#> elpd_loo   -670.3 36.1
+#> p_loo        92.7 13.7
+#> looic      1340.7 72.2
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.3]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.2]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     229   97.0%   164     
-#>    (0.7, 1]   (bad)        6    2.5%   <NA>    
+#> (-Inf, 0.7]   (good)     230   97.5%   162     
+#>    (0.7, 1]   (bad)        5    2.1%   <NA>    
 #>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 
 # no more warnings after reloo
 (reloo1 <- reloo(fit1, loo = loo1, chains = 1))
-#> 7 problematic observation(s) found.
-#> The model will be refit 7 times.
+#> 6 problematic observation(s) found.
+#> The model will be refit 6 times.
 #> 
-#> Fitting model 1 out of 7 (leaving out observation 8)
+#> Fitting model 1 out of 6 (leaving out observation 45)
 #> Start sampling
 #> 
-#> Fitting model 2 out of 7 (leaving out observation 10)
+#> Fitting model 2 out of 6 (leaving out observation 49)
 #> Start sampling
 #> 
-#> Fitting model 3 out of 7 (leaving out observation 16)
+#> Fitting model 3 out of 6 (leaving out observation 98)
 #> Start sampling
 #> 
-#> Fitting model 4 out of 7 (leaving out observation 74)
+#> Fitting model 4 out of 6 (leaving out observation 115)
 #> Start sampling
 #> 
-#> Fitting model 5 out of 7 (leaving out observation 98)
+#> Fitting model 5 out of 6 (leaving out observation 143)
 #> Start sampling
 #> 
-#> Fitting model 6 out of 7 (leaving out observation 115)
-#> Start sampling
-#> 
-#> Fitting model 7 out of 7 (leaving out observation 143)
+#> Fitting model 6 out of 6 (leaving out observation 182)
 #> Start sampling
 #> 
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -672.8 37.3
-#> p_loo        95.8 15.6
-#> looic      1345.7 74.6
+#> elpd_loo   -676.4 40.7
+#> p_loo        98.8 18.9
+#> looic      1352.7 81.4
 #> ------
 #> MCSE of elpd_loo is 0.6.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.3]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.2]).
 #> 
 #> All Pareto k estimates are good (k < 0.7).
 #> See help('pareto-k-diagnostic') for details.

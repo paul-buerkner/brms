@@ -88,8 +88,8 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 6e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -106,9 +106,9 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.023 seconds (Warm-up)
-#> Chain 1:                0.013 seconds (Sampling)
-#> Chain 1:                0.036 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.02 seconds (Warm-up)
+#> Chain 1:                0.012 seconds (Sampling)
+#> Chain 1:                0.032 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -131,15 +131,15 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.024 seconds (Warm-up)
-#> Chain 2:                0.015 seconds (Sampling)
-#> Chain 2:                0.039 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.022 seconds (Warm-up)
+#> Chain 2:                0.012 seconds (Sampling)
+#> Chain 2:                0.034 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 3: Gradient evaluation took 3e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -156,15 +156,15 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.023 seconds (Warm-up)
-#> Chain 3:                0.013 seconds (Sampling)
-#> Chain 3:                0.036 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.018 seconds (Warm-up)
+#> Chain 3:                0.011 seconds (Sampling)
+#> Chain 3:                0.029 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 4e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 4: Gradient evaluation took 3e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -181,9 +181,9 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.025 seconds (Warm-up)
-#> Chain 4:                0.015 seconds (Sampling)
-#> Chain 4:                0.04 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.023 seconds (Warm-up)
+#> Chain 4:                0.013 seconds (Sampling)
+#> Chain 4:                0.036 seconds (Total)
 #> Chain 4: 
 # add both LOO and WAIC at once
 fit <- add_criterion(fit, c("loo", "waic"))
@@ -195,27 +195,27 @@ print(fit$criteria$loo)
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -936.1 42.0
-#> p_loo        13.5  7.3
-#> looic      1872.1 84.1
+#> elpd_loo   -937.1 42.6
+#> p_loo        14.6  8.3
+#> looic      1874.2 85.3
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.0]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.0]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     235   99.6%   338     
-#>    (0.7, 1]   (bad)        1    0.4%   <NA>    
-#>    (1, Inf)   (very bad)   0    0.0%   <NA>    
+#> (-Inf, 0.7]   (good)     235   99.6%   189     
+#>    (0.7, 1]   (bad)        0    0.0%   <NA>    
+#>    (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 print(fit$criteria$waic)
 #> 
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>           Estimate   SE
-#> elpd_waic   -936.7 42.5
-#> p_waic        14.1  7.9
-#> waic        1873.5 85.1
+#> elpd_waic   -936.5 42.2
+#> p_waic        13.9  7.8
+#> waic        1872.9 84.3
 #> 
 #> 5 (2.1%) p_waic estimates greater than 0.4. We recommend trying loo instead. 
 # }

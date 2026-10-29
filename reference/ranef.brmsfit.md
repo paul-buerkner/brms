@@ -76,8 +76,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.8e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.38 seconds.
+#> Chain 1: Gradient evaluation took 4.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.42 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -94,15 +94,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.721 seconds (Warm-up)
-#> Chain 1:                0.477 seconds (Sampling)
-#> Chain 1:                1.198 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.642 seconds (Warm-up)
+#> Chain 1:                0.39 seconds (Sampling)
+#> Chain 1:                1.032 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.4e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
+#> Chain 2: Gradient evaluation took 2.9e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.29 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -119,9 +119,9 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.67 seconds (Warm-up)
-#> Chain 2:                0.644 seconds (Sampling)
-#> Chain 2:                1.314 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.621 seconds (Warm-up)
+#> Chain 2:                0.511 seconds (Sampling)
+#> Chain 2:                1.132 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 4 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
@@ -132,18 +132,18 @@ ranef(fit)
 #> , , Intercept
 #> 
 #>      Estimate Est.Error      Q2.5    Q97.5
-#> 1  0.30467081 0.8750871 -1.214209 2.499196
-#> 2  0.02825514 0.8187142 -1.690913 1.847562
-#> 3  0.08762618 0.8016888 -1.578298 1.942982
-#> 4 -0.21487766 0.8408538 -2.183174 1.372078
+#> 1  0.27600874 0.9067979 -1.296074 2.589330
+#> 2  0.00516405 0.8384335 -1.747060 1.903566
+#> 3  0.06650317 0.8422333 -1.689903 2.023606
+#> 4 -0.22466639 0.8579908 -2.230082 1.435661
 #> 
 #> , , Trt1
 #> 
 #>     Estimate Est.Error      Q2.5    Q97.5
-#> 1  0.1678512  1.091097 -1.966271 2.887353
-#> 2  0.2875135  1.123628 -1.756602 3.154275
-#> 3  0.1174871  1.043511 -1.930729 2.721896
-#> 4 -0.2282879  1.103589 -2.918115 1.886437
+#> 1  0.1836235  1.171169 -2.146618 3.089103
+#> 2  0.2782745  1.156733 -1.803233 2.972164
+#> 3  0.1664216  1.171482 -2.171578 2.982610
+#> 4 -0.2708869  1.086226 -2.834679 1.930818
 #> 
 #> 
 # }

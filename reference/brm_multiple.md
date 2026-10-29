@@ -350,12 +350,12 @@ imp <- mice(nhanes2, m = m)
 # fit the model using mice and lm
 fit_imp1 <- with(lm(bmi ~ age + hyp + chl), data = imp)
 summary(pool(fit_imp1))
-#>          term   estimate std.error statistic       df     p.value
-#> 1 (Intercept) 19.0050191 3.9623275  4.796428 7.392980 0.001696942
-#> 2    age40-59 -5.7819661 2.5790688 -2.241881 3.758055 0.092760029
-#> 3    age60-99 -8.0118093 3.3519357 -2.390204 3.173096 0.092008489
-#> 4      hypyes  2.2912320 2.2194912  1.032323 6.733643 0.337565925
-#> 5         chl  0.0563835 0.0237295  2.376093 5.516864 0.058724384
+#>          term   estimate  std.error  statistic        df     p.value
+#> 1 (Intercept) 19.4550815 4.16607762  4.6698797  9.017553 0.001162693
+#> 2    age40-59 -4.9449303 2.11458154 -2.3384912 13.465815 0.035371545
+#> 3    age60-99 -6.7760264 2.48905418 -2.7223298 10.516747 0.020590260
+#> 4      hypyes  1.9962652 3.02400447  0.6601396  4.100097 0.544409670
+#> 5         chl  0.0511015 0.02386204  2.1415393  8.698329 0.061907502
 
 # fit the model using brms
 fit_imp2 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
@@ -393,8 +393,8 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 8e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -411,17 +411,17 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.066 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.071 seconds (Warm-up)
 #> Chain 1:                0.016 seconds (Sampling)
-#> Chain 1:                0.082 seconds (Total)
+#> Chain 1:                0.087 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 1
 #> Start sampling
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 9e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -465,15 +465,15 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.05 seconds (Warm-up)
-#> Chain 1:                0.014 seconds (Sampling)
-#> Chain 1:                0.064 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.069 seconds (Warm-up)
+#> Chain 1:                0.018 seconds (Sampling)
+#> Chain 1:                0.087 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 6e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.06 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -490,9 +490,9 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.057 seconds (Warm-up)
-#> Chain 1:                0.016 seconds (Sampling)
-#> Chain 1:                0.073 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.05 seconds (Warm-up)
+#> Chain 1:                0.014 seconds (Sampling)
+#> Chain 1:                0.064 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 3
 #> Start sampling
@@ -501,8 +501,8 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 7e-06 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 1: Gradient evaluation took 1.1e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.11 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -519,9 +519,9 @@ fit_imp3 <- brm_multiple(bmi ~ age + hyp + chl, data = imp, chains = 1)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.068 seconds (Warm-up)
-#> Chain 1:                0.026 seconds (Sampling)
-#> Chain 1:                0.094 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.077 seconds (Warm-up)
+#> Chain 1:                0.027 seconds (Sampling)
+#> Chain 1:                0.104 seconds (Total)
 #> Chain 1: 
 #> Fitting imputed model 5
 #> Start sampling
@@ -535,15 +535,15 @@ summary(fit_imp3)
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI
-#> Intercept    19.06      3.75    11.78    26.20
-#> age40M59     -5.81      2.31   -10.22    -1.12
-#> age60M99     -8.02      2.92   -13.71    -2.67
-#> hypyes        2.32      2.11    -1.98     6.41
-#> chl           0.06      0.02     0.01     0.10
+#> Intercept    19.58      4.12    11.67    27.96
+#> age40M59     -4.99      2.18    -9.29    -0.67
+#> age60M99     -6.79      2.50   -11.48    -1.61
+#> hypyes        2.03      2.79    -3.59     7.24
+#> chl           0.05      0.02     0.00     0.10
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI
-#> sigma     2.97      0.55     2.06     4.22
+#> sigma     3.51      0.68     2.45     5.12
 #> 
 #> Draws were sampled using sampling(NUTS). Overall Rhat and ESS estimates
 #> are not informative for brm_multiple models and are hence not displayed.

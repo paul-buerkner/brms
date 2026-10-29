@@ -93,14 +93,14 @@ summary(fit_imp1)
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI
-    Intercept    14.38      8.28    -1.73    30.16
-    age           1.91      4.90    -7.11    12.49
+    Intercept    14.71      8.19    -0.80    30.41
+    age           1.75      4.86    -7.37    12.25
     chl           0.09      0.04     0.00     0.17
     age:chl      -0.02      0.02    -0.07     0.02
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI
-    sigma     3.34      0.77     2.13     5.09
+    sigma     3.33      0.76     2.13     5.06
 
     Draws were sampled using sampling(NUTS). Overall Rhat and ESS estimates
     are not informative for brm_multiple models and are hence not displayed.
@@ -141,66 +141,66 @@ lapply(draws_per_dat, summarise_draws, default_convergence_measures())
      [38;5;246m# A tibble: 8 × 4 [39m
       variable     rhat ess_bulk ess_tail
        [3m [38;5;246m<chr> [39m [23m        [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m1 [39m b_Intercept  1.00     548.     827.
-     [38;5;250m2 [39m b_age        1.00     546.     778.
-     [38;5;250m3 [39m b_chl        1.00     579.     855.
-     [38;5;250m4 [39m b_age:chl    1.00     512.     817.
-     [38;5;250m5 [39m sigma        1.00     885.     951.
-     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m115.     [4m1 [24m078.
-     [38;5;250m7 [39m lprior       1.01     836.     932.
-     [38;5;250m8 [39m lp__         1.00     711.     877.
+     [38;5;250m1 [39m b_Intercept  1.00     575.     555.
+     [38;5;250m2 [39m b_age        1.00     586.     576.
+     [38;5;250m3 [39m b_chl        1.00     600.     637.
+     [38;5;250m4 [39m b_age:chl    1.01     537.     490.
+     [38;5;250m5 [39m sigma        1.00     918.     [4m1 [24m115.
+     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m260.     [4m1 [24m160.
+     [38;5;250m7 [39m lprior       1.00     856.     [4m1 [24m064.
+     [38;5;250m8 [39m lp__         1.00     602.     813.
 
     [[2]]
      [38;5;246m# A tibble: 8 × 4 [39m
       variable     rhat ess_bulk ess_tail
        [3m [38;5;246m<chr> [39m [23m        [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m1 [39m b_Intercept  1.00     593.     890.
-     [38;5;250m2 [39m b_age        1.00     584.     934.
-     [38;5;250m3 [39m b_chl        1.00     612.     876.
-     [38;5;250m4 [39m b_age:chl    1.00     558.     877.
-     [38;5;250m5 [39m sigma        1.00     845.     690.
-     [38;5;250m6 [39m Intercept    1.00     864.     795.
-     [38;5;250m7 [39m lprior       1.00     734.     649.
-     [38;5;250m8 [39m lp__         1.00     470.     762.
+     [38;5;250m1 [39m b_Intercept  1.01     412.     539.
+     [38;5;250m2 [39m b_age        1.01     413.     418.
+     [38;5;250m3 [39m b_chl        1.01     451.     549.
+     [38;5;250m4 [39m b_age:chl    1.01     396.     433.
+     [38;5;250m5 [39m sigma        1.00     950.     966.
+     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m117.     [4m1 [24m130.
+     [38;5;250m7 [39m lprior       1.00     954.     902.
+     [38;5;250m8 [39m lp__         1.00     618.     708.
 
     [[3]]
      [38;5;246m# A tibble: 8 × 4 [39m
       variable     rhat ess_bulk ess_tail
        [3m [38;5;246m<chr> [39m [23m        [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m1 [39m b_Intercept 1.00      696.     [4m1 [24m009.
-     [38;5;250m2 [39m b_age       1.01      673.     845.
-     [38;5;250m3 [39m b_chl       1.00      752.     [4m1 [24m042.
-     [38;5;250m4 [39m b_age:chl   1.00      660.     718.
-     [38;5;250m5 [39m sigma       1.000     961.     979.
-     [38;5;250m6 [39m Intercept   1.00      [4m1 [24m069.     882.
-     [38;5;250m7 [39m lprior      1.00      881.     994.
-     [38;5;250m8 [39m lp__        1.000     645.     975.
+     [38;5;250m1 [39m b_Intercept  1.00     890.     [4m1 [24m070.
+     [38;5;250m2 [39m b_age        1.00     827.     937.
+     [38;5;250m3 [39m b_chl        1.00     973.     [4m1 [24m103.
+     [38;5;250m4 [39m b_age:chl    1.00     818.     949.
+     [38;5;250m5 [39m sigma        1.01     [4m1 [24m139.     [4m1 [24m234.
+     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m246.     [4m1 [24m034.
+     [38;5;250m7 [39m lprior       1.00     892.     [4m1 [24m091.
+     [38;5;250m8 [39m lp__         1.00     594.     [4m1 [24m062.
 
     [[4]]
      [38;5;246m# A tibble: 8 × 4 [39m
       variable     rhat ess_bulk ess_tail
        [3m [38;5;246m<chr> [39m [23m        [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m1 [39m b_Intercept  1.00     717.     752.
-     [38;5;250m2 [39m b_age        1.00     724.     858.
-     [38;5;250m3 [39m b_chl        1.01     723.     799.
-     [38;5;250m4 [39m b_age:chl    1.01     673.     820.
-     [38;5;250m5 [39m sigma        1.00     [4m1 [24m028.     [4m1 [24m104.
-     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m109.     [4m1 [24m156.
-     [38;5;250m7 [39m lprior       1.00     979.     [4m1 [24m067.
-     [38;5;250m8 [39m lp__         1.00     621.     859.
+     [38;5;250m1 [39m b_Intercept  1.01     691.     972.
+     [38;5;250m2 [39m b_age        1.01     671.     985.
+     [38;5;250m3 [39m b_chl        1.01     733.     973.
+     [38;5;250m4 [39m b_age:chl    1.01     643.     890.
+     [38;5;250m5 [39m sigma        1.00     957.     931.
+     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m238.     [4m1 [24m061.
+     [38;5;250m7 [39m lprior       1.00     879.     931.
+     [38;5;250m8 [39m lp__         1.00     705.     [4m1 [24m043.
 
     [[5]]
      [38;5;246m# A tibble: 8 × 4 [39m
       variable     rhat ess_bulk ess_tail
        [3m [38;5;246m<chr> [39m [23m        [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m     [3m [38;5;246m<dbl> [39m [23m
-     [38;5;250m1 [39m b_Intercept  1.01     686.     769.
-     [38;5;250m2 [39m b_age        1.01     710.     657.
-     [38;5;250m3 [39m b_chl        1.01     702.     953.
-     [38;5;250m4 [39m b_age:chl    1.01     688.     651.
-     [38;5;250m5 [39m sigma        1.00     890.     837.
-     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m276.     992.
-     [38;5;250m7 [39m lprior       1.00     827.     681.
-     [38;5;250m8 [39m lp__         1.00     767.     914.
+     [38;5;250m1 [39m b_Intercept  1.00     487.     836.
+     [38;5;250m2 [39m b_age        1.01     462.     805.
+     [38;5;250m3 [39m b_chl        1.00     514.     756.
+     [38;5;250m4 [39m b_age:chl    1.01     447.     763.
+     [38;5;250m5 [39m sigma        1.00     865.     836.
+     [38;5;250m6 [39m Intercept    1.00     [4m1 [24m028.     905.
+     [38;5;250m7 [39m lprior       1.00     809.     789.
+     [38;5;250m8 [39m lp__         1.00     677.     928.
 
 The convergence of each of the submodels looks good. Accordingly, we can
 proceed with further post-processing and interpretation of the results.
@@ -283,17 +283,17 @@ summary(fit_imp2)
 
     Regression Coefficients:
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    bmi_Intercept    13.50      9.09    -4.36    31.65 1.00     1598     2038
-    chl_Intercept   137.73     22.33    92.68   182.01 1.00     3899     2969
-    bmi_age          -4.51      5.88   -16.39     6.69 1.00     1295     1781
-    chl_age          31.00     11.62     7.51    53.90 1.00     3603     2803
-    bmi_michl         0.12      0.05     0.03     0.21 1.00     1743     2098
-    bmi_michl:age    -0.01      0.03    -0.06     0.04 1.00     1380     1940
+    bmi_Intercept    13.94      8.95    -3.19    31.91 1.00     1593     1589
+    chl_Intercept   136.79     22.70    90.85   180.71 1.00     3662     3195
+    bmi_age          -4.86      5.80   -16.81     5.78 1.00     1326     1584
+    chl_age          31.60     11.55     8.88    54.50 1.00     3658     3111
+    bmi_michl         0.12      0.05     0.03     0.21 1.00     1662     1656
+    bmi_michl:age    -0.01      0.03    -0.05     0.05 1.00     1355     1434
 
     Further Distributional Parameters:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma_bmi     3.32      0.75     2.19     5.10 1.00     1468     2242
-    sigma_chl    36.67      6.79    26.34    52.47 1.00     2793     2688
+    sigma_bmi     3.27      0.72     2.16     4.97 1.00     1469     2358
+    sigma_chl    36.54      6.29    26.31    50.85 1.00     2414     3163
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential

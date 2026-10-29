@@ -223,8 +223,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.9e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.49 seconds.
+#> Chain 1: Gradient evaluation took 4.4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -241,15 +241,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 4.142 seconds (Warm-up)
-#> Chain 1:                2.531 seconds (Sampling)
-#> Chain 1:                6.673 seconds (Total)
+#> Chain 1:  Elapsed Time: 3.408 seconds (Warm-up)
+#> Chain 1:                2.767 seconds (Sampling)
+#> Chain 1:                6.175 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
+#> Chain 2: Gradient evaluation took 3.3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -266,15 +266,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 4.53 seconds (Warm-up)
-#> Chain 2:                2.466 seconds (Sampling)
-#> Chain 2:                6.996 seconds (Total)
+#> Chain 2:  Elapsed Time: 3.785 seconds (Warm-up)
+#> Chain 2:                4.033 seconds (Sampling)
+#> Chain 2:                7.818 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
+#> Chain 3: Gradient evaluation took 3.4e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -291,15 +291,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 4.506 seconds (Warm-up)
-#> Chain 3:                4.253 seconds (Sampling)
-#> Chain 3:                8.759 seconds (Total)
+#> Chain 3:  Elapsed Time: 3.67 seconds (Warm-up)
+#> Chain 3:                2.588 seconds (Sampling)
+#> Chain 3:                6.258 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 3.9e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
+#> Chain 4: Gradient evaluation took 3.5e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -316,29 +316,29 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 4.502 seconds (Warm-up)
-#> Chain 4:                2.468 seconds (Sampling)
-#> Chain 4:                6.97 seconds (Total)
+#> Chain 4:  Elapsed Time: 3.818 seconds (Warm-up)
+#> Chain 4:                2.124 seconds (Sampling)
+#> Chain 4:                5.942 seconds (Total)
 #> Chain 4: 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
-#> Warning: Found 56 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 59 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
 #> 
 #> Computed from 4000 by 236 log-likelihood matrix.
 #> 
 #>          Estimate   SE
-#> elpd_loo   -593.9 13.7
-#> p_loo       106.6  6.9
-#> looic      1187.9 27.4
+#> elpd_loo   -595.3 13.9
+#> p_loo       107.9  7.0
+#> looic      1190.6 27.8
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.7]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.5]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     180   76.3%   195     
-#>    (0.7, 1]   (bad)       52   22.0%   <NA>    
-#>    (1, Inf)   (very bad)   4    1.7%   <NA>    
+#> (-Inf, 0.7]   (good)     177   75.0%   208     
+#>    (0.7, 1]   (bad)       53   22.5%   <NA>    
+#>    (1, Inf)   (very bad)   6    2.5%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 # perform 10-fold cross validation
 (kfold1 <- kfold(fit1, chains = 1))
@@ -367,14 +367,14 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Based on 10-fold cross-validation.
 #> 
 #>            Estimate   SE
-#> elpd_kfold   -618.4 16.9
-#> p_kfold       131.0 10.4
-#> kfoldic      1236.7 33.9
+#> elpd_kfold   -619.0 16.9
+#> p_kfold       131.6 10.3
+#> kfoldic      1238.0 33.8
 #> ------
 #> 
 #> Pareto k diagnostic values:
 #>                           Count Pct.    Min. ESS
-#> (-Inf, 0.67]   (good)     233   98.7%   556     
+#> (-Inf, 0.67]   (good)     233   98.7%   653     
 #>    (0.67, 1]   (bad)        0    0.0%   <NA>    
 #>     (1, Inf)   (very bad)   3    1.3%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
@@ -406,9 +406,9 @@ kfold(fit1, chains = 1, joint = "fold")
 #> Based on 10-fold cross-validation.
 #> 
 #>            Estimate   SE
-#> elpd_kfold   -656.0 22.4
-#> p_kfold       169.3 18.1
-#> kfoldic      1312.0 44.8
+#> elpd_kfold   -661.3 29.1
+#> p_kfold       175.0 25.2
+#> kfoldic      1322.5 58.1
 #> ------
 #> 
 #> Pareto k diagnostic values:
@@ -443,21 +443,21 @@ kfold(fit1, chains = 1)
 #> Start sampling
 #> Fitting model 10 out of 10
 #> Start sampling
-#> Warning: Found 2 observations with a pareto_k > 0.666666666666667 in model 'fit1'.
+#> Warning: Found 3 observations with a pareto_k > 0.666666666666667 in model 'fit1'.
 #> 
 #> Based on 10-fold cross-validation.
 #> 
 #>            Estimate   SE
-#> elpd_kfold   -616.1 16.8
-#> p_kfold       128.8 10.2
-#> kfoldic      1232.2 33.6
+#> elpd_kfold   -615.4 16.5
+#> p_kfold       128.0  9.9
+#> kfoldic      1230.7 33.1
 #> ------
 #> 
 #> Pareto k diagnostic values:
 #>                           Count Pct.    Min. ESS
-#> (-Inf, 0.67]   (good)     234   99.2%   599     
-#>    (0.67, 1]   (bad)        0    0.0%   <NA>    
-#>     (1, Inf)   (very bad)   2    0.8%   <NA>    
+#> (-Inf, 0.67]   (good)     233   98.7%   663     
+#>    (0.67, 1]   (bad)        2    0.8%   <NA>    
+#>     (1, Inf)   (very bad)   1    0.4%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 plan(sequential)
 
@@ -590,7 +590,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.2 seconds.
+#> Total execution time: 1.1 seconds.
 #> 
 #> Running MCMC with 4 sequential chains...
 #> 
@@ -601,7 +601,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.2 seconds.
+#> Total execution time: 1.1 seconds.
 #> 
 #> Fitting model 1 out of 2
 #> Start sampling

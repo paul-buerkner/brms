@@ -54,8 +54,8 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.2e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
+#> Chain 1: Gradient evaluation took 7e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -72,15 +72,15 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.099 seconds (Warm-up)
-#> Chain 1:                0.035 seconds (Sampling)
-#> Chain 1:                0.134 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.094 seconds (Warm-up)
+#> Chain 1:                0.033 seconds (Sampling)
+#> Chain 1:                0.127 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 4e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 2: Gradient evaluation took 3e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -97,15 +97,15 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.109 seconds (Warm-up)
-#> Chain 2:                0.043 seconds (Sampling)
-#> Chain 2:                0.152 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.088 seconds (Warm-up)
+#> Chain 2:                0.032 seconds (Sampling)
+#> Chain 2:                0.12 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 3: Gradient evaluation took 3e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -122,9 +122,9 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.098 seconds (Warm-up)
-#> Chain 3:                0.037 seconds (Sampling)
-#> Chain 3:                0.135 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.087 seconds (Warm-up)
+#> Chain 3:                0.033 seconds (Sampling)
+#> Chain 3:                0.12 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -147,20 +147,20 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.108 seconds (Warm-up)
-#> Chain 4:                0.039 seconds (Sampling)
-#> Chain 4:                0.147 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.085 seconds (Warm-up)
+#> Chain 4:                0.03 seconds (Sampling)
+#> Chain 4:                0.115 seconds (Total)
 #> Chain 4: 
 
 lp <- log_posterior(fit)
 head(lp)
 #>   Chain Iteration     Value
-#> 1     1         1 -486.2018
-#> 2     1         2 -487.9699
-#> 3     1         3 -489.2115
-#> 4     1         4 -484.9281
-#> 5     1         5 -484.9671
-#> 6     1         6 -484.5229
+#> 1     1         1 -485.2757
+#> 2     1         2 -483.9077
+#> 3     1         3 -487.3921
+#> 4     1         4 -482.9472
+#> 5     1         5 -483.5868
+#> 6     1         6 -483.1267
 
 np <- nuts_params(fit)
 str(np)
@@ -168,20 +168,20 @@ str(np)
 #>  $ Chain    : int  1 1 1 1 1 1 1 1 1 1 ...
 #>  $ Iteration: int  1 2 3 4 5 6 7 8 9 10 ...
 #>  $ Parameter: Factor w/ 6 levels "accept_stat__",..: 1 1 1 1 1 1 1 1 1 1 ...
-#>  $ Value    : num  0.998 0.857 0.771 0.982 0.961 ...
+#>  $ Value    : num  0.698 0.997 0.539 0.927 0.997 ...
 # extract the number of divergence transitions
 sum(subset(np, Parameter == "divergent__")$Value)
 #> [1] 0
 
 head(rhat(fit))
 #>     b_Intercept           b_age     b_sexfemale b_age:sexfemale           sigma 
-#>        1.000248        1.000785        1.000372        1.000792        1.001975 
+#>        1.001802        1.001644        1.001714        1.001548        1.001708 
 #>       Intercept 
-#>        1.001829 
+#>        1.000732 
 head(neff_ratio(fit))
 #>     b_Intercept           b_age     b_sexfemale b_age:sexfemale           sigma 
-#>       0.4260906       0.4062593       0.3728095       0.3645236       0.6291614 
+#>       0.3660127       0.3501625       0.3324177       0.3125507       0.6367364 
 #>       Intercept 
-#>       0.6197379 
+#>       0.6123605 
 # }
 ```

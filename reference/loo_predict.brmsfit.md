@@ -117,8 +117,8 @@ fit <- brm(weight ~ group, data = d)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 1: Gradient evaluation took 5e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.05 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -136,8 +136,8 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
 #> Chain 1:  Elapsed Time: 0.011 seconds (Warm-up)
-#> Chain 1:                0.01 seconds (Sampling)
-#> Chain 1:                0.021 seconds (Total)
+#> Chain 1:                0.011 seconds (Sampling)
+#> Chain 1:                0.022 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -160,15 +160,15 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.01 seconds (Warm-up)
+#> Chain 2:  Elapsed Time: 0.011 seconds (Warm-up)
 #> Chain 2:                0.01 seconds (Sampling)
-#> Chain 2:                0.02 seconds (Total)
+#> Chain 2:                0.021 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 4e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.04 seconds.
+#> Chain 3: Gradient evaluation took 2e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -185,15 +185,15 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.012 seconds (Warm-up)
-#> Chain 3:                0.01 seconds (Sampling)
-#> Chain 3:                0.022 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.01 seconds (Warm-up)
+#> Chain 3:                0.011 seconds (Sampling)
+#> Chain 3:                0.021 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 3e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 4: Gradient evaluation took 2e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -210,101 +210,101 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.011 seconds (Warm-up)
-#> Chain 4:                0.009 seconds (Sampling)
-#> Chain 4:                0.02 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.012 seconds (Warm-up)
+#> Chain 4:                0.01 seconds (Sampling)
+#> Chain 4:                0.022 seconds (Total)
 #> Chain 4: 
 loo_predictive_interval(fit, prob = 0.8)
 #> Running PSIS to compute weights
 #>            q10      q90
-#>  [1,] 4.086658 6.099511
-#>  [2,] 3.952639 5.982989
-#>  [3,] 3.988170 6.003492
-#>  [4,] 3.989440 5.835315
-#>  [5,] 4.086716 6.089946
-#>  [6,] 4.056988 6.106231
-#>  [7,] 3.950568 6.050696
-#>  [8,] 4.090262 6.057129
-#>  [9,] 3.973462 6.073383
-#> [10,] 3.989869 6.054655
-#> [11,] 3.641428 5.638272
-#> [12,] 3.721266 5.721369
-#> [13,] 3.643473 5.713548
-#> [14,] 3.866520 5.761594
-#> [15,] 3.591131 5.482531
-#> [16,] 3.790882 5.747139
-#> [17,] 3.592316 5.409894
-#> [18,] 3.599975 5.728514
-#> [19,] 3.686796 5.709781
-#> [20,] 3.610006 5.758691
+#>  [1,] 4.104461 6.106387
+#>  [2,] 3.946844 5.942279
+#>  [3,] 3.975836 6.010287
+#>  [4,] 3.936007 5.859922
+#>  [5,] 4.104679 6.085987
+#>  [6,] 4.082916 6.108275
+#>  [7,] 3.965488 6.054453
+#>  [8,] 4.056460 6.076927
+#>  [9,] 3.985012 6.056993
+#> [10,] 3.988782 6.066735
+#> [11,] 3.626811 5.694474
+#> [12,] 3.691668 5.733745
+#> [13,] 3.655181 5.692952
+#> [14,] 3.856260 5.747909
+#> [15,] 3.611965 5.522781
+#> [16,] 3.794947 5.688854
+#> [17,] 3.594747 5.418993
+#> [18,] 3.585373 5.706027
+#> [19,] 3.663547 5.736795
+#> [20,] 3.617765 5.715515
 
 ## optionally log-weights can be pre-computed and reused
 psis <- loo::psis(-log_lik(fit), cores = 2)
 loo_predictive_interval(fit, prob = 0.8, psis_object = psis)
 #>            q10      q90
-#>  [1,] 4.091342 6.130623
-#>  [2,] 3.917652 6.000012
-#>  [3,] 4.010131 6.035042
-#>  [4,] 3.965405 5.837825
-#>  [5,] 4.118871 6.110691
-#>  [6,] 4.047368 6.102830
-#>  [7,] 3.991166 5.986654
-#>  [8,] 4.050299 6.097324
-#>  [9,] 3.945654 6.006360
-#> [10,] 4.017182 6.073838
-#> [11,] 3.621182 5.671400
-#> [12,] 3.738226 5.752884
-#> [13,] 3.686083 5.765674
-#> [14,] 3.828719 5.708753
-#> [15,] 3.643854 5.455236
-#> [16,] 3.782444 5.718142
-#> [17,] 3.494880 5.364733
-#> [18,] 3.653488 5.706662
-#> [19,] 3.682481 5.738590
-#> [20,] 3.640418 5.706361
+#>  [1,] 4.106413 6.072142
+#>  [2,] 3.956705 5.988746
+#>  [3,] 4.012618 6.042415
+#>  [4,] 3.925902 5.843192
+#>  [5,] 4.106890 6.122774
+#>  [6,] 4.065625 6.124774
+#>  [7,] 3.968849 5.993979
+#>  [8,] 4.044554 6.095990
+#>  [9,] 3.958221 6.024337
+#> [10,] 4.042580 6.063134
+#> [11,] 3.608261 5.666594
+#> [12,] 3.694262 5.762264
+#> [13,] 3.654366 5.744219
+#> [14,] 3.814131 5.753113
+#> [15,] 3.628184 5.476126
+#> [16,] 3.773774 5.726626
+#> [17,] 3.616112 5.404928
+#> [18,] 3.601986 5.701068
+#> [19,] 3.683811 5.692551
+#> [20,] 3.622785 5.692261
 loo_predict(fit, type = "var", psis_object = psis)
 #>             var
-#>  [1,] 0.6341889
-#>  [2,] 0.6459611
-#>  [3,] 0.6477019
-#>  [4,] 0.5838173
-#>  [5,] 0.6426555
-#>  [6,] 0.6435834
-#>  [7,] 0.6558330
-#>  [8,] 0.6610992
-#>  [9,] 0.6480890
-#> [10,] 0.6780068
-#> [11,] 0.6663567
-#> [12,] 0.6302480
-#> [13,] 0.6854037
-#> [14,] 0.5926749
-#> [15,] 0.5611214
-#> [16,] 0.6322851
-#> [17,] 0.5149118
-#> [18,] 0.6851024
-#> [19,] 0.6877240
-#> [20,] 0.6617218
+#>  [1,] 0.6124240
+#>  [2,] 0.6479519
+#>  [3,] 0.6599563
+#>  [4,] 0.5830894
+#>  [5,] 0.6373206
+#>  [6,] 0.6332037
+#>  [7,] 0.6730528
+#>  [8,] 0.6409808
+#>  [9,] 0.6613779
+#> [10,] 0.7089992
+#> [11,] 0.6953620
+#> [12,] 0.6129567
+#> [13,] 0.6869191
+#> [14,] 0.5858355
+#> [15,] 0.5375803
+#> [16,] 0.6318167
+#> [17,] 0.5301938
+#> [18,] 0.6679234
+#> [19,] 0.6906654
+#> [20,] 0.6373395
 loo_epred(fit, type = "var", psis_object = psis)
 #>              var
-#>  [1,] 0.05823207
-#>  [2,] 0.06063710
-#>  [3,] 0.06278810
-#>  [4,] 0.05323118
-#>  [5,] 0.06129478
-#>  [6,] 0.06195281
-#>  [7,] 0.06280742
-#>  [8,] 0.06149881
-#>  [9,] 0.06226685
-#> [10,] 0.06286526
-#> [11,] 0.06773635
-#> [12,] 0.06530733
-#> [13,] 0.06716529
-#> [14,] 0.05653938
-#> [15,] 0.05727392
-#> [16,] 0.06101407
-#> [17,] 0.05522012
-#> [18,] 0.06744473
-#> [19,] 0.06657905
-#> [20,] 0.06789751
+#>  [1,] 0.05941590
+#>  [2,] 0.06079187
+#>  [3,] 0.06297466
+#>  [4,] 0.05487445
+#>  [5,] 0.06222280
+#>  [6,] 0.06274935
+#>  [7,] 0.06302882
+#>  [8,] 0.06243327
+#>  [9,] 0.06238772
+#> [10,] 0.06313856
+#> [11,] 0.06661047
+#> [12,] 0.06479759
+#> [13,] 0.06630318
+#> [14,] 0.05648581
+#> [15,] 0.05430182
+#> [16,] 0.06063892
+#> [17,] 0.05064226
+#> [18,] 0.06637826
+#> [19,] 0.06587703
+#> [20,] 0.06679601
 # }
 ```

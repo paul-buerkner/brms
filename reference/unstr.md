@@ -44,8 +44,8 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000105 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.05 seconds.
+#> Chain 1: Gradient evaluation took 0.000177 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.77 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -62,15 +62,15 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.788 seconds (Warm-up)
-#> Chain 1:                0.555 seconds (Sampling)
-#> Chain 1:                1.343 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.716 seconds (Warm-up)
+#> Chain 1:                0.519 seconds (Sampling)
+#> Chain 1:                1.235 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 5.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.53 seconds.
+#> Chain 2: Gradient evaluation took 8.8e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.88 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -87,15 +87,15 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.715 seconds (Warm-up)
-#> Chain 2:                0.617 seconds (Sampling)
-#> Chain 2:                1.332 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.688 seconds (Warm-up)
+#> Chain 2:                0.435 seconds (Sampling)
+#> Chain 2:                1.123 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 5.2e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.52 seconds.
+#> Chain 3: Gradient evaluation took 4.7e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.47 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -112,15 +112,15 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.767 seconds (Warm-up)
-#> Chain 3:                0.61 seconds (Sampling)
-#> Chain 3:                1.377 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.659 seconds (Warm-up)
+#> Chain 3:                0.497 seconds (Sampling)
+#> Chain 3:                1.156 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 5.2e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.52 seconds.
+#> Chain 4: Gradient evaluation took 4.7e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.47 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -137,9 +137,9 @@ fit <- brm(count ~ Trt + unstr(visit, patient), data = epilepsy)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.795 seconds (Warm-up)
-#> Chain 4:                0.64 seconds (Sampling)
-#> Chain 4:                1.435 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.588 seconds (Warm-up)
+#> Chain 4:                0.533 seconds (Sampling)
+#> Chain 4:                1.121 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 
@@ -151,21 +151,21 @@ summary(fit)
 #> 
 #> Correlation Structures:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> cortime(1,2)     0.79      0.05     0.68     0.87 1.00     2510     2697
-#> cortime(1,3)     0.69      0.06     0.56     0.79 1.00     2967     2909
-#> cortime(2,3)     0.73      0.06     0.59     0.84 1.00     2910     2558
-#> cortime(1,4)     0.78      0.05     0.68     0.86 1.00     2494     2811
-#> cortime(2,4)     0.91      0.02     0.86     0.95 1.00     2869     2538
-#> cortime(3,4)     0.74      0.07     0.59     0.84 1.00     2865     2817
+#> cortime(1,2)     0.79      0.05     0.68     0.87 1.00     1930     2306
+#> cortime(1,3)     0.69      0.06     0.57     0.79 1.00     2480     2985
+#> cortime(2,3)     0.73      0.06     0.59     0.84 1.00     2706     2773
+#> cortime(1,4)     0.79      0.05     0.68     0.87 1.00     1818     2491
+#> cortime(2,4)     0.91      0.02     0.86     0.95 1.00     3209     3240
+#> cortime(3,4)     0.74      0.06     0.58     0.84 1.00     2499     2647
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     8.32      2.16     4.01    12.54 1.00     4395     2687
-#> Trt1         -0.69      3.02    -6.70     5.09 1.00     4621     3026
+#> Intercept     8.24      2.12     3.98    12.61 1.00     3986     2786
+#> Trt1         -0.65      2.97    -6.64     5.10 1.00     4041     3118
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma    12.59      0.92    10.89    14.59 1.00     2627     2910
+#> sigma    12.62      0.90    11.05    14.54 1.00     2265     2463
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

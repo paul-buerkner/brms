@@ -62,8 +62,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.41 seconds.
+#> Chain 1: Gradient evaluation took 3.7e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.37 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -80,15 +80,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.723 seconds (Warm-up)
-#> Chain 1:                0.399 seconds (Sampling)
-#> Chain 1:                1.122 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.722 seconds (Warm-up)
+#> Chain 1:                0.629 seconds (Sampling)
+#> Chain 1:                1.351 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
+#> Chain 2: Gradient evaluation took 3e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.3 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -105,39 +105,39 @@ fit <- brm(count ~ zAge + zBase * Trt + (1+Trt|visit),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.756 seconds (Warm-up)
-#> Chain 2:                0.57 seconds (Sampling)
-#> Chain 2:                1.326 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.663 seconds (Warm-up)
+#> Chain 2:                0.481 seconds (Sampling)
+#> Chain 2:                1.144 seconds (Total)
 #> Chain 2: 
-#> Warning: There were 8 divergent transitions after warmup. See
+#> Warning: There were 3 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
 ## extract population and group-level coefficients separately
 fixef(fit)
 #>              Estimate Est.Error       Q2.5     Q97.5
-#> Intercept   8.3805271 1.0295451  6.1895980 10.415388
-#> zAge        1.6255192 0.5033540  0.6195475  2.600940
-#> zBase       7.0736887 0.7652248  5.5799384  8.553424
-#> Trt1       -0.5699312 1.3036311 -3.2956938  2.031424
-#> zBase:Trt1  4.7561967 1.0215380  2.7296836  6.723061
+#> Intercept   8.4080560 0.9655297  6.3413222 10.130798
+#> zAge        1.6382347 0.5237024  0.6278908  2.639194
+#> zBase       7.0265912 0.7639634  5.4769891  8.482213
+#> Trt1       -0.7099839 1.3194749 -3.3396086  1.723281
+#> zBase:Trt1  4.7828378 1.0198244  2.8581711  6.749996
 ranef(fit)
 #> $visit
 #> , , Intercept
 #> 
-#>     Estimate Est.Error      Q2.5    Q97.5
-#> 1  0.3285308 0.9344019 -1.293782 2.693919
-#> 2  0.0750183 0.9101700 -1.837578 2.313599
-#> 3  0.1297632 0.8784518 -1.587116 2.263351
-#> 4 -0.2364204 0.9471601 -2.552662 1.704648
+#>      Estimate Est.Error      Q2.5    Q97.5
+#> 1  0.34135610 0.9382166 -1.226836 2.772130
+#> 2  0.09968401 0.8782179 -1.696261 2.183759
+#> 3  0.14431020 0.9119715 -1.480372 2.288115
+#> 4 -0.20093860 0.9044591 -2.163351 1.678969
 #> 
 #> , , Trt1
 #> 
-#>      Estimate Est.Error      Q2.5    Q97.5
-#> 1  0.13890322  1.118502 -2.098429 2.660623
-#> 2  0.21155455  1.128022 -1.794073 3.029122
-#> 3  0.08166616  1.058476 -2.116232 2.612850
-#> 4 -0.31902731  1.137901 -3.214865 1.670180
+#>     Estimate Est.Error      Q2.5    Q97.5
+#> 1  0.2068644  1.129104 -1.896670 2.884655
+#> 2  0.2626932  1.181336 -2.087958 3.195214
+#> 3  0.1311467  1.152926 -2.244617 2.814154
+#> 4 -0.2176979  1.209247 -3.083865 2.291449
 #> 
 #> 
 ## extract combined coefficients
@@ -145,43 +145,43 @@ coef(fit)
 #> $visit
 #> , , Intercept
 #> 
-#>   Estimate Est.Error     Q2.5    Q97.5
-#> 1 8.709058 0.9577679 6.942009 10.71741
-#> 2 8.455545 0.9243263 6.648054 10.24409
-#> 3 8.510290 0.9730510 6.580128 10.47897
-#> 4 8.144107 0.9591460 6.149919 10.06692
+#>   Estimate Est.Error     Q2.5     Q97.5
+#> 1 8.749412 0.9369108 7.026388 10.724609
+#> 2 8.507740 0.9026341 6.773999 10.419782
+#> 3 8.552366 0.9153059 6.673310 10.425008
+#> 4 8.207117 0.9397999 6.178842  9.968766
 #> 
 #> , , Trt1
 #> 
 #>     Estimate Est.Error      Q2.5    Q97.5
-#> 1 -0.4310280  1.293600 -3.089817 2.101123
-#> 2 -0.3583766  1.296555 -2.783107 2.205693
-#> 3 -0.4882650  1.281349 -3.041544 1.993971
-#> 4 -0.8889585  1.334815 -3.735598 1.574951
+#> 1 -0.5031195  1.241760 -2.803109 2.036540
+#> 2 -0.4472907  1.290644 -2.880706 2.143415
+#> 3 -0.5788371  1.244170 -2.903376 1.944472
+#> 4 -0.9276818  1.319342 -3.659297 1.526786
 #> 
 #> , , zAge
 #> 
-#>   Estimate Est.Error      Q2.5   Q97.5
-#> 1 1.625519  0.503354 0.6195475 2.60094
-#> 2 1.625519  0.503354 0.6195475 2.60094
-#> 3 1.625519  0.503354 0.6195475 2.60094
-#> 4 1.625519  0.503354 0.6195475 2.60094
+#>   Estimate Est.Error      Q2.5    Q97.5
+#> 1 1.638235 0.5237024 0.6278908 2.639194
+#> 2 1.638235 0.5237024 0.6278908 2.639194
+#> 3 1.638235 0.5237024 0.6278908 2.639194
+#> 4 1.638235 0.5237024 0.6278908 2.639194
 #> 
 #> , , zBase
 #> 
 #>   Estimate Est.Error     Q2.5    Q97.5
-#> 1 7.073689 0.7652248 5.579938 8.553424
-#> 2 7.073689 0.7652248 5.579938 8.553424
-#> 3 7.073689 0.7652248 5.579938 8.553424
-#> 4 7.073689 0.7652248 5.579938 8.553424
+#> 1 7.026591 0.7639634 5.476989 8.482213
+#> 2 7.026591 0.7639634 5.476989 8.482213
+#> 3 7.026591 0.7639634 5.476989 8.482213
+#> 4 7.026591 0.7639634 5.476989 8.482213
 #> 
 #> , , zBase:Trt1
 #> 
 #>   Estimate Est.Error     Q2.5    Q97.5
-#> 1 4.756197  1.021538 2.729684 6.723061
-#> 2 4.756197  1.021538 2.729684 6.723061
-#> 3 4.756197  1.021538 2.729684 6.723061
-#> 4 4.756197  1.021538 2.729684 6.723061
+#> 1 4.782838  1.019824 2.858171 6.749996
+#> 2 4.782838  1.019824 2.858171 6.749996
+#> 3 4.782838  1.019824 2.858171 6.749996
+#> 4 4.782838  1.019824 2.858171 6.749996
 #> 
 #> 
 # }

@@ -78,43 +78,43 @@ summary(fit1)
     Multilevel Hyperparameters:
     ~dam (Number of levels: 106) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.00      714
-    sd(back_Intercept)                       0.25      0.07     0.10     0.39 1.01      253
-    cor(tarsus_Intercept,back_Intercept)    -0.52      0.22    -0.92    -0.09 1.00      423
+    sd(tarsus_Intercept)                     0.48      0.05     0.39     0.59 1.00      801
+    sd(back_Intercept)                       0.25      0.07     0.11     0.40 1.01      278
+    cor(tarsus_Intercept,back_Intercept)    -0.51      0.22    -0.90    -0.07 1.00      524
                                          Tail_ESS
-    sd(tarsus_Intercept)                     1096
-    sd(back_Intercept)                        507
-    cor(tarsus_Intercept,back_Intercept)      637
+    sd(tarsus_Intercept)                     1075
+    sd(back_Intercept)                        806
+    cor(tarsus_Intercept,back_Intercept)      672
 
     ~fosternest (Number of levels: 104) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.27      0.05     0.17     0.38 1.00      585
-    sd(back_Intercept)                       0.35      0.06     0.24     0.46 1.00      682
-    cor(tarsus_Intercept,back_Intercept)     0.68      0.20     0.24     0.98 1.01      289
+    sd(tarsus_Intercept)                     0.27      0.05     0.17     0.38 1.00      661
+    sd(back_Intercept)                       0.35      0.06     0.23     0.47 1.01      530
+    cor(tarsus_Intercept,back_Intercept)     0.70      0.21     0.19     0.99 1.00      347
                                          Tail_ESS
-    sd(tarsus_Intercept)                      960
-    sd(back_Intercept)                        853
-    cor(tarsus_Intercept,back_Intercept)      612
+    sd(tarsus_Intercept)                     1082
+    sd(back_Intercept)                       1064
+    cor(tarsus_Intercept,back_Intercept)      769
 
     Regression Coefficients:
                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    tarsus_Intercept    -0.40      0.07    -0.54    -0.27 1.00     1096     1431
-    back_Intercept      -0.01      0.07    -0.14     0.12 1.00     1777     1636
-    tarsus_sexMale       0.77      0.06     0.66     0.90 1.00     3603     1584
-    tarsus_sexUNK        0.23      0.13    -0.02     0.49 1.00     3350     1694
-    tarsus_hatchdate    -0.04      0.06    -0.17     0.07 1.00      930     1341
-    back_sexMale         0.01      0.07    -0.13     0.14 1.00     3924     1289
-    back_sexUNK          0.15      0.15    -0.14     0.44 1.00     3463     1582
-    back_hatchdate      -0.09      0.05    -0.19     0.02 1.00     1719     1528
+    tarsus_Intercept    -0.41      0.07    -0.55    -0.27 1.00     1368     1356
+    back_Intercept      -0.01      0.07    -0.14     0.12 1.00     2265     1722
+    tarsus_sexMale       0.77      0.06     0.66     0.89 1.01     3374     1242
+    tarsus_sexUNK        0.23      0.13    -0.01     0.47 1.00     3651     1531
+    tarsus_hatchdate    -0.04      0.06    -0.16     0.07 1.00     1097     1246
+    back_sexMale         0.01      0.07    -0.13     0.15 1.00     3695     1301
+    back_sexUNK          0.15      0.15    -0.14     0.44 1.00     4198     1524
+    back_hatchdate      -0.09      0.05    -0.19     0.01 1.00     2085     1637
 
     Further Distributional Parameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2807     1301
-    sigma_back       0.90      0.02     0.85     0.95 1.00     2544     1380
+    sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2713     1782
+    sigma_back       0.90      0.02     0.85     0.95 1.00     3215     1489
 
     Residual Correlations: 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     2474     1528
+    rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     3001     1572
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -160,8 +160,8 @@ bayes_R2(fit1)
 ```
 
               Estimate  Est.Error      Q2.5     Q97.5
-    R2tarsus 0.4339440 0.02668196 0.3806539 0.4845826
-    R2back   0.2001045 0.02876502 0.1450168 0.2567839
+    R2tarsus 0.4354138 0.02574276 0.3803778 0.4848176
+    R2back   0.1991678 0.02941897 0.1434771 0.2565567
 
 Clearly, there is much variation in both animal characteristics that we
 can not explain, but apparently we can explain more of the variation in
@@ -210,40 +210,40 @@ summary(fit2)
     Multilevel Hyperparameters:
     ~dam (Number of levels: 106) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.48      0.05     0.39     0.59 1.00      736
-    sd(back_Intercept)                       0.24      0.08     0.09     0.38 1.01      340
-    cor(tarsus_Intercept,back_Intercept)    -0.50      0.23    -0.93    -0.04 1.00      484
+    sd(tarsus_Intercept)                     0.48      0.05     0.39     0.58 1.00      857
+    sd(back_Intercept)                       0.25      0.07     0.10     0.39 1.01      320
+    cor(tarsus_Intercept,back_Intercept)    -0.50      0.23    -0.92    -0.04 1.00      686
                                          Tail_ESS
-    sd(tarsus_Intercept)                     1485
-    sd(back_Intercept)                        537
-    cor(tarsus_Intercept,back_Intercept)      776
+    sd(tarsus_Intercept)                      752
+    sd(back_Intercept)                        501
+    cor(tarsus_Intercept,back_Intercept)      829
 
     ~fosternest (Number of levels: 104) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.26      0.06     0.16     0.38 1.00      652
-    sd(back_Intercept)                       0.35      0.06     0.23     0.47 1.00      576
-    cor(tarsus_Intercept,back_Intercept)     0.66      0.21     0.18     0.98 1.01      231
+    sd(tarsus_Intercept)                     0.27      0.05     0.18     0.38 1.00      863
+    sd(back_Intercept)                       0.35      0.06     0.24     0.46 1.01      418
+    cor(tarsus_Intercept,back_Intercept)     0.68      0.21     0.23     0.98 1.01      257
                                          Tail_ESS
-    sd(tarsus_Intercept)                     1158
-    sd(back_Intercept)                       1088
-    cor(tarsus_Intercept,back_Intercept)      595
+    sd(tarsus_Intercept)                     1247
+    sd(back_Intercept)                       1114
+    cor(tarsus_Intercept,back_Intercept)      748
 
     Regression Coefficients:
                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    tarsus_Intercept    -0.41      0.07    -0.55    -0.27 1.00     1477     1382
-    back_Intercept      -0.00      0.06    -0.11     0.11 1.00     2191     1509
-    tarsus_sexMale       0.77      0.06     0.65     0.89 1.00     4010     1475
-    tarsus_sexUNK        0.22      0.13    -0.03     0.47 1.00     3583     1553
-    back_hatchdate      -0.08      0.05    -0.18     0.01 1.00     2094     1652
+    tarsus_Intercept    -0.41      0.07    -0.55    -0.27 1.00     1481     1600
+    back_Intercept      -0.00      0.05    -0.10     0.10 1.00     1817     1509
+    tarsus_sexMale       0.77      0.06     0.66     0.88 1.00     4883     1725
+    tarsus_sexUNK        0.22      0.13    -0.02     0.47 1.00     3802     1485
+    back_hatchdate      -0.09      0.05    -0.19     0.02 1.00     2082     1667
 
     Further Distributional Parameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma_tarsus     0.76      0.02     0.72     0.80 1.00     2579     1581
-    sigma_back       0.90      0.02     0.85     0.95 1.00     2950     1531
+    sigma_tarsus     0.75      0.02     0.72     0.80 1.00     2796     1387
+    sigma_back       0.90      0.02     0.85     0.95 1.00     2883     1442
 
     Residual Correlations: 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     3516     1580
+    rescor(tarsus,back)    -0.05      0.04    -0.13     0.02 1.00     3299     1662
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -262,16 +262,16 @@ loo(fit1, fit2)
     Computed from 2000 by 828 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo  -2126.4 33.5
-    p_loo       176.9  7.4
-    looic      4252.8 67.1
+    elpd_loo  -2125.5 33.5
+    p_loo       176.2  7.3
+    looic      4251.1 67.1
     ------
     MCSE of elpd_loo is NA.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.3]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.0]).
 
     Pareto k diagnostic values:
                              Count Pct.    Min. ESS
-    (-Inf, 0.7]   (good)     824   99.5%   63      
+    (-Inf, 0.7]   (good)     824   99.5%   59      
        (0.7, 1]   (bad)        4    0.5%   <NA>    
        (1, Inf)   (very bad)   0    0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
@@ -281,20 +281,24 @@ loo(fit1, fit2)
     Computed from 2000 by 828 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo  -2125.5 33.6
-    p_loo       174.5  7.2
-    looic      4250.9 67.1
+    elpd_loo  -2124.3 33.7
+    p_loo       174.2  7.3
+    looic      4248.6 67.3
     ------
-    MCSE of elpd_loo is 0.4.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.5, 2.0]).
+    MCSE of elpd_loo is NA.
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 2.6]).
 
-    All Pareto k estimates are good (k < 0.7).
+    Pareto k diagnostic values:
+                             Count Pct.    Min. ESS
+    (-Inf, 0.7]   (good)     825   99.6%   166     
+       (0.7, 1]   (bad)        3    0.4%   <NA>    
+       (1, Inf)   (very bad)   0    0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
 
     Model comparisons:
      model elpd_diff se_diff p_worse       diag_diff      diag_elpd
-      fit2       0.0     0.0      NA                               
-      fit1      -0.9     1.3    0.76 |elpd_diff| < 4 4 k_psis > 0.7
+      fit2       0.0     0.0      NA                 3 k_psis > 0.7
+      fit1      -1.3     1.3    0.84 |elpd_diff| < 4 4 k_psis > 0.7
 
 Apparently, there is no noteworthy difference in the model fit.
 Accordingly, we do not really need to model `sex` and `hatchdate` for
@@ -348,44 +352,44 @@ summary(fit3)
 
     Smoothing Spline Hyperparameters:
                            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sds(back_shatchdate_1)     1.91      1.04     0.27     4.26 1.00      514      478
+    sds(back_shatchdate_1)     1.93      1.04     0.29     4.25 1.00      422      352
 
     Multilevel Hyperparameters:
     ~dam (Number of levels: 106) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.47      0.05     0.38     0.59 1.01      712
-    sd(back_Intercept)                       0.24      0.07     0.09     0.37 1.00      337
-    cor(tarsus_Intercept,back_Intercept)    -0.52      0.22    -0.92    -0.07 1.00      660
+    sd(tarsus_Intercept)                     0.47      0.05     0.37     0.57 1.00      543
+    sd(back_Intercept)                       0.24      0.07     0.09     0.37 1.00      318
+    cor(tarsus_Intercept,back_Intercept)    -0.51      0.23    -0.92    -0.05 1.01      431
                                          Tail_ESS
-    sd(tarsus_Intercept)                      955
-    sd(back_Intercept)                        574
-    cor(tarsus_Intercept,back_Intercept)     1025
+    sd(tarsus_Intercept)                     1108
+    sd(back_Intercept)                        447
+    cor(tarsus_Intercept,back_Intercept)      580
 
     ~fosternest (Number of levels: 104) 
                                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS
-    sd(tarsus_Intercept)                     0.26      0.05     0.16     0.37 1.00      532
-    sd(back_Intercept)                       0.31      0.06     0.20     0.42 1.00      540
-    cor(tarsus_Intercept,back_Intercept)     0.67      0.21     0.17     0.98 1.01      187
+    sd(tarsus_Intercept)                     0.26      0.05     0.16     0.37 1.00      510
+    sd(back_Intercept)                       0.31      0.06     0.20     0.43 1.01      387
+    cor(tarsus_Intercept,back_Intercept)     0.63      0.22     0.15     0.97 1.01      175
                                          Tail_ESS
-    sd(tarsus_Intercept)                     1172
-    sd(back_Intercept)                        574
-    cor(tarsus_Intercept,back_Intercept)      623
+    sd(tarsus_Intercept)                      898
+    sd(back_Intercept)                        538
+    cor(tarsus_Intercept,back_Intercept)      320
 
     Regression Coefficients:
                          Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    tarsus_Intercept        -0.41      0.07    -0.54    -0.27 1.00     1266     1396
-    back_Intercept          -0.00      0.05    -0.11     0.10 1.00     1632     1232
-    tarsus_sexMale           0.77      0.06     0.66     0.88 1.00     3427     1500
-    tarsus_sexUNK            0.21      0.12    -0.02     0.45 1.00     2534     1334
-    sigma_tarsus_sexFem     -0.30      0.04    -0.38    -0.22 1.00     2705     1654
-    sigma_tarsus_sexMale    -0.24      0.04    -0.32    -0.17 1.00     2641     1584
-    sigma_tarsus_sexUNK     -0.39      0.13    -0.63    -0.14 1.00     2871     1725
-    back_shatchdate_1       -0.48      2.99    -6.08     6.06 1.00     1083     1333
+    tarsus_Intercept        -0.41      0.07    -0.54    -0.28 1.00      731     1243
+    back_Intercept          -0.00      0.05    -0.10     0.10 1.00     1242     1518
+    tarsus_sexMale           0.77      0.06     0.66     0.88 1.00     2679     1555
+    tarsus_sexUNK            0.22      0.12    -0.02     0.45 1.00     2441     1498
+    sigma_tarsus_sexFem     -0.30      0.04    -0.38    -0.22 1.00     2226     1560
+    sigma_tarsus_sexMale    -0.25      0.04    -0.33    -0.16 1.00     1999     1502
+    sigma_tarsus_sexUNK     -0.39      0.13    -0.63    -0.13 1.00     1835     1445
+    back_shatchdate_1       -0.30      3.07    -5.73     6.86 1.00      818      784
 
     Further Distributional Parameters:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma_back       0.90      0.02     0.86     0.95 1.00     2609     1582
-    alpha_tarsus    -1.23      0.42    -1.90     0.03 1.00     1172      500
+    sigma_back       0.90      0.02     0.85     0.95 1.00     1865     1285
+    alpha_tarsus    -1.21      0.45    -1.88     0.20 1.01      700      223
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential

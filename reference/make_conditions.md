@@ -46,11 +46,11 @@ numeric variables, `mean + (-1:1) * SD` are used as conditions.
 ``` r
 df <- data.frame(x = c("a", "b"), y = rnorm(10))
 make_conditions(df, vars = c("x", "y"))
-#>   x          y            cond__
-#> 1 a -0.2925950 x = a & y = -0.29
-#> 2 a  0.3363284  x = a & y = 0.34
-#> 3 a  0.9652517  x = a & y = 0.97
-#> 4 b -0.2925950 x = b & y = -0.29
-#> 5 b  0.3363284  x = b & y = 0.34
-#> 6 b  0.9652517  x = b & y = 0.97
+#>   x         y            cond__
+#> 1 a -0.772919 x = a & y = -0.77
+#> 2 a -0.023671 x = a & y = -0.02
+#> 3 a  0.725577  x = a & y = 0.73
+#> 4 b -0.772919 x = b & y = -0.77
+#> 5 b -0.023671 x = b & y = -0.02
+#> 6 b  0.725577  x = b & y = 0.73
 ```

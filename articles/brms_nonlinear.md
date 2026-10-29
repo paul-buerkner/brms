@@ -105,12 +105,12 @@ summary(fit1)
 
     Regression Coefficients:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    b1_Intercept     2.09      0.11     1.88     2.30 1.00     1589     1735
-    b2_Intercept     0.73      0.03     0.68     0.79 1.00     1594     1867
+    b1_Intercept     2.09      0.11     1.88     2.30 1.00     1583     1876
+    b2_Intercept     0.73      0.03     0.68     0.79 1.00     1581     1975
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     1.03      0.07     0.90     1.19 1.00     2283     2125
+    sigma     1.03      0.07     0.90     1.19 1.00     2349     2167
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -158,12 +158,12 @@ summary(fit2)
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept     2.81      0.17     2.47     3.15 1.00     4447     3120
-    x             2.01      0.17     1.67     2.35 1.00     3799     3219
+    Intercept     2.81      0.17     2.46     3.15 1.00     4312     2998
+    x             2.01      0.17     1.69     2.34 1.00     4876     3024
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     1.72      0.13     1.49     1.99 1.00     4413     2915
+    sigma     1.72      0.13     1.50     2.00 1.00     4538     3073
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -200,12 +200,12 @@ loo(fit1, fit2)
     Computed from 4000 by 100 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -146.2  6.1
-    p_loo         2.9  0.9
-    looic       292.4 12.1
+    elpd_loo   -146.1  6.1
+    p_loo         2.8  0.8
+    looic       292.2 12.1
     ------
     MCSE of elpd_loo is 0.1.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.3]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.1]).
 
     All Pareto k estimates are good (k < 0.7).
     See help('pareto-k-diagnostic') for details.
@@ -215,16 +215,16 @@ loo(fit1, fit2)
     Computed from 4000 by 100 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -200.6 17.9
-    p_loo         8.7  5.2
-    looic       401.1 35.8
+    elpd_loo   -200.9 18.1
+    p_loo         9.2  5.7
+    looic       401.8 36.3
     ------
     MCSE of elpd_loo is NA.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.1]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.3]).
 
     Pareto k diagnostic values:
                              Count Pct.    Min. ESS
-    (-Inf, 0.7]   (good)     99    99.0%   392     
+    (-Inf, 0.7]   (good)     99    99.0%   292     
        (0.7, 1]   (bad)       1     1.0%   <NA>    
        (1, Inf)   (very bad)  0     0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
@@ -232,7 +232,7 @@ loo(fit1, fit2)
     Model comparisons:
      model elpd_diff se_diff p_worse diag_diff      diag_elpd
       fit1       0.0     0.0      NA                         
-      fit2     -54.4    17.3    1.00           1 k_psis > 0.7
+      fit2     -54.8    17.6    1.00           1 k_psis > 0.7
 
 Since smaller `LOOIC` values indicate better model fit, it is
 immediately evident that the non-linear model fits the data better,
@@ -317,17 +317,17 @@ summary(fit_loss)
     Multilevel Hyperparameters:
     ~AY (Number of levels: 10) 
                       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(ult_Intercept)   745.18    228.88   425.47  1287.61 1.01     1240     2143
+    sd(ult_Intercept)   758.68    246.19   434.96  1388.44 1.00     1038     1710
 
     Regression Coefficients:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    ult_Intercept    5303.32    299.95  4710.18  5908.78 1.00     1054     1717
-    omega_Intercept     1.34      0.05     1.24     1.44 1.00     2580     2670
-    theta_Intercept    46.15      2.20    42.29    50.97 1.00     2457     2112
+    ult_Intercept    5313.17    300.46  4752.78  5918.09 1.01     1027     1566
+    omega_Intercept     1.34      0.05     1.24     1.44 1.00     2614     2357
+    theta_Intercept    46.23      2.18    42.39    50.96 1.00     2509     2184
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma   139.75     15.28   114.14   174.74 1.00     2720     2154
+    sigma   139.82     15.54   113.17   174.43 1.00     2767     2389
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -414,8 +414,8 @@ summary(fit_ir1)
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept     0.89      0.13     0.64     1.16 1.00     2695     2589
-    ability       0.51      0.13     0.25     0.78 1.00     3395     3048
+    Intercept     0.90      0.13     0.64     1.18 1.00     2852     2359
+    ability       0.51      0.14     0.25     0.79 1.00     3044     2086
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -465,8 +465,8 @@ summary(fit_ir2)
 
     Regression Coefficients:
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    eta_Intercept     0.21      0.18    -0.14     0.56 1.00     3111     2307
-    eta_ability       0.79      0.22     0.38     1.25 1.00     3185     2090
+    eta_Intercept     0.21      0.18    -0.16     0.56 1.00     3359     2325
+    eta_ability       0.79      0.22     0.38     1.26 1.00     3201     2261
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -491,12 +491,12 @@ loo(fit_ir1, fit_ir2)
     Computed from 4000 by 300 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -178.6  7.3
-    p_loo         2.0  0.2
-    looic       357.3 14.6
+    elpd_loo   -178.7  7.4
+    p_loo         2.1  0.2
+    looic       357.4 14.7
     ------
     MCSE of elpd_loo is 0.0.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.1]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.0]).
 
     All Pareto k estimates are good (k < 0.7).
     See help('pareto-k-diagnostic') for details.
@@ -507,11 +507,11 @@ loo(fit_ir1, fit_ir2)
 
              Estimate   SE
     elpd_loo   -178.2  7.5
-    p_loo         2.3  0.3
-    looic       356.5 15.0
+    p_loo         2.2  0.3
+    looic       356.4 15.0
     ------
     MCSE of elpd_loo is 0.0.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.0]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.7, 1.0]).
 
     All Pareto k estimates are good (k < 0.7).
     See help('pareto-k-diagnostic') for details.
@@ -519,7 +519,7 @@ loo(fit_ir1, fit_ir2)
     Model comparisons:
        model elpd_diff se_diff p_worse       diag_diff diag_elpd
      fit_ir2       0.0     0.0      NA                          
-     fit_ir1      -0.4     0.8    0.68 |elpd_diff| < 4          
+     fit_ir1      -0.5     0.8    0.73 |elpd_diff| < 4          
 
 shows that both model fit the data equally well, but remember that
 predictions of the first model might still be misleading as they may
@@ -563,8 +563,8 @@ summary(fit_ir3)
 
     Regression Coefficients:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    eta_ability         0.88      0.25     0.43     1.39 1.00     2493     2167
-    guess_Intercept     0.40      0.05     0.30     0.50 1.00     2532     2249
+    eta_ability         0.89      0.25     0.44     1.38 1.00     2835     2776
+    guess_Intercept     0.40      0.05     0.30     0.50 1.00     2967     2369
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential

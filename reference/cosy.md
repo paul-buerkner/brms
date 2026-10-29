@@ -45,8 +45,8 @@ fit <- brm(x ~ cosy(), data = lh)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000282 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.82 seconds.
+#> Chain 1: Gradient evaluation took 0.000244 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.44 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -63,15 +63,15 @@ fit <- brm(x ~ cosy(), data = lh)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.409 seconds (Warm-up)
-#> Chain 1:                2.54 seconds (Sampling)
-#> Chain 1:                4.949 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.041 seconds (Warm-up)
+#> Chain 1:                2.197 seconds (Sampling)
+#> Chain 1:                4.238 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000149 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.49 seconds.
+#> Chain 2: Gradient evaluation took 0.00013 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.3 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -88,15 +88,15 @@ fit <- brm(x ~ cosy(), data = lh)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.376 seconds (Warm-up)
-#> Chain 2:                2.289 seconds (Sampling)
-#> Chain 2:                4.665 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.308 seconds (Warm-up)
+#> Chain 2:                2.006 seconds (Sampling)
+#> Chain 2:                4.314 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 0.00015 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.5 seconds.
+#> Chain 3: Gradient evaluation took 0.000127 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 1.27 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -113,15 +113,15 @@ fit <- brm(x ~ cosy(), data = lh)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.417 seconds (Warm-up)
-#> Chain 3:                2.263 seconds (Sampling)
-#> Chain 3:                4.68 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.074 seconds (Warm-up)
+#> Chain 3:                1.962 seconds (Sampling)
+#> Chain 3:                4.036 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 0.000147 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.47 seconds.
+#> Chain 4: Gradient evaluation took 0.000129 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 1.29 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -138,9 +138,9 @@ fit <- brm(x ~ cosy(), data = lh)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.575 seconds (Warm-up)
-#> Chain 4:                2.233 seconds (Sampling)
-#> Chain 4:                4.808 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.19 seconds (Warm-up)
+#> Chain 4:                2.29 seconds (Sampling)
+#> Chain 4:                4.48 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: gaussian 
@@ -152,15 +152,15 @@ summary(fit)
 #> 
 #> Correlation Structures:
 #>      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> cosy     0.55      0.28     0.04     0.97 1.00      463      874
+#> cosy     0.57      0.28     0.03     0.97 1.01      469      662
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     2.37      0.93     0.22     4.34 1.00      944      651
+#> Intercept     2.38      0.90     0.47     4.24 1.00     1076      836
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.09      0.68     0.54     3.01 1.01      482      807
+#> sigma     1.14      0.72     0.53     3.09 1.00      516      916
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
