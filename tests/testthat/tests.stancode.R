@@ -425,8 +425,10 @@ test_that("truncation appears in the Stan code", {
   scode <- stancode(count | trunc(0, 150) ~ Trt,
                          data = epilepsy, family = "poisson")
   expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]) -")
+  expect_match2(scode, "(poisson_lcdf(lb[n] - 1 | mu[n]) > -1e-10 ?")
+  expect_match2(scode, "(is_inf(ub[n]) || poisson_lpmf(ub[n] | mu[n]) < -600 ?")
   expect_match2(scode,
-    "log_diff_exp(poisson_lcdf(ub[n] | mu[n]), poisson_lcdf(lb[n] - 1 | mu[n]));"
+    "log_diff_exp(poisson_lccdf(lb[n] - 1 | mu[n]), poisson_lccdf(ub[n] | mu[n]))"
   )
 })
 
@@ -1441,6 +1443,7 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = poisson())
   expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
   expect_match2(scode, "poisson_lcdf(rcens[n] | mu[n])")
+  expect_match2(scode, "target += (poisson_lcdf(Y[n] | mu[n]) > -1e-10 ?")
 
   scode <- stancode(y | cens(x) ~ 1, dat, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")
@@ -1450,8 +1453,10 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
 
   dat$x[1] <- 2
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = asym_laplace())
-  expect_match2(scode, "target += log_diff_exp(\n")
-  expect_match2(scode, "asym_laplace_lcdf(rcens[n] | mu[n], sigma, quantile),")
+  expect_match2(scode, paste0(
+    "target += log_diff_exp(asym_laplace_lcdf(rcens[n] | mu[n], sigma, quantile), ",
+    "asym_laplace_lcdf(Y[n] | mu[n], sigma, quantile));"
+  ))
 
   dat$x <- 1
   expect_match2(stancode(y | cens(x) + weights(x) ~ 1, dat, exponential()),
@@ -1872,9 +1877,13 @@ test_that("Stan code of mixture model is correct", {
     "ps[2] = log(theta2) + normal_lccdf(Y[n] | mu2[n], sigma2);"
   )
   expect_match2(scode, paste0(
-    "ps[2] = log(theta2) + log_diff_exp(\n",
-    "          normal_lcdf(rcens[n] | mu2[n], sigma2),"
+    "ps[2] = log(theta2) + log_diff_exp(normal_lcdf(rcens[n] | mu2[n], sigma2), ",
+    "normal_lcdf(Y[n] | mu2[n], sigma2));"
   ))
+  scode <- stancode(y | cens(2, y2 = 2) ~ x, data, mixture(gaussian, student))
+  expect_match2(scode,
+    "ps[2] = log(theta2) + (student_t_lcdf(Y[n] | nu2, mu2[n], sigma2) > -1e-10 ?"
+  )
 
   # truncated mixture model
   scode <- stancode(y | trunc(3) ~ x, data, fam)
