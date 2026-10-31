@@ -27,6 +27,12 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Evaluate the Stan functions of ordinal models on the log scale, as `log_lik`
+does, for all links of `sratio` and `cratio` and the links other than logit
+of the other families, so improbable categories no longer make the log
+density `-Inf`. Models with the softit link, and non-linear `cumulative`,
+`hurdle_cumulative` and `acat` models with the cauchit link, now compile.
+Thanks to Ahmed Eldeeb. (#NNNN)
 * Evaluate `log_lik` of ordinal models on the log scale throughout, so
 improbable categories no longer give `-Inf` or `NaN` where their log
 probability is representable, and stop it failing for two categories or a

@@ -337,7 +337,7 @@ test_that("link functions appear in the Stan code", {
   expect_match2(scode, "mu = inv_cauchit(mu);")
 
   scode <- stancode(y ~ x, dat, family = cumulative('cauchit'))
-  expect_match2(scode, "p = inv_cauchit(disc * (thres[1] - mu));")
+  expect_match2(scode, "return log_inv_cauchit(disc * (thres[1] - mu));")
 })
 
 test_that("Stan GLM primitives are applied correctly", {
@@ -917,7 +917,9 @@ test_that("Stan code of ordinal models is correct", {
     prior = prior(normal(0, 2), Intercept)
   )
   expect_match2(scode, "real cumulative_probit_lpmf(int y")
-  expect_match2(scode, "p = Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "real log_Phi(real y)")
+  expect_match2(scode, "return log_Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "if (lcdf_lower > -log2()) {")
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = Intercept + dot_product(means_X, b);")
@@ -926,7 +928,14 @@ test_that("Stan code of ordinal models is correct", {
 
   scode <- stancode(y ~ x1, dat, family = cratio("probit"))
   expect_match2(scode, "real cratio_probit_lpmf(int y")
-  expect_match2(scode, "q[k] = std_normal_lcdf(disc * (mu - thres[k]));")
+  expect_match2(scode, "out += log_Phi(disc * (mu - thres[k]));")
+
+  scode <- stancode(
+    bf(y ~ a * x1, a ~ 1, nl = TRUE), dat, family = acat("softit"),
+    prior = prior(normal(0, 1), nlpar = "a")
+  )
+  expect_match2(scode, "real log1m_inv_softit(real y)")
+  expect_match2(scode, "l1mq[k] = log1m_inv_softit(disc * (mu - thres[k]));")
 
   scode <- stancode(y ~ x1 + cs(x2) + cs(g), dat, family = sratio())
   expect_match2(scode, "real sratio_logit_lpmf(int y")
@@ -1081,7 +1090,9 @@ test_that("Stan code of hurdle cumulative model is correct", {
   )
 
   expect_match2(scode, "real hurdle_cumulative_ordered_probit_lpmf(int y")
-  expect_match2(scode, "p = Phi(disc * (thres[1] - mu)) * (1 - hu);")
+  expect_match2(scode,
+    "return log_Phi(disc * (thres[1] - mu)) + bernoulli_lpmf(0 | hu);"
+  )
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
 
   # sum-to-zero thresholds

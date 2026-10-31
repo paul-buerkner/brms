@@ -34,3 +34,22 @@
    vector inv_cauchit(vector y) {
      return atan(y) / pi() + 0.5;
    }
+  /* compute the log of the inverse of the cauchit link, via atan2 so that
+   * the lower tail does not cancel
+   * Args:
+   *   y: a scalar in (-Inf, Inf)
+   * Returns:
+   *   a scalar in (-Inf, 0)
+   */
+   real log_inv_cauchit(real y) {
+     return log(atan2(1, -y)) - log(pi());
+   }
+  /* compute the log of one minus the inverse of the cauchit link
+   * Args:
+   *   y: a scalar in (-Inf, Inf)
+   * Returns:
+   *   a scalar in (-Inf, 0)
+   */
+   real log1m_inv_cauchit(real y) {
+     return log(atan2(1, y)) - log(pi());
+   }

@@ -296,6 +296,13 @@ stan_thres <- function(bterms, prior, normalize, ...) {
   if (!is.customfamily(bterms$family)) {
     family_name <- bterms$family$family
     link <- bterms$family$link
+    # Stan functions of the log-scale inverse links used in the lpmfs
+    chunk <- switch(link,
+      cloglog = , cauchit = , softit = link, probit = "log_Phi"
+    )
+    if (!is.null(chunk)) {
+      str_add(out$fun) <- glue("  #include 'fun_{chunk}.stan'\n")
+    }
     if (has_extra_cat(bterms)) {
       str_add(out$fun) <- glue(
         "  #includeR `stan_hurdle_ordinal_lpmf('{family_name}', '{link}')`\n"
