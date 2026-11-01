@@ -1007,6 +1007,40 @@ stan_log_lik_custom <- function(bterms, threads = NULL, ...) {
   sdist(lpdf, p[dpars], p$thres, p$Jthres, vars, vec = no_loop)
 }
 
+# Stan code for log(F(x)) or log(1 - F(x)), F being the inverse of an ordinal
+# link, computing whichever of F(x) and 1 - F(x) is small directly, as
+# log_cdf() and log_ccdf() do in R
+# @param x Stan code of the argument
+# @param link name of the link function
+# @param lower log(F(x)) if TRUE, log(1 - F(x)) if FALSE
+stan_log_inv_link <- function(x, link, lower = TRUE) {
+  x_approx <- glue("0.07056 * pow({x}, 3.0) + 1.5976 * {x}")
+  if (lower) {
+    out <- switch(link,
+      logit = glue("log_inv_logit({x})"),
+      probit = glue("log_Phi({x})"),
+      probit_approx = glue("log_inv_logit({x_approx})"),
+      cloglog = glue("log_inv_cloglog({x})"),
+      cauchit = glue("log_inv_cauchit({x})"),
+      softit = glue("log_inv_softit({x})")
+    )
+  } else {
+    out <- switch(link,
+      logit = glue("log1m_inv_logit({x})"),
+      # reflected, as std_normal_lccdf is -Inf beyond 8.25 standard deviations
+      probit = glue("log_Phi(-({x}))"),
+      probit_approx = glue("log1m_inv_logit({x_approx})"),
+      cloglog = glue("log1m_inv_cloglog({x})"),
+      cauchit = glue("log1m_inv_cauchit({x})"),
+      softit = glue("log1m_inv_softit({x})")
+    )
+  }
+  if (is.null(out)) {
+    stop2("Link '", link, "' is not supported.")
+  }
+  out
+}
+
 # ordinal log-probability density functions in Stan language
 # @return a character string
 stan_ordinal_lpmf <- function(family, link) {
@@ -1049,70 +1083,41 @@ stan_ordinal_lpmf <- function(family, link) {
         "   }}\n"
       )
     } else {
+      lcdf <- function(k) stan_log_inv_link(th(k), link)
+      lccdf <- function(k) stan_log_inv_link(th(k), link, lower = FALSE)
+      # F(thres[y]) - F(thres[y - 1]) is taken from the upper tail where
+      # F(thres[y - 1]) > 1/2, as log_diff_cdf() does in R
       str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
-        "     real p;\n",
         "     if (y == 1) {{\n",
-        "       p = {inv_link}({th(1)});\n",
+        "       return {lcdf(1)};\n",
         "     }} else if (y == nthres + 1) {{\n",
-        "       p = 1 - {inv_link}({th('nthres')});\n",
-        "     }} else {{\n",
-        "       p = {inv_link}({th('y')}) -\n",
-        "           {inv_link}({th('y - 1')});\n",
+        "       return {lccdf('nthres')};\n",
         "     }}\n",
-        "     return log(p);\n",
+        "     real lcdf_lower = {lcdf('y - 1')};\n",
+        "     if (lcdf_lower > -log2()) {{\n",
+        "       return log_diff_exp({lccdf('y - 1')}, {lccdf('y')});\n",
+        "     }}\n",
+        "     return log_diff_exp({lcdf('y')}, lcdf_lower);\n",
         "   }}\n"
       )
     }
   } else if (family %in% c("sratio", "cratio")) {
     # TODO: support 'softit' link as well
-    if (inv_link == "inv_cloglog") {
-      qk <- str_if(
-        family == "sratio",
-        "-exp({th('k')})",
-        "log1m_exp(-exp({th('k')}))"
-      )
-    } else if (inv_link == "inv_logit") {
-      qk <- str_if(
-        family == "sratio",
-        "log1m_inv_logit({th('k')})",
-        "log_inv_logit({th('k')})"
-      )
-    } else if (inv_link == "Phi") {
-      qk <- str_if(
-        family == "sratio",
-        "std_normal_lccdf({th('k')})",
-        "std_normal_lcdf({th('k')})"
-      )
-    } else if (inv_link == "Phi_approx") {
-      qk <- str_if(
-        family == "sratio",
-        "log1m_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})",
-        "log_inv_logit(0.07056 * pow({th('k')}, 3.0) + 1.5976 * {th('k')})"
-      )
-    } else if (inv_link == "inv_cauchit") {
-      qk <- str_if(
-        family == "sratio",
-        "cauchy_lccdf({th('k')}|0,1)",
-        "cauchy_lcdf({th('k')}|0,1)"
-      )
-    }
-    qk <- glue(qk)
+    # log-probabilities of stopping at category y and of passing category k,
+    # each from its own tail instead of complementing the other
+    lp_stop <- stan_log_inv_link(th("y"), link, lower = family == "sratio")
+    lp_pass <- stan_log_inv_link(th("k"), link, lower = family == "cratio")
     str_add(out) <- glue(
       "     int nthres = num_elements(thres);\n",
-      "     vector[nthres + 1] p;\n",
-      "     vector[nthres] q;\n",
-      "     int k = 1;\n",
-      "     while (k <= min(y, nthres)) {{\n",
-      "       q[k] = {qk};\n",
-      "       p[k] = log1m_exp(q[k]);\n",
-      "       for (kk in 1:(k - 1)) p[k] = p[k] + q[kk];\n",
-      "       k += 1;\n",
+      "     real out = 0;\n",
+      "     for (k in 1:min(y - 1, nthres)) {{\n",
+      "       out += {lp_pass};\n",
       "     }}\n",
-      "     if (y == nthres + 1) {{\n",
-      "       p[nthres + 1] = sum(q);\n",
+      "     if (y <= nthres) {{\n",
+      "       out += {lp_stop};\n",
       "     }}\n",
-      "     return p[y];\n",
+      "     return out;\n",
       "   }}\n"
     )
   } else if (family == "acat") {
@@ -1126,16 +1131,18 @@ stan_ordinal_lpmf <- function(family, link) {
     } else {
       str_add(out) <- glue(
         "     int nthres = num_elements(thres);\n",
-        "     vector[nthres + 1] p;\n",
-        "     vector[nthres] q;\n",
-        "     for (k in 1:(nthres))\n",
-        "       q[k] = {inv_link}({th('k')});\n",
-        "     for (k in 1:(nthres + 1)) {{\n",
-        "       p[k] = 1.0;\n",
-        "       for (kk in 1:(k - 1)) p[k] = p[k] * q[kk];\n",
-        "       for (kk in k:(nthres)) p[k] = p[k] * (1 - q[kk]);\n",
+        "     vector[nthres + 1] p = rep_vector(0, nthres + 1);\n",
+        "     vector[nthres] lq;\n",
+        "     vector[nthres] l1mq;\n",
+        "     for (k in 1:nthres) {{\n",
+        "       lq[k] = {stan_log_inv_link(th('k'), link)};\n",
+        "       l1mq[k] = {stan_log_inv_link(th('k'), link, lower = FALSE)};\n",
         "     }}\n",
-        "     return log(p[y]) - log(sum(p));\n",
+        "     for (k in 1:(nthres + 1)) {{\n",
+        "       for (kk in 1:(k - 1)) p[k] += lq[kk];\n",
+        "       for (kk in k:nthres) p[k] += l1mq[kk];\n",
+        "     }}\n",
+        "     return p[y] - log_sum_exp(p);\n",
         "   }}\n"
       )
     }
@@ -1224,20 +1231,25 @@ stan_hurdle_ordinal_lpmf <- function(family, link) {
       "   }}\n"
     )
   } else {
+    lcdf <- function(k) stan_log_inv_link(th(k), link)
+    lccdf <- function(k) stan_log_inv_link(th(k), link, lower = FALSE)
+    # as in stan_ordinal_lpmf() for cumulative models
     str_add(out) <- glue(
       "     int nthres = num_elements(thres);\n",
-      "     real p;\n",
-      "     if (y == 0){{\n",
-      "       p = hu;\n",
+      "     if (y == 0) {{\n",
+      "       return bernoulli_lpmf(1 | hu);\n",
       "     }} else if (y == 1) {{\n",
-      "       p = {inv_link}({th(1)}) * (1 - hu);\n",
+      "       return {lcdf(1)} + bernoulli_lpmf(0 | hu);\n",
       "     }} else if (y == nthres + 1) {{\n",
-      "       p = (1 - {inv_link}({th('nthres')})) * (1 - hu);\n",
-      "     }} else {{\n",
-      "       p = ({inv_link}({th('y')}) -\n",
-      "           {inv_link}({th('y - 1')})) * (1 - hu);\n",
+      "       return {lccdf('nthres')} + bernoulli_lpmf(0 | hu);\n",
       "     }}\n",
-      "     return log(p);\n",
+      "     real lcdf_lower = {lcdf('y - 1')};\n",
+      "     if (lcdf_lower > -log2()) {{\n",
+      "       return log_diff_exp({lccdf('y - 1')}, {lccdf('y')}) +\n",
+      "                bernoulli_lpmf(0 | hu);\n",
+      "     }}\n",
+      "     return log_diff_exp({lcdf('y')}, lcdf_lower) +\n",
+      "              bernoulli_lpmf(0 | hu);\n",
       "   }}\n"
     )
   }
