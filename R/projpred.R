@@ -113,10 +113,20 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
   }
-  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset", "sm"))
+  not_ok_term_types <- setdiff(
+    all_term_types(), c("fe", "re", "offset", "sm", "sp")
+  )
   if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
-    stop2("Projpred only supports standard multilevel and smoothing terms as ",
-          "well as offsets.")
+    stop2("Projpred only supports standard multilevel, smoothing, and ",
+          "monotonic terms as well as offsets.")
+  }
+  sp_terms <- bterms$dpars$mu$sp
+  if (!is.null(sp_terms)) {
+    # 'sp' terms are mo(), me(), and mi() terms (see terms_sp())
+    if (length(attr(sp_terms, "uni_me")) || length(attr(sp_terms, "uni_mi"))) {
+      stop2("Projpred does not support me() or mi() terms.")
+    }
+    require_package("projpred", "2.12.0")
   }
 
   # only use the raw formula for selection of terms

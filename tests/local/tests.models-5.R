@@ -248,6 +248,32 @@ test_that("projpred K-fold reference models use the 'dis' of their refit",
   expect_equal(ref_user$cvrefbuilder(fit_fold)$dis, dis_user)
 }))
 
+test_that("projpred methods can be run with monotonic terms",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- data.frame(
+    x = sample(0:4, 100, TRUE), z = rnorm(100),
+    f = factor(sample(c("lo", "mid", "hi"), 100, TRUE),
+               levels = c("lo", "mid", "hi"), ordered = TRUE)
+  )
+  dat$y <- c(0, 1, 1.5, 1.7, 1.8)[dat$x + 1] +
+    c(0, 0.4, 0.6)[as.integer(dat$f)] + 0.5 * dat$z + rnorm(100, sd = 0.5)
+  fit <- brm(y ~ mo(x) + mo(f) + z, data = dat, refresh = 0)
+
+  vs <- projpred::varsel(fit)
+  expect_is(vs, "vsel")
+  expect_setequal(projpred::ranking(vs)$fulldata, c("mo(x)", "mo(f)", "z"))
+  prj <- projpred::project(fit, predictor_terms = c("mo(x)", "mo(f)", "z"),
+                           ndraws = 25)
+  pred_new <- projpred::proj_linpred(prj, newdata = dat[1:5, ])$pred
+  pred_train <- projpred::proj_linpred(prj)$pred
+  expect_equal(unname(pred_new), unname(pred_train[, 1:5]))
+
+  # me() and mi() terms are not supported
+  fit_me <- brm(y ~ me(z, 0.1) + mo(x), data = dat, empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_me), "me\\(\\) or mi\\(\\)")
+}))
+
 test_that("alternative algorithms can be used", suppressWarnings({
   fit <- brm(
     count ~ zBase, data = epilepsy,
