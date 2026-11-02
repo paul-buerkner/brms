@@ -3,9 +3,11 @@
 ### New Features
 
 * Add native Cox predictive draws, CDFs, densities, and quantiles with explicit
-tail extrapolation policies; survival quantities, restricted mean survival
-time with a required horizon, and censoring utilities.
-Cox plots remain external and `pp_check` continues to delegate to bayesplot.
+tail extrapolation policies, and restricted mean survival time with a required
+horizon. The Cox demo includes optional survival and censoring utility recipes;
+these are not package APIs. Reverse-KM censoring in the demo uses the optional
+`prodlim` package. Cox plots remain external and `pp_check` continues to delegate
+to bayesplot.
 
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)

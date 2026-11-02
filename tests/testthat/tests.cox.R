@@ -19,6 +19,18 @@ cox_test_prep <- function(ns = 20L, nobs = 3L, tail = "constant") {
   ), class = "brmsprep")
 }
 
+cox_demo_utils <- function() {
+  path <- system.file("demo", "cox.R", package = "brms", mustWork = TRUE)
+  out <- new.env(parent = globalenv())
+  for (expr in parse(path)) {
+    if (is.call(expr) && identical(expr[[1]], quote(`<-`)) &&
+        is.call(expr[[3]]) && identical(expr[[3]][[1]], quote(`function`))) {
+      eval(expr, envir = out)
+    }
+  }
+  out
+}
+
 test_that("Cox Stan data use response-specific names", {
   skip_if_not_installed("splines2")
   dat <- data.frame(y = 1:10, y2 = 2:11, x = seq_len(10))
@@ -166,7 +178,7 @@ test_that("Cox inversion and tails agree with independent forward evaluation", {
   }
   q <- brms:::qcox(0.99, mu, sb, basis, "none")
   expect_true(all(q < 0))
-  expect_equal(cox_decode(q)$time, rep(4, length(mu)))
+  expect_equal(abs(q), rep(4, length(mu)))
   expect_true(all(is.na(brms:::pcox(
     5, mu, sbhaz = sb, basis = basis, tail = "none"
   ))))
@@ -304,7 +316,7 @@ test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
   skip_if_not_installed("splines2")
   prep <- cox_test_prep(nobs = 1L)
   prep$dpars$mu[] <- 1
-  rate <- cox_bhaz(4, prep)[, 1]
+  rate <- brms:::bhaz_at(4, prep$bhaz$sbhaz[[1]], prep$bhaz$basis)
   cases <- list(
     list(p = -100, lower.tail = FALSE, log.p = TRUE),
     list(p = -1e-20, lower.tail = TRUE, log.p = TRUE),
@@ -332,24 +344,25 @@ test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
   )), rep(-1000, 20), tolerance = 1e-7)
 })
 
-test_that("Cox survival curves and streaming summaries agree", {
+test_that("Cox demo survival curves and streaming summaries agree", {
   skip_if_not_installed("splines2")
+  demo <- cox_demo_utils()
   prep <- cox_test_prep()
   times <- c(0, 1, 4)
-  curves <- cox_surv_curve(times, prep)
+  curves <- demo$cox_surv_curve(times, prep)
   expect_equal(dim(curves), c(20L, 3L, 3L))
   expect_equal(curves[, 3, 1], exp(-prep$dpars$mu[, 1]))
-  expect_equal(cox_surv(1, prep)[, 1], curves[, 2, 1])
-  summary <- cox_surv_summary(times, prep, probs = c(0.1, 0.5))
+  expect_equal(demo$cox_surv(1, prep)[, 1], curves[, 2, 1])
+  summary <- demo$cox_surv_summary(times, prep, probs = c(0.1, 0.5))
   expect_equal(summary[, 1, 1], apply(curves[, , 1], 2, quantile, probs = 0.1))
-  expect_equal(as.vector(cox_cumbhaz(c(0, 4), prep)[, 2]), rep(1, 20))
+  expect_equal(as.vector(demo$cox_cumbhaz(c(0, 4), prep)[, 2]), rep(1, 20))
   prep$old_order <- c(3L, 1L, 2L)
-  expect_equal(cox_surv(c(0.5, 1.5, 2.5), prep),
-               exp(-prep$dpars$mu * cox_cumbhaz(c(0.5, 1.5, 2.5), prep)))
-  expect_equal(cox_surv(1, prep), brms:::reorder_obs(cox_surv(1, prep,
+  expect_equal(demo$cox_surv(c(0.5, 1.5, 2.5), prep),
+               exp(-prep$dpars$mu * demo$cox_cumbhaz(c(0.5, 1.5, 2.5), prep)))
+  expect_equal(demo$cox_surv(1, prep), brms:::reorder_obs(demo$cox_surv(1, prep,
     sort = TRUE), prep$old_order))
-  expect_error(cox_surv_curve(numeric(0), prep), "times")
-  expect_error(cox_surv(1:2, prep), "length")
+  expect_error(demo$cox_surv_curve(numeric(0), prep), "times")
+  expect_error(demo$cox_surv(1:2, prep), "length")
 })
 
 test_that("Cox RMST agrees with independent integration and truncation", {
@@ -408,18 +421,21 @@ test_that("Cox RMST agrees with independent integration and truncation", {
                                sort = FALSE), "finite positive")
 })
 
-test_that("Censoring preserves existing signs and validates shapes", {
+test_that("Cox demo censoring preserves existing signs and validates shapes", {
+  demo <- cox_demo_utils()
   draws <- matrix(c(1, -2, 3, 4), 2)
-  expect_equal(cox_censor(draws, c(1.5, 3.5)),
+  expect_equal(demo$cox_censor(draws, c(1.5, 3.5)),
                matrix(c(1, -1.5, 3, -3.5), 2))
-  expect_equal(cox_censor(draws, Inf), draws)
-  expect_error(cox_censor(draws, 1:3), "length")
-  expect_error(cox_censor(draws, matrix(1, 1, 4)), "dimensions")
-  expect_error(cox_censor(draws, 0), "positive")
-  expect_equal(cox_censor_times(1:3, c(1, 1, 1), 5), rep(Inf, 5))
+  expect_equal(demo$cox_censor(draws, Inf), draws)
+  expect_equal(demo$cox_decode(draws),
+               list(time = abs(draws), status = matrix(c(1L, 0L, 1L, 1L), 2)))
+  expect_error(demo$cox_censor(draws, 1:3), "length")
+  expect_error(demo$cox_censor(draws, matrix(1, 1, 4)), "dimensions")
+  expect_error(demo$cox_censor(draws, 0), "positive")
+  expect_equal(demo$cox_censor_times(1:3, c(1, 1, 1), 5), rep(Inf, 5))
   skip_if_not_installed("prodlim")
   set.seed(12)
-  ct <- cox_censor_times(1:4, c(1, 0, 0, 1), 1000)
+  ct <- demo$cox_censor_times(1:4, c(1, 0, 0, 1), 1000)
   expect_true(all(ct %in% c(2, 3, Inf)))
   expect_true(all(c(2, 3, Inf) %in% ct))
 })

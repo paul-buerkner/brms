@@ -94,8 +94,11 @@
 #'   Both are extrapolation assumptions, not information identified by the
 #'   fitted spline. With \code{tail = "none"}, random draws and quantiles
 #'   beyond this boundary are right-censored there and encoded as negative
-#'   times. Use \code{\link{cox_decode}} to recover times and event indicators;
-#'   ordinary summaries of signed values are not survival-time summaries.
+#'   times. For predictions \code{x}, recover times with \code{abs(x)} and
+#'   event indicators with \code{x > 0}; ordinary summaries of signed values
+#'   are not survival-time summaries. See \code{demo("cox", package = "brms")}
+#'   for optional survival and censoring utility recipes, which are not part
+#'   of the package API.
 #'   CDFs and densities beyond the boundary are undefined with no tail.
 #'   Cox \code{output = "pit"} is a conditional CDF, not a censoring-aware
 #'   calibration diagnostic.
