@@ -45,6 +45,12 @@ test_that("Cox Stan data use response-specific names", {
   expect_equal(dim(posterior_epred(
     prep, horizon = 2, dpar = NULL, nlpar = NULL, sort = FALSE
   )), c(3L, 10L, 2L))
+  expect_silent(sdata <- standata(
+    fit, newdata = data.frame(x = 1:2), check_response = FALSE
+  ))
+  expect_true(all(is.na(sdata$Y_y)) && all(is.na(sdata$Y_y2)))
+  expect_equal(as.vector(sdata$Zcbhaz_y %*% rep(0.2, 5)), c(0, 0))
+  expect_equal(as.vector(sdata$Zcbhaz_y2 %*% rep(0.2, 5)), c(0, 0))
 })
 
 test_that("Cox preparation preserves singleton and absent strata", {
@@ -72,17 +78,32 @@ test_that("Cox preparation preserves singleton and absent strata", {
 test_that("Unchecked Cox responses do not extrapolate the spline", {
   skip_if_not_installed("splines2")
   dat <- data.frame(y = 1:10, x = seq_len(10))
-  fit <- brm(y ~ x, dat, family = cox(), empty = TRUE)
-  expect_silent(sdata <- standata(
-    fit, newdata = data.frame(y = c(0, 100), x = 1:2),
-    check_response = FALSE
-  ))
-  expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 1))
-  expect_silent(sdata <- standata(
-    fit, newdata = data.frame(x = 1:2), check_response = FALSE
-  ))
-  expect_true(all(is.na(sdata$Y)))
-  expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 0))
+  for (form in list(bf(y ~ x), bf(y ~ exp(a), a ~ x, nl = TRUE))) {
+    fit <- brm(form, dat, family = cox(), empty = TRUE)
+    expect_silent(sdata <- standata(
+      fit, newdata = data.frame(y = c(0, 100), x = 1:2),
+      check_response = FALSE
+    ))
+    expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 1))
+    expect_silent(sdata <- standata(
+      fit, newdata = data.frame(x = 1:2), check_response = FALSE
+    ))
+    expect_true(all(is.na(sdata$Y)))
+    expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 0))
+    expect_error(standata(
+      fit, newdata = data.frame(y = c(-1, 2), x = 1:2),
+      check_response = TRUE
+    ), "requires response greater than or equal to 0")
+    expect_warning(standata(
+      fit, newdata = data.frame(y = 100, x = 1),
+      check_response = TRUE
+    ), "beyond boundary knots")
+    expect_silent(response <- standata(
+      fit, newdata = data.frame(y = c(0, 100), x = 1:2),
+      only_response = TRUE
+    ))
+    expect_equal(as.vector(response$Y), c(0, 100))
+  }
 })
 
 test_that("Cox preparation uses native links and nonlinear parameter dispatch", {

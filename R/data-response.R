@@ -461,35 +461,44 @@ data_mixture <- function(bframe, data2, prior) {
   out
 }
 
-# data for the baseline functions of Cox models
-data_bhaz <- function(bframe, data, data2, prior, check_response = TRUE) {
+# response-time baseline matrices for Cox models
+data_response_bhaz <- function(bframe, data, check_response = TRUE) {
+  out <- list()
+  if (is.mvbrmsframe(bframe)) {
+    for (x in bframe$terms) {
+      c(out) <- data_response_bhaz(x, data, check_response = check_response)
+    }
+  } else if (is.brmsframe(bframe)) {
+    data <- subset_data(data, bframe)
+    for (x in bframe$dpars) {
+      c(out) <- data_response_bhaz(x, data, check_response = check_response)
+    }
+  } else if (is_cox(bframe$family)) {
+    bhaz <- family_info(bframe, "bhaz")
+    bs <- bhaz_basis(bframe, data, args = bhaz$args)
+    y <- bframe$frame$resp$values
+    if (!check_response) {
+      # Native predictions evaluate the baseline at their requested times.
+      bounds <- attr(bs, "Boundary.knots")
+      y[is.na(y)] <- bounds[1]
+      y <- pmin(pmax(y, bounds[1]), bounds[2])
+    }
+    out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
+    out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
+    names(out) <- paste0(names(out), usc(bframe$resp))
+  }
+  out
+}
+
+# baseline dimensions, strata and priors for Cox models
+data_bhaz <- function(bframe, data, data2, prior) {
   out <- list()
   if (!is_cox(bframe$family)) {
     return(out)
   }
-  y <- bframe$frame$resp$values
   bhaz <- family_info(bframe, "bhaz")
-  bs <- bframe$frame$basis$bhaz$basis_matrix
-  if (is.null(bs)) {
-    # models fitted with brms 2.23.0 stored the basis with the predictor terms
-    bs <- bframe$basis$bhaz$basis_matrix
-  }
-  if (is.null(bs)) {
-    # no basis was passed in, that is, we are on the original data and thus
-    # define the basis (and its knots) here; on the newdata path, the stored
-    # basis is passed in via 'brmsframe' and only evaluated below
-    bs <- bhaz_basis(bframe, data, args = bhaz$args)
-  }
-  if (!check_response) {
-    # These matrices are unused for prediction at arbitrary times. Missing
-    # or out-of-support new responses must not extrapolate the I-spline.
-    bounds <- attr(bs, "Boundary.knots")
-    y[is.na(y)] <- bounds[1]
-    y <- pmin(pmax(y, bounds[1]), bounds[2])
-  }
-  out$Zbhaz <- bhaz_basis_matrix(y, bhaz$args, basis = bs)
-  out$Zcbhaz <- bhaz_basis_matrix(y, bhaz$args, integrate = TRUE, basis = bs)
-  out$Kbhaz <- NCOL(out$Zbhaz)
+  bs <- bhaz_basis(bframe, data, args = bhaz$args, warn = FALSE)
+  out$Kbhaz <- NCOL(bs)
   groups <- bhaz$groups
   if (!is.null(groups)) {
     out$ngrbhaz <- length(groups)
@@ -519,16 +528,23 @@ data_bhaz <- function(bframe, data, data2, prior, check_response = TRUE) {
 
 # Construct the basis matrix of the baseline hazard of the Cox model
 # This function is the single place where the knots of the baseline hazard are
-# defined. It is called by 'data_bhaz' on the original data (that is, when no
-# basis was passed into 'brmsframe') and by 'frame_basis_bhaz' when storing the
-# basis in the fitted model object. Both calls use the same data and arguments
-# and hence yield the same basis.
+# defined. It is used in data preparation and by 'frame_basis_bhaz' when
+# storing the basis in the fitted model object. Stored bases are reused
+# for newdata.
 # @param bframe a btl or btnl object containing the response formula
 # @param data data.frame containing the response and censoring variables
 # @param args arguments passed to the spline generating functions
 # @param warn emit a warning if no exact events are available?
 # @return the M-spline basis matrix of the baseline hazard function
 bhaz_basis <- function(bframe, data, args = list(), warn = TRUE) {
+  bs <- bframe$frame$basis$bhaz$basis_matrix
+  if (is.null(bs)) {
+    # models fitted with brms 2.23.0 stored the basis with the predictor terms
+    bs <- bframe$basis$bhaz$basis_matrix
+  }
+  if (!is.null(bs)) {
+    return(bs)
+  }
   y <- model.response(model.frame(bframe$respform, data, na.action = na.pass))
   # by default, only the event times are used to define the knots; older
   # models used both event and censoring times, which is generally not sensible

@@ -119,13 +119,14 @@ standata.default <- function(object, data, family = gaussian(), prior = NULL,
     internal = internal
   )
   if (!only_response) {
+    c(out) <- data_response_bhaz(bframe, data, check_response = check_response)
     # pass as sdata so that data_special_prior knows about data_gr_global
     # TODO: compute sdata_gr_global in brmsframe in brms 3.0
     # this would require passing data2 to brmsframe
     sdata_gr_global <- data_gr_global(bframe, data2 = data2)
     c(out) <- data_predictor(
       bframe, data = data, prior = prior, data2 = data2,
-      sdata = sdata_gr_global, check_response = check_response
+      sdata = sdata_gr_global
     )
     c(out) <- sdata_gr_global
     c(out) <- data_Xme(bframe, data = data)

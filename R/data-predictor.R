@@ -54,7 +54,7 @@ data_predictor.brmsterms <- function(x, data, data2, prior, sdata = NULL, ...) {
 # @return a named list of data to be passed to Stan
 #' @export
 data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
-                               sdata = NULL, check_response = TRUE, ...) {
+                               sdata = NULL, ...) {
   out <- c(
     data_fe(x, data),
     data_sp(x, data, data2 = data2, prior = prior),
@@ -64,8 +64,7 @@ data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
     data_gp(x, data),
     data_ac(x, data, data2 = data2),
     data_offset(x, data),
-    data_bhaz(x, data, data2 = data2, prior = prior,
-              check_response = check_response)
+    data_bhaz(x, data, data2 = data2, prior = prior)
   )
   c(out) <- data_special_prior(x, data, prior = prior, sdata = c(sdata, out))
   out
@@ -74,12 +73,11 @@ data_predictor.btl <- function(x, data, data2 = list(), prior = brmsprior(),
 # prepare data for non-linear parameters for use in Stan
 #' @export
 data_predictor.btnl <- function(x, data, data2 = list(), prior = brmsprior(),
-                                check_response = TRUE, ...) {
+                                ...) {
   out <- list()
   c(out) <- data_cnl(x, data)
   c(out) <- data_ac(x, data, data2 = data2)
-  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior,
-                     check_response = check_response)
+  c(out) <- data_bhaz(x, data, data2 = data2, prior = prior)
   out
 }
 
