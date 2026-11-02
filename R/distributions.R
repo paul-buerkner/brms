@@ -1930,6 +1930,7 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
 dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
                  sbhaz = NULL, basis = NULL, tail = "constant",
                  lb = NULL, ub = NULL) {
+  # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     H <- mu * bhaz_at(x, sbhaz, basis, tail, integrate = TRUE)
     out <- log(mu) + log(bhaz_at(x, sbhaz, basis, tail)) - H
@@ -1953,6 +1954,7 @@ dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
 # hazard function of the cox model
 hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
                  sbhaz = NULL, basis = NULL, tail = "constant") {
+  # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     bhaz <- bhaz_at(x, sbhaz, basis, tail)
   }
@@ -1967,6 +1969,7 @@ hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
 pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL, lower.tail = TRUE,
                  log.p = FALSE, sbhaz = NULL, basis = NULL, tail = "constant",
                  lb = NULL, ub = NULL) {
+  # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     H <- mu * bhaz_at(q, sbhaz, basis, tail, integrate = TRUE)
     if (is.null(lb) && is.null(ub)) {
