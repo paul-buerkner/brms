@@ -3,6 +3,8 @@ context("Tests for miscellaneous functions")
 test_that("require_package checks loaded namespace versions", {
   requireNamespace("stats", quietly = TRUE)
   read_version <- utils::packageVersion
+  # Guard against reintroducing slow disk-backed packageVersion() lookups,
+  # which previously caused a performance problem.
   testthat::local_mocked_bindings(
     packageVersion = function(pkg, ...) {
       if (pkg == "stats") stop("Unexpected package metadata lookup.")
