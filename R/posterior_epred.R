@@ -508,6 +508,8 @@ posterior_epred_cox <- function(prep, horizon = NULL, nodes = 64) {
   }
   require_package("statmod")
   rule <- statmod::gauss.quad(nodes, kind = "legendre")
+  # RMST is the integral of survival from 0 to horizon, conditional on any
+  # truncation. Split panels at spline knots and boundaries before quadrature.
   # Shared panels avoid reevaluating the same spline for each observation.
   breaks0 <- c(0, horizon, bounds, attr(prep$bhaz$basis, "knots"))
   breaks0 <- sort(unique(breaks0[is.finite(breaks0) &
@@ -543,6 +545,7 @@ posterior_epred_cox <- function(prep, horizon = NULL, nodes = 64) {
       lb <- prep$data$lb[i]
       ub <- prep$data$ub[i]
       tr <- cox_truncation(mu, sb, prep$bhaz$basis, prep$bhaz$tail, lb, ub)
+      # Conditional survival changes form at each observation's truncation bounds.
       breaks <- c(breaks0, lb, ub)
       breaks <- sort(unique(breaks[is.finite(breaks) &
                                     breaks >= 0 & breaks <= horizon]))

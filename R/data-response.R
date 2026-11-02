@@ -461,7 +461,8 @@ data_mixture <- function(bframe, data2, prior) {
   out
 }
 
-# response-time baseline matrices for Cox models
+# Response-time matrices are separate from predictor dimensions and priors so
+# response checking also applies to nonlinear and multivariate Cox models.
 data_response_bhaz <- function(bframe, data, check_response = TRUE) {
   out <- list()
   if (is.mvbrmsframe(bframe)) {
@@ -478,7 +479,8 @@ data_response_bhaz <- function(bframe, data, check_response = TRUE) {
     bs <- bhaz_basis(bframe, data, args = bhaz$args)
     y <- bframe$frame$resp$values
     if (!check_response) {
-      # Native predictions evaluate the baseline at their requested times.
+      # Use in-support placeholders for unchecked response-time matrices only.
+      # Native predictions evaluate requested times with a separate tail policy.
       bounds <- attr(bs, "Boundary.knots")
       y[is.na(y)] <- bounds[1]
       y <- pmin(pmax(y, bounds[1]), bounds[2])

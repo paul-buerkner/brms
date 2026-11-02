@@ -1,6 +1,7 @@
 # Evaluate the fitted baseline without extrapolating its spline basis.
 # Paired evaluation associates each time with one row of simplex draws;
 # common-time evaluation shares a time grid across all draws.
+# Simplex weights give H0 = 1 at the upper boundary, not unit event probability.
 bhaz_at <- function(t, sbhaz, basis, tail = "constant", integrate = FALSE,
                     paired = TRUE) {
   tail <- match.arg(tail, c("constant", "loglinear", "none"))
@@ -87,6 +88,7 @@ cox_truncation <- function(mu, sbhaz, basis, tail, lb = NULL, ub = NULL) {
 }
 
 # Invert H0 using bracketed Newton steps, shrinking the active set.
+# With extrapolation, targets above H0 = 1 use analytic tail inversion.
 qcox_baseline <- function(target, sbhaz, basis, tail, tol = 1e-10,
                           maxit = 100L, lb = NULL, ub = NULL) {
   bounds <- attr(basis, "Boundary.knots")

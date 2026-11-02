@@ -2006,6 +2006,7 @@ pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL, lower.tail = TRUE,
 qcox <- function(p, mu, sbhaz, basis, tail = "constant",
                  lower.tail = TRUE, log.p = FALSE, lb = NULL, ub = NULL) {
   tail <- match.arg(tail, c("constant", "loglinear", "none"))
+  # Invert on the cumulative-hazard scale: H(T) = -log(1 - p).
   target <- qexp(p, lower.tail = lower.tail, log.p = log.p)
   if (nrow(sbhaz) == 1L) {
     sbhaz <- sbhaz[rep(1L, max(length(p), length(mu))), , drop = FALSE]
@@ -2018,6 +2019,8 @@ qcox <- function(p, mu, sbhaz, basis, tail = "constant",
   scale <- pmin(target, 1)
   if (!is.null(lb) || !is.null(ub)) {
     tr <- cox_truncation(mu, sbhaz, basis, tail, lb, ub)
+    # Conditional inversion uses the hazard increment above H(lb), avoiding
+    # subtraction of CDFs that may both have rounded to 1.
     increment <- -log1m_prob(
       log1m_prob(-target) + log1m_prob(-tr$width)
     )
@@ -2029,6 +2032,7 @@ qcox <- function(p, mu, sbhaz, basis, tail = "constant",
     scale <- pmin(increment, -expm1(-tr$width))
     target <- tr$Hlo + increment
   }
+  # Scale hazard tolerance to the probability and, if truncated, interval mass.
   out <- qcox_baseline(target / mu, sbhaz, basis, tail,
                        tol = 1e-10 * scale / mu, lb = lb, ub = ub)
   take <- which(out >= 0)

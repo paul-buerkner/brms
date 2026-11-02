@@ -849,6 +849,9 @@ prepare_predictions_bhaz <- function(bframe, draws, sdata, cox_version = NULL,
   if (!is_cox(bframe$family)) {
     return(NULL)
   }
+  # bhaz/cbhaz retain draws-by-observations evaluations for likelihoods.
+  # Arbitrary-time predictions use the stored basis and draws-by-coefficients
+  # sbhaz matrices, one per stratum; Jgrbhaz selects each observation's stratum.
   out <- list(
     basis = bframe$frame$basis$bhaz$basis_matrix,
     version = cox_version,
