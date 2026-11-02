@@ -162,7 +162,7 @@ Besides random draws, related quantities such as CDF or PIT
   ordinary summaries of signed values are not survival-time summaries.
   CDFs and densities beyond the boundary are undefined with no tail.
   Cox \code{output = "pit"} is a conditional CDF, not a censoring-aware
-  calibration diagnostic; use \code{\link{cox_pit}} for the latter.
+  calibration diagnostic.
   Censoring-aware plotting remains external to brms.
 
   For truncated discrete models only: In the absence of any general

@@ -4,7 +4,7 @@
 
 * Add native Cox predictive draws, CDFs, densities, and quantiles with explicit
 tail extrapolation policies; survival quantities, restricted mean survival
-time with a required horizon, and censoring-aware numerical diagnostics.
+time with a required horizon, and censoring utilities.
 Cox plots remain external and `pp_check` continues to delegate to bayesplot.
 
 * Specify a prior `tag` for use in prior sensitivity analysis

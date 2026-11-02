@@ -408,33 +408,6 @@ test_that("Cox RMST agrees with independent integration and truncation", {
                                sort = FALSE), "finite positive")
 })
 
-test_that("Censored PIT randomizes after aggregation with shared uniforms", {
-  skip_if_not_installed("splines2")
-  prep <- cox_test_prep(nobs = 4L)
-  prep$data$cens <- c(0, 1, -1, 2)
-  prep$data$rcens <- rep(2, 4)
-  F <- posterior_predict(prep, output = "probability")
-  set.seed(41)
-  avg <- cox_pit(prep)
-  set.seed(41)
-  conditional <- cox_pit(prep, average = FALSE)
-  expect_equal(avg, unname(colMeans(conditional)))
-  expect_equal(avg[1], mean(F[, 1]))
-  expect_true(avg[2] >= mean(F[, 2]) && avg[2] <= 1)
-  expect_true(avg[3] >= 0 && avg[3] <= mean(F[, 3]))
-  upper <- mean(brms:::posterior_predict_cox(4, prep, output = "probability",
-                                            q = 2))
-  expect_true(avg[4] >= mean(F[, 4]) && avg[4] <= upper)
-  prep$data$rcens <- NULL
-  expect_error(cox_pit(prep), "rcens")
-  prep$data$cens <- NULL
-  prep$data$lb <- rep(0.5, 4)
-  expect_equal(cox_snell(prep)[, 1],
-    cox_cumhaz(1, prep)[, 1] - cox_cumhaz(0.5, prep)[, 1])
-  prep$data$ub <- rep(2, 4)
-  expect_error(cox_snell(prep), "upper truncation")
-})
-
 test_that("Censoring preserves existing signs and validates shapes", {
   draws <- matrix(c(1, -2, 3, 4), 2)
   expect_equal(cox_censor(draws, c(1.5, 3.5)),
@@ -449,50 +422,4 @@ test_that("Censoring preserves existing signs and validates shapes", {
   ct <- cox_censor_times(1:4, c(1, 0, 0, 1), 1000)
   expect_true(all(ct %in% c(2, 3, Inf)))
   expect_true(all(c(2, 3, Inf) %in% ct))
-})
-
-test_that("Cox LOO-PIT rejects precomputed weights for selected or reordered draws", {
-  skip_if_not_installed("splines2")
-  testthat::local_mocked_bindings(
-    prepare_cox_predictions = function(...) cox_test_prep(), .package = "brms"
-  )
-  fit <- brms:::brmsfit_example1
-  ids <- seq_len(posterior::ndraws(fit))
-  expect_error(loo_pit_cox(fit, loo_obj = list(), draw_ids = ids[-1]),
-               "Recompute PSIS")
-  expect_error(loo_pit_cox(fit, loo_obj = list(), draw_ids = rev(ids)),
-               "reordered draws")
-  expect_error(loo_pit_cox(fit, loo_obj = list(), newdata = fit$data),
-               "newdata")
-  wrong <- structure(list(psis_object = TRUE), yhash = "another-response")
-  expect_error(loo_pit_cox(fit, loo_obj = wrong), "response")
-})
-
-test_that("Cox LOO-PIT computes likelihoods and CDFs from one preparation", {
-  skip_if_not_installed("splines2")
-  fit <- brms:::brmsfit_example1
-  ns <- min(200L, posterior::ndraws(fit))
-  prep <- cox_test_prep(ns = ns)
-  set.seed(316)
-  ll <- matrix(rnorm(ns * 3, -2, 0.1), ns)
-  testthat::local_mocked_bindings(
-    prepare_cox_predictions = function(...) prep,
-    log_lik = function(object, ...) {
-      stopifnot(identical(object, prep))
-      ll
-    },
-    r_eff_log_lik = function(...) rep(1, 3),
-    .package = "brms"
-  )
-  # The example fit has too few draws for reliable Pareto-k diagnostics.
-  psis <- suppressWarnings(loo::psis(-ll, r_eff = rep(1, 3), cores = 1))
-  expected <- colSums(
-    weights(psis, normalize = TRUE, log = FALSE) *
-      posterior_predict(prep, output = "probability")
-  )
-  got <- suppressWarnings(loo_pit_cox(
-    fit, draw_ids = seq_len(ns), randomize_cens = FALSE,
-    newdata = data.frame(g = "new"), allow_new_levels = TRUE, cores = 1
-  ))
-  expect_equal(got, expected)
 })
