@@ -477,6 +477,31 @@ test_that("posterior_predict_mixture does not let p partially match prep", {
   expect_equal(dim(draws), c(10, nobs(fit)))
 })
 
+test_that("predict preserves raw draws and summary controls", {
+  fit <- brms:::rename_pars(brms:::brmsfit_example3)
+  args <- list(
+    fit, newdata = fit$data[1:3, ], re_formula = NA, draw_ids = 1:5
+  )
+  set.seed(123)
+  draws <- do.call(posterior_predict, args)
+  set.seed(123)
+  expect_equal(do.call(predict, c(args, summary = FALSE)), draws)
+  set.seed(123)
+  expect_equal(do.call(predict, args), posterior_summary(draws))
+  set.seed(123)
+  expect_equal(
+    do.call(predict, c(args, robust = TRUE, list(probs = c(0.1, 0.9)))),
+    posterior_summary(draws, robust = TRUE, probs = c(0.1, 0.9))
+  )
+  set.seed(123)
+  probability <- do.call(posterior_predict, c(args, output = "probability"))
+  set.seed(123)
+  expect_equal(
+    do.call(predict, c(args, summary = FALSE, output = "probability")),
+    probability
+  )
+})
+
 # ---------------------------------------------------------------------------
 # Tests for the posterior_predict() output API
 # (probability / pit / density / quantile, plus pp_cdf helpers)

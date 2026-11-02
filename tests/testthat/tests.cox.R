@@ -224,6 +224,57 @@ test_that("Native Cox outputs and stable truncation use the same distribution", 
   expect_error(posterior_predict(child), "non-mixture")
 })
 
+test_that("Cox prediction controls use the existing posterior_predict interface", {
+  skip_if_not_installed("splines2")
+  fit <- brms:::brmsfit_example1
+  prep <- cox_test_prep()
+  testthat::local_mocked_bindings(
+    prepare_predictions = function(...) prep, .package = "brms"
+  )
+  set.seed(123)
+  draws <- posterior_predict(prep)
+  set.seed(123)
+  expect_equal(predict(fit, summary = FALSE), draws)
+  set.seed(123)
+  expect_equal(predict(fit), posterior_summary(draws))
+
+  cases <- list(
+    list(output = "probability", q = 2, lower.tail = FALSE, log.p = TRUE),
+    list(output = "density", q = 2, log = TRUE),
+    list(output = "quantile", p = log(0.25), lower.tail = FALSE, log.p = TRUE)
+  )
+  for (args in cases) {
+    expect_equal(
+      do.call(posterior_predict, c(list(fit), args)),
+      do.call(posterior_predict, c(list(prep), args))
+    )
+  }
+})
+
+test_that("Cox pp_check rejects censoring codes but accepts event times", {
+  fit <- restructure(brms:::rename_pars(brms:::brmsfit_example1))
+  y <- seq_len(nrow(fit$data))
+  fit$formula <- bf(y ~ 1, family = cox())
+  fit$data <- data.frame(y = y)
+  yrep <- rbind(y, y + 1)
+  testthat::local_mocked_bindings(
+    get_y = function(...) y,
+    posterior_predict = function(...) yrep,
+    current_data = function(...) fit$data,
+    .package = "brms"
+  )
+  expect_s3_class(pp_check(fit, type = "ecdf_overlay", ndraws = 2), "ggplot")
+  yrep[1, 1] <- -1
+  expect_error(
+    pp_check(fit, type = "ecdf_overlay", ndraws = 2),
+    "Censored Cox replications require an external plotting function"
+  )
+  expect_error(
+    pp_check(fit, type = "dens_overlay", prefix = "ppd", ndraws = 2),
+    "Censored Cox replications require an external plotting function"
+  )
+})
+
 test_that("Cox inversion controls probability error and narrow truncation", {
   skip_if_not_installed("splines2")
   prep <- cox_test_prep(ns = 3L, nobs = 1L)

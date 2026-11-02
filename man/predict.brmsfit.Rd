@@ -20,11 +20,6 @@
   robust = FALSE,
   probs = c(0.025, 0.975),
   output = "random",
-  q = NULL,
-  p = NULL,
-  lower.tail = TRUE,
-  log.p = FALSE,
-  log = FALSE,
   ...
 )
 }
@@ -91,27 +86,6 @@ function. Only used if \code{summary} is \code{TRUE}.}
 \code{"density"}, or \code{"quantile"}. See Details for more
 information.}
 
-\item{q}{Optional values at which to evaluate probabilities, PIT
-values, or densities. Only used if \code{output} is
-\code{"probability"}, \code{"pit"}, or \code{"density"}.
-Defaults to the observed responses. See Details.}
-
-\item{p}{Probabilities at which to evaluate quantiles. Only used
-and required if \code{output = "quantile"}.}
-
-\item{lower.tail}{Logical; If \code{TRUE} (default), return
-\eqn{P(X \le x)} or the corresponding lower-tail quantiles.
-Else, return \eqn{P(X > x)} or upper-tail quantiles.
-Only used if \code{output} is \code{"probability"}, \code{"pit"},
-or \code{"quantile"}.}
-
-\item{log.p}{Logical; If \code{TRUE}, probabilities are given and
-returned on the log scale. Only used if \code{output} is
-\code{"probability"}, \code{"pit"}, or \code{"quantile"}.}
-
-\item{log}{Logical; If \code{TRUE}, densities are returned on the
-log scale. Only used if \code{output = "density"}.}
-
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}
 }
@@ -135,6 +109,12 @@ An \code{array} of predicted response values.
 \description{
 This method is an alias of \code{\link{posterior_predict.brmsfit}}
 with additional arguments for obtaining summaries of the computed draws.
+}
+\details{
+To specify \code{q}, \code{p}, \code{lower.tail}, \code{log.p},
+  or \code{log}, use \code{\link{posterior_predict.brmsfit}} directly.
+  These arguments are not forwarded by \code{predict}. To summarize the
+  resulting draws, use \code{\link{posterior_summary}}.
 }
 \examples{
 \dontrun{
