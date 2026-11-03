@@ -126,7 +126,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     if (length(attr(sp_terms, "uni_me")) || length(attr(sp_terms, "uni_mi"))) {
       stop2("Projpred does not support me() or mi() terms.")
     }
-    require_package("projpred", "2.12.0")
+    # check for the feature instead of a version number, so that development
+    # versions of projpred with mo() support also work
+    require_package("projpred")
+    if (!"mo_effects" %in% getNamespaceExports("projpred")) {
+      stop2("Monotonic terms need a version of projpred that supports them. ",
+            "Please update package 'projpred'.")
+    }
   }
 
   # only use the raw formula for selection of terms
