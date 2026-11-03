@@ -19,6 +19,7 @@
   knots = NULL,
   drop_unused_levels = TRUE,
   threads = getOption("brms.threads", NULL),
+  subsample = NULL,
   normalize = getOption("brms.normalize", TRUE),
   save_model = NULL,
   ...
