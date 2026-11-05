@@ -116,8 +116,8 @@ fit <- brm(count ~ zAge + zBase * Trt
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
+#> Chain 1: Gradient evaluation took 3.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.38 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -134,9 +134,9 @@ fit <- brm(count ~ zAge + zBase * Trt
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.448 seconds (Warm-up)
-#> Chain 1:                1.67 seconds (Sampling)
-#> Chain 1:                4.118 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.459 seconds (Warm-up)
+#> Chain 1:                1.671 seconds (Sampling)
+#> Chain 1:                4.13 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -159,15 +159,15 @@ fit <- brm(count ~ zAge + zBase * Trt
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.584 seconds (Warm-up)
-#> Chain 2:                2.054 seconds (Sampling)
-#> Chain 2:                4.638 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.577 seconds (Warm-up)
+#> Chain 2:                2.046 seconds (Sampling)
+#> Chain 2:                4.623 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.9e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.29 seconds.
+#> Chain 3: Gradient evaluation took 2.8e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.28 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -184,9 +184,9 @@ fit <- brm(count ~ zAge + zBase * Trt
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.388 seconds (Warm-up)
-#> Chain 3:                1.889 seconds (Sampling)
-#> Chain 3:                4.277 seconds (Total)
+#> Chain 3:  Elapsed Time: 2.352 seconds (Warm-up)
+#> Chain 3:                1.88 seconds (Sampling)
+#> Chain 3:                4.232 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -209,8 +209,8 @@ fit <- brm(count ~ zAge + zBase * Trt
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.273 seconds (Warm-up)
-#> Chain 4:                1.654 seconds (Sampling)
+#> Chain 4:  Elapsed Time: 2.272 seconds (Warm-up)
+#> Chain 4:                1.655 seconds (Sampling)
 #> Chain 4:                3.927 seconds (Total)
 #> Chain 4: 
 #> Warning: There were 12 divergent transitions after warmup. See

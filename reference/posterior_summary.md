@@ -120,8 +120,8 @@ fit <- brm(time ~ age * sex, data = kidney)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
 #> Chain 2:  Elapsed Time: 0.081 seconds (Warm-up)
-#> Chain 2:                0.029 seconds (Sampling)
-#> Chain 2:                0.11 seconds (Total)
+#> Chain 2:                0.03 seconds (Sampling)
+#> Chain 2:                0.111 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).

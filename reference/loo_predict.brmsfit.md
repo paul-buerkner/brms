@@ -135,15 +135,15 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.011 seconds (Warm-up)
+#> Chain 1:  Elapsed Time: 0.012 seconds (Warm-up)
 #> Chain 1:                0.011 seconds (Sampling)
-#> Chain 1:                0.022 seconds (Total)
+#> Chain 1:                0.023 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.03 seconds.
+#> Chain 2: Gradient evaluation took 2e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.02 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -185,9 +185,9 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.01 seconds (Warm-up)
+#> Chain 3:  Elapsed Time: 0.011 seconds (Warm-up)
 #> Chain 3:                0.011 seconds (Sampling)
-#> Chain 3:                0.021 seconds (Total)
+#> Chain 3:                0.022 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -211,8 +211,8 @@ fit <- brm(weight ~ group, data = d)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
 #> Chain 4:  Elapsed Time: 0.012 seconds (Warm-up)
-#> Chain 4:                0.01 seconds (Sampling)
-#> Chain 4:                0.022 seconds (Total)
+#> Chain 4:                0.011 seconds (Sampling)
+#> Chain 4:                0.023 seconds (Total)
 #> Chain 4: 
 loo_predictive_interval(fit, prob = 0.8)
 #> Running PSIS to compute weights

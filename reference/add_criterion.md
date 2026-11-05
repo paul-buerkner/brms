@@ -157,8 +157,8 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
 #> Chain 3:  Elapsed Time: 0.018 seconds (Warm-up)
-#> Chain 3:                0.011 seconds (Sampling)
-#> Chain 3:                0.029 seconds (Total)
+#> Chain 3:                0.012 seconds (Sampling)
+#> Chain 3:                0.03 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -181,9 +181,9 @@ fit <- brm(count ~ Trt, data = epilepsy)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.023 seconds (Warm-up)
+#> Chain 4:  Elapsed Time: 0.024 seconds (Warm-up)
 #> Chain 4:                0.013 seconds (Sampling)
-#> Chain 4:                0.036 seconds (Total)
+#> Chain 4:                0.037 seconds (Total)
 #> Chain 4: 
 # add both LOO and WAIC at once
 fit <- add_criterion(fit, c("loo", "waic"))

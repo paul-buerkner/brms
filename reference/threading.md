@@ -105,19 +105,19 @@ summary(fit)
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.55      0.07     0.42     0.71 1.00      310      435
+#> sd(Intercept)     0.55      0.07     0.42     0.70 1.00      357      642
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.78      0.12     1.53     2.00 1.01      333      445
-#> zAge           0.09      0.09    -0.07     0.27 1.00      397      458
-#> zBase          0.70      0.12     0.47     0.92 1.00      337      617
-#> Trt1          -0.26      0.17    -0.59     0.09 1.00      363      623
-#> zBase:Trt1     0.05      0.16    -0.27     0.39 1.00      497      624
+#> Intercept      1.79      0.12     1.55     2.02 1.00      453      818
+#> zAge           0.09      0.09    -0.07     0.27 1.00      538      750
+#> zBase          0.71      0.12     0.46     0.94 1.00      454      640
+#> Trt1          -0.26      0.17    -0.61     0.07 1.00      524      567
+#> zBase:Trt1     0.05      0.17    -0.27     0.39 1.00      494      626
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     7.34      1.81     4.43    12.05 1.00      916      591
+#> shape     7.38      1.89     4.60    11.86 1.00     1297      902
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

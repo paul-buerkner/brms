@@ -38,6 +38,13 @@
 
 #### Bug Fixes
 
+- Use the complementary CDFs in the Stan code of two-sided truncation
+  and interval censoring once the CDF of the lower bound rounds towards
+  1, for the `poisson`, `beta_binomial`, `weibull`, `lognormal`,
+  `shifted_lognormal`, `exgaussian`, and `student` families, whose
+  truncated log density otherwise became inaccurate and then infinite.
+  Thanks to Ahmed Eldeeb.
+  ([\#1956](https://github.com/paul-buerkner/brms/issues/1956))
 - Evaluate `log_lik` of ordinal models on the log scale throughout, so
   improbable categories no longer give `-Inf` or `NaN` where their log
   probability is representable, and stop it failing for two categories

@@ -223,8 +223,8 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.44 seconds.
+#> Chain 1: Gradient evaluation took 4.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.43 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -241,15 +241,15 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 3.408 seconds (Warm-up)
-#> Chain 1:                2.767 seconds (Sampling)
-#> Chain 1:                6.175 seconds (Total)
+#> Chain 1:  Elapsed Time: 3.518 seconds (Warm-up)
+#> Chain 1:                2.854 seconds (Sampling)
+#> Chain 1:                6.372 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.3e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
+#> Chain 2: Gradient evaluation took 3.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -266,9 +266,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 3.785 seconds (Warm-up)
-#> Chain 2:                4.033 seconds (Sampling)
-#> Chain 2:                7.818 seconds (Total)
+#> Chain 2:  Elapsed Time: 3.913 seconds (Warm-up)
+#> Chain 2:                4.167 seconds (Sampling)
+#> Chain 2:                8.08 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -291,9 +291,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 3.67 seconds (Warm-up)
-#> Chain 3:                2.588 seconds (Sampling)
-#> Chain 3:                6.258 seconds (Total)
+#> Chain 3:  Elapsed Time: 3.783 seconds (Warm-up)
+#> Chain 3:                2.669 seconds (Sampling)
+#> Chain 3:                6.452 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -316,9 +316,9 @@ fit1 <- brm(count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 3.818 seconds (Warm-up)
-#> Chain 4:                2.124 seconds (Sampling)
-#> Chain 4:                5.942 seconds (Total)
+#> Chain 4:  Elapsed Time: 3.94 seconds (Warm-up)
+#> Chain 4:                2.21 seconds (Sampling)
+#> Chain 4:                6.15 seconds (Total)
 #> Chain 4: 
 # throws warning about some pareto k estimates being too high
 (loo1 <- loo(fit1))
@@ -570,7 +570,7 @@ fit_cmdstanr <- brm(rate ~ conc + state, data = Puromycin,
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.2 seconds.
+#> Total execution time: 1.1 seconds.
 #> 
 
 # now restart the R session and run the following (after attaching 'brms')
@@ -590,7 +590,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.1 seconds.
+#> Total execution time: 1.0 seconds.
 #> 
 #> Running MCMC with 4 sequential chains...
 #> 
@@ -601,7 +601,7 @@ kfold_cmdstanr <- kfold(fit_cmdstanr, K = 2)
 #> 
 #> All 4 chains finished successfully.
 #> Mean chain execution time: 0.0 seconds.
-#> Total execution time: 1.1 seconds.
+#> Total execution time: 1.0 seconds.
 #> 
 #> Fitting model 1 out of 2
 #> Start sampling
