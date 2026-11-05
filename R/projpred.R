@@ -113,22 +113,28 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
   }
+  # get_effect() checks the terms of all dpars: if conv_cats_dpars(family),
+  # the dpars are 'mu<category>' (no 'mu'); other dpars stopped above
   not_ok_term_types <- setdiff(
     all_term_types(), c("fe", "re", "offset", "sm", "sp")
   )
-  if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
+  has_not_ok <- ulapply(not_ok_term_types, function(t) {
+    length(get_effect(bterms, target = t)) > 0L
+  })
+  if (any(has_not_ok)) {
     stop2("Projpred only supports standard multilevel, smoothing, and ",
           "monotonic terms as well as offsets.")
   }
-  sp_terms <- bterms$dpars$mu$sp
-  if (!is.null(sp_terms)) {
+  sp_terms <- get_effect(bterms, target = "sp")
+  if (length(sp_terms)) {
     # 'sp' terms are mo(), me(), and mi() terms (see terms_sp())
-    if (length(attr(sp_terms, "uni_me")) || length(attr(sp_terms, "uni_mi"))) {
+    uni_me <- ulapply(sp_terms, attr, "uni_me")
+    uni_mi <- ulapply(sp_terms, attr, "uni_mi")
+    if (length(uni_me) || length(uni_mi)) {
       stop2("Projpred does not support me() or mi() terms.")
     }
     # check for the feature instead of a version number, so that development
     # versions of projpred with mo() support also work
-    require_package("projpred")
     if (!"mo_effects" %in% getNamespaceExports("projpred")) {
       stop2("Monotonic terms need a version of projpred that supports them. ",
             "Please update package 'projpred'.")

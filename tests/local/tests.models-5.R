@@ -272,6 +272,17 @@ test_that("projpred methods can be run with monotonic terms",
   # me() and mi() terms are not supported
   fit_me <- brm(y ~ me(z, 0.1) + mo(x), data = dat, empty = TRUE)
   expect_error(projpred::get_refmodel(fit_me), "me\\(\\) or mi\\(\\)")
+
+  # the checks also apply to categorical models; 3 categories give the dpars
+  # 'mu2' and 'mu3' and no dpar 'mu'
+  dat$ycat <- factor(sample(1:3, 100, TRUE))
+  fit_me_cat <- brm(ycat ~ me(z, 0.1) + mo(x), data = dat,
+                    family = categorical(), empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_me_cat), "me\\(\\) or mi\\(\\)")
+  fit_gp_cat <- brm(ycat ~ gp(z), data = dat,
+                    family = categorical(), empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_gp_cat),
+               "only supports standard multilevel")
 }))
 
 test_that("alternative algorithms can be used", suppressWarnings({
