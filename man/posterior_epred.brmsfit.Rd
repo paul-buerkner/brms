@@ -17,6 +17,8 @@
   ndraws = NULL,
   draw_ids = NULL,
   sort = FALSE,
+  horizon = NULL,
+  nodes = 64,
   ...
 )
 }
@@ -56,6 +58,14 @@ If \code{NULL} (the default), all draws are used.}
 Indicating whether to return predicted values in the original
 order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
+
+\item{horizon}{For Cox response predictions, a required finite nonnegative
+restriction horizon. Returns restricted mean survival time
+\eqn{E[\min(T, horizon)]}, not the unrestricted mean. No horizon is
+chosen implicitly. Ignored for other families and parameter predictions.}
+
+\item{nodes}{Number of Gauss-Legendre nodes per integration panel for Cox
+restricted mean survival time (default 64). Requires \pkg{statmod}.}
 
 \item{...}{Further arguments passed to \code{\link{prepare_predictions}}
 that control several aspects of data validation and prediction.}

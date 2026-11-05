@@ -110,6 +110,12 @@ An \code{array} of predicted response values.
 This method is an alias of \code{\link{posterior_predict.brmsfit}}
 with additional arguments for obtaining summaries of the computed draws.
 }
+\details{
+To specify \code{q}, \code{p}, \code{lower.tail}, \code{log.p},
+  or \code{log}, use \code{\link{posterior_predict.brmsfit}} directly.
+  These arguments are not forwarded by \code{predict}. To summarize the
+  resulting draws, use \code{\link{posterior_summary}}.
+}
 \examples{
 \dontrun{
 ## fit a model
