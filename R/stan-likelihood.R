@@ -154,12 +154,12 @@ stan_log_lik_cens <- function(ll, bterms, threads, normalize, ...) {
       "    {tp}{w}{ll$dist}_lcdf(Y{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     )
     if (has_interval_cens) {
+      interval <- stan_log_prob_interval(
+        ll, lower = glue("Y{resp}{n}"), upper = glue("rcens{resp}{n}")
+      )
       str_add(out) <- glue(
         "    }} else if (cens{resp}{n} == 2) {{\n",
-        "    {tp}{w}log_diff_exp(\n",
-        "        {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
-        "        {ll$dist}_lcdf(Y{resp}{n}{ll$shift} | {ll$args})\n",
-        "      ){tr};\n"
+        "    {tp}{w}{interval}{tr};\n"
       )
     }
     str_add(out) <- glue("    }}\n")
@@ -213,12 +213,12 @@ stan_log_lik_mix <- function(ll, bterms, pred_mix_prob, threads,
       "{ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args}){tr};\n"
     )
     if (has_interval_cens(bterms)) {
+      interval <- stan_log_prob_interval(
+        ll, lower = glue("{Y}{resp}{n}"), upper = glue("rcens{resp}{n}")
+      )
       str_add(out) <- glue(
         "    }} else if (cens{resp}{n} == 2) {{\n",
-        "      ps[{mix}] = {theta} + log_diff_exp(\n",
-        "        {ll$dist}_lcdf(rcens{resp}{n}{ll$shift} | {ll$args}),\n",
-        "        {ll$dist}_lcdf({Y}{resp}{n}{ll$shift} | {ll$args})\n",
-        "      ){tr};\n"
+        "      ps[{mix}] = {theta} + {interval}{tr};\n"
       )
     }
     str_add(out) <- glue("    }}\n")
@@ -255,10 +255,38 @@ stan_log_lik_trunc <- function(ll, bterms, threads, short = FALSE, ...) {
     } else if (!any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
       out <- glue("{ms}{ll$dist}_lcdf({ub}{ll$shift} | {ll$args})")
     } else if (any(bounds$lb > -Inf) && any(bounds$ub < Inf)) {
-      trr <- glue("{ll$dist}_lcdf({ub}{ll$shift} | {ll$args})")
-      trl <- glue("{ll$dist}_lcdf({lb}{ll$shift} | {ll$args})")
-      out <- glue("{ms}log_diff_exp({trr}, {trl})")
+      out <- glue("{ms}{stan_log_prob_interval(ll, lb, ub)}")
     }
+  }
+  out
+}
+
+# Stan code for the log probability of the response in (lower, upper]. The
+# lcdfs round to 0 once 1 - F(lower) gets small, so this uses the lccdfs
+# where 1 - F(lower) < 1e-10, for distributions whose Stan lccdf stays exact
+# there (#1956). log_prob_interval() in R switches from F(lower) > 1/2, but
+# the gradients of Stan's lccdfs can be NaN once 1 - F(upper) underflows
+stan_log_prob_interval <- function(ll, lower, upper) {
+  lcdf <- function(q) glue("{ll$dist}_lcdf({q}{ll$shift} | {ll$args})")
+  out <- glue("log_diff_exp({lcdf(upper)}, {lcdf(lower)})")
+  upper_tail_dists <- c(
+    "poisson", "beta_binomial", "weibull", "lognormal", "exp_mod_normal",
+    "student_t"
+  )
+  if (ll$dist %in% upper_tail_dists) {
+    lccdf <- function(q) glue("{ll$dist}_lccdf({q}{ll$shift} | {ll$args})")
+    # leave out lccdf(upper) where upper is infinite or its density is
+    # negligible, as lccdf(upper) may underflow there and even evaluating it
+    # would make gradients NaN
+    lpdf <- str_if(ll$dist %in% c("poisson", "beta_binomial"), "lpmf", "lpdf")
+    lpdf_upper <- glue("{ll$dist}_{lpdf}({upper}{ll$shift} | {ll$args})")
+    out <- glue(
+      "({lcdf(lower)} > -1e-10 ?\n",
+      "{wsp(nsp = 8)}(is_inf({upper}) || {lpdf_upper} < -600 ?\n",
+      "{wsp(nsp = 10)}{lccdf(lower)} :\n",
+      "{wsp(nsp = 10)}log_diff_exp({lccdf(lower)}, {lccdf(upper)})) :\n",
+      "{wsp(nsp = 8)}{out})"
+    )
   }
   out
 }
