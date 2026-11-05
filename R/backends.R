@@ -439,7 +439,7 @@ fit_model <- function(model, backend, ...) {
     }
     args$init <- do_call(rbind, lapply(seq_along(init), function(i) {
       stanli::unconstrain(stanli_model, init[[i]], partial = TRUE,
-                          seed = seed + i)
+                          ignore_unknown = TRUE, seed = seed + i)
     }))
   }
 
@@ -505,12 +505,47 @@ fit_model <- function(model, backend, ...) {
   }
   out <- do_call(fit_fun, args)
   out <- stanli::as_stanfit(out, exclude = as.character(unlist(exclude)))
+  # stanli prints these itself only when refresh > 0
+  if (algorithm == "sampling" && !empty_model && is_equal(args$refresh, 0)) {
+    warn_sampler_problems_stanli(out)
+  }
 
   if (empty_model) {
     # allow correct updating of an 'empty' model
     out@sim <- list()
   }
   out
+}
+
+# warn about divergences, treedepth saturation and low E-BFMI as rstan does
+# @param x a stanfit object
+warn_sampler_problems_stanli <- function(x) {
+  n_div <- rstan::get_num_divergent(x)
+  if (n_div > 0) {
+    warning2(
+      "There were ", n_div, " divergent transitions after warmup. See\n",
+      "https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup\n",
+      "to find out why this is a problem and how to eliminate them."
+    )
+  }
+  n_max <- rstan::get_num_max_treedepth(x)
+  if (n_max > 0) {
+    max_depth <- x@stan_args[[1]]$control$max_treedepth %||% 10
+    warning2(
+      "There were ", n_max, " transitions after warmup that exceeded the ",
+      "maximum treedepth. Increase max_treedepth above ", max_depth, ". See\n",
+      "https://mc-stan.org/misc/warnings.html#maximum-treedepth-exceeded"
+    )
+  }
+  n_bfmi <- length(rstan::get_low_bfmi_chains(x))
+  if (n_bfmi > 0) {
+    warning2(
+      "There were ", n_bfmi, " chains where the estimated Bayesian Fraction ",
+      "of Missing Information was low. See\n",
+      "https://mc-stan.org/misc/warnings.html#bfmi-low"
+    )
+  }
+  invisible(x)
 }
 
 # fit model with a mock backend for testing
@@ -633,7 +668,7 @@ elapsed_time <- function(x) {
 }
 
 stanli_min_version <- function() {
-  "0.23.1"
+  "0.25.0"
 }
 
 # supported Stan backends

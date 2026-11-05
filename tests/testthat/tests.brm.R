@@ -140,8 +140,9 @@ test_that("brm fits and post-processes a model with the stanli backend", {
   dat <- data.frame(
     y = rnorm(40), x = rnorm(40), g = rep(1:5, each = 8)
   )
-  fit <- brm(y ~ x + (1 | g), dat, backend = "stanli", chains = 2,
-             iter = 600, seed = 1, silent = 2, refresh = 0)
+  fit <- suppressWarnings(brm(y ~ x + (1 | g), dat, backend = "stanli",
+                              chains = 2, iter = 600, seed = 1, silent = 2,
+                              refresh = 0))
   expect_s3_class(fit, "brmsfit")
   expect_s4_class(fit$fit, "stanfit")
   expect_equal(fit$backend, "stanli")
@@ -159,7 +160,8 @@ test_that("brm fits and post-processes a model with the stanli backend", {
                                      "adapt_engaged", "stepsize"))
 
   expect_false(needs_recompilation(fit))
-  fit2 <- update(fit, newdata = dat[1:30, ], seed = 2, silent = 2, refresh = 0)
+  fit2 <- suppressWarnings(update(fit, newdata = dat[1:30, ], seed = 2,
+                                  silent = 2, refresh = 0))
   expect_equal(nobs(fit2), 30)
   expect_equal(fit2$backend, "stanli")
 
@@ -197,6 +199,10 @@ test_that("the stanli backend handles sampler arguments", {
   fit <- brm(y ~ x, dat, backend = "stanli", chains = 2, iter = 300,
              init = inits, seed = 1, silent = 2, refresh = 0)
   expect_equal(ndraws(fit), 300)
+  fit <- brm(y ~ x, dat, backend = "stanli", chains = 1, iter = 300,
+             init = list(list(Intercept = 0, sigma = 1, b_Intercept = 0)),
+             seed = 1, silent = 2, refresh = 0)
+  expect_equal(ndraws(fit), 150)
   expect_error(
     brm(y ~ x, dat, backend = "stanli", chains = 1, iter = 300,
         init = list(list(sigma = -1)), silent = 2, refresh = 0),
@@ -208,6 +214,27 @@ test_that("the stanli backend handles sampler arguments", {
   filled <- update(empty, chains = 2, iter = 300, seed = 1, silent = 2,
                    refresh = 0, recompile = FALSE)
   expect_equal(ndraws(filled), 300)
+})
+
+test_that("the stanli backend warns about sampler problems", {
+  skip_if_no_stanli()
+  set.seed(1234)
+  dat <- data.frame(y = rnorm(40), x = rnorm(40), g = rep(1:5, each = 8))
+  expect_warning(
+    brm(y ~ x + (1 | g), dat, backend = "stanli", chains = 1, iter = 400,
+        seed = 1, silent = 2, control = list(max_treedepth = 1)),
+    "exceeded the maximum treedepth. Increase max_treedepth above 1"
+  )
+  out <- capture.output(expect_no_warning(
+    brm(y ~ x + (1 | g), dat, backend = "stanli", chains = 1, iter = 400,
+        seed = 1, silent = 1, refresh = 100,
+        control = list(max_treedepth = 1))
+  ))
+  expect_true(any(grepl("maximum treedepth limit of 1", out, fixed = TRUE)))
+  expect_no_warning(
+    brm(y ~ x, dat, backend = "stanli", chains = 0, silent = 2,
+        control = list(max_treedepth = 1))
+  )
 })
 
 test_that("log_prob-based methods need no compiler with the stanli backend", {
@@ -241,8 +268,9 @@ test_that("the stanli backend runs the approximate algorithms", {
     y = rnorm(60), x = rnorm(60), g = rep(1:6, each = 10)
   )
   dat$y <- 0.5 + 0.8 * dat$x + dat$y
-  ref <- brm(y ~ x + (1 | g), dat, backend = "stanli", chains = 2,
-             iter = 1000, seed = 1, silent = 2, refresh = 0)
+  ref <- suppressWarnings(brm(y ~ x + (1 | g), dat, backend = "stanli",
+                              chains = 2, iter = 1000, seed = 1, silent = 2,
+                              refresh = 0))
 
   for (algorithm in c("meanfield", "fullrank", "pathfinder", "laplace")) {
     fit <- suppressMessages(suppressWarnings(brm(
