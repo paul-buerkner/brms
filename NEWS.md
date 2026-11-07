@@ -2,6 +2,9 @@
 
 ### New Features
 
+* Add native family `split_student` to fit two-piece (Fernández–Steel)
+Student-t models (#513).
+
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

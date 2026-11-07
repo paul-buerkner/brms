@@ -608,7 +608,7 @@ prior_predictor.mvbrmsframe <- function(x, internal = FALSE, ...) {
     } else {
       prior <- prior + brmsprior(class = "rescor", prior = "lkj(1)")
     }
-    if (family_names(x)[1] %in% "student") {
+    if (family_names(x)[1] %in% c("student", "split_student")) {
       prior <- prior +
         brmsprior(class = "nu", prior = "gamma(2, 0.1)", lb = "1")
     }
