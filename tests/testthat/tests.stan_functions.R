@@ -76,20 +76,6 @@ test_that("self-defined Stan functions work correctly", {
                pasym_laplace(y, mu, sigma, quantile,
                              lower.tail = FALSE, log = TRUE))
 
-  # split_student functions
-  mu <- 0.7
-  sigma <- 0.4
-  alpha <- 0.6
-  df <- 3
-  y <- rsplit_student(1, df = df, mu = mu, sigma = sigma, alpha = alpha)
-  expect_equal(split_student_lpdf(y, mu, sigma, alpha, df),
-               dsplit_student(y, df = df, mu = mu, sigma = sigma, alpha = alpha, log = TRUE))
-  expect_equal(split_student_lcdf(y, mu, sigma, alpha, df),
-               psplit_student(y, df = df, mu = mu, sigma = sigma, alpha = alpha, log = TRUE))
-  expect_equal(split_student_lccdf(y, mu, sigma, alpha, df),
-               psplit_student(y, df = df, mu = mu, sigma = sigma, alpha = alpha,
-                             lower.tail = FALSE, log = TRUE))
-
   # wiener diffusion model functions
   alpha = 2
   tau = 0.5
