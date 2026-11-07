@@ -788,6 +788,17 @@ posterior_predict_asym_laplace <- function(i, prep, output = "random", ...) {
                             sigma = sigma, quantile = quantile, ...)
 }
 
+posterior_predict_split_student <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
+  df <- get_dpar(prep, "nu", i = i)
+  
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "split_student", mu = mu,
+                            sigma = sigma, alpha = alpha, df = df, ...)
+}
+
 posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
                                                          output = "random", ...) {
   zi <- get_dpar(prep, "zi", i = i)

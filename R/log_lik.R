@@ -671,6 +671,18 @@ log_lik_asym_laplace <- function(i, prep, ...) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_split_student <- function(i, prep, ...) {
+  args <- list(
+    mu = get_dpar(prep, "mu", i),
+    sigma = get_dpar(prep, "sigma", i),
+    alpha = get_dpar(prep, "alpha", i),
+    df = get_dpar(prep, "nu", i)
+  )
+  out <- log_lik_censor(dist = "split_student", args, i, prep)
+  out <- log_lik_truncate(out, psplit_student, args, i, prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_zero_inflated_asym_laplace <- function(i, prep, ...) {
   args <- list(
     mu = get_dpar(prep, "mu", i),

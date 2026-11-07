@@ -572,6 +572,11 @@ stan_log_lik_asym_laplace <- function(bterms,...) {
   sdist("asym_laplace", p$mu, p$sigma, p$quantile, vec = FALSE)
 }
 
+stan_log_lik_split_student <- function(bterms, ...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("split_student", p$mu, p$sigma, p$alpha, p$nu, vec = FALSE)
+}
+
 stan_log_lik_skew_normal <- function(bterms, ...) {
   p <- stan_log_lik_dpars(bterms)
   p$sigma <- stan_log_lik_add_se(p$sigma, bterms, ...)
