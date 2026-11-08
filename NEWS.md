@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Add family `split_normal` implementing the Fernández–Steel two-piece
+normal distribution (#513).
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

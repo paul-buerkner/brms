@@ -987,6 +987,13 @@ test_that("Stan code for xbeta models is correct", {
   expect_match2(scode, "lprior += gamma_lpdf(kappa | 0.01, 0.01);")
 })
 
+test_that("Stan code for split_normal models is correct", {
+  dat <- data.frame(y = rnorm(10), x = rnorm(10))
+  scode <- stancode(y ~ x, dat, family = split_normal())
+  expect_match2(scode, "target += split_normal_lpdf(Y[n] | mu[n], sigma, alpha);")
+  expect_match2(scode, "lprior += normal_lpdf(alpha | 0, 4);")
+})
+
 test_that("ordinal disc parameters appear in the Stan code", {
   scode <- stancode(
     bf(rating ~ period + carry + treat, disc ~ period),

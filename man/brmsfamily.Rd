@@ -10,6 +10,7 @@
 \alias{lognormal}
 \alias{shifted_lognormal}
 \alias{skew_normal}
+\alias{split_normal}
 \alias{exponential}
 \alias{weibull}
 \alias{frechet}
@@ -82,6 +83,8 @@ lognormal(link = "identity", link_sigma = "log")
 shifted_lognormal(link = "identity", link_sigma = "log", link_ndt = "log")
 
 skew_normal(link = "identity", link_sigma = "log", link_alpha = "identity")
+
+split_normal(link = "identity", link_sigma = "log", link_alpha = "identity")
 
 exponential(link = "log")
 

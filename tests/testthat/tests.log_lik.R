@@ -69,6 +69,13 @@ test_that("log_lik for various skewed normal models works as expected", {
   )
   ll <- as.numeric(brms:::log_lik_skew_normal(1, prep = prep))
   expect_equal(ll, ll_skew_normal)
+
+  ll_split_normal <- dsplit_normal(
+    x = prep$data$Y[1], mu = prep$dpars$mu[, 1],
+    sigma = prep$dpars$sigma, alpha = prep$dpars$alpha, log = TRUE
+  )
+  ll <- as.numeric(brms:::log_lik_split_normal(1, prep = prep))
+  expect_equal(ll, ll_split_normal)
 })
 
 test_that("log_lik of aysm_laplace models runs without errors", {

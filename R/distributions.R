@@ -448,6 +448,122 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   })
 }
 
+
+#' The Split Normal Distribution
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the split normal distribution with mean \code{mu}, standard deviation
+#' \code{sigma}, and skewness \code{alpha}.
+#'
+#' @name SplitNormal
+#'
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param p Vector of probabilities.
+#' @param n Number of draws to sample from the distribution.
+#' @param mu Vector of mean values.
+#' @param sigma Vector of standard deviation values.
+#' @param alpha Vector of skewness values.
+#'
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#'
+#' @export
+dsplit_normal <- function(x, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  dp <- cp2dp_split_normal(mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  # Standardized distance from the mode
+  z <- (x - m) / omega
+  # Effective Gaussian coordinate: stretched on right (z >= 0), compressed on left (z < 0)
+  u <- ifelse(z >= 0, z / k, k * z)
+  # Log density with exact normalization
+  log_d <- log(2) - log(omega) - log(k + 1 / k) + dnorm(u, log = TRUE)
+  if (log) log_d else exp(log_d)
+}
+
+#' @rdname SplitNormal
+#' @export
+psplit_normal <- function(q, mu = 0, sigma = 1, alpha = 0,
+                          lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  dp <- cp2dp_split_normal(mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  z <- (q - m) / omega
+  w_left  <- 2 / (1 + k^2)
+  w_right <- (2 * k^2) / (1 + k^2)
+  
+  if (lower.tail) {
+    if (log.p) {
+      ifelse(z < 0,
+             log(w_left) + pnorm(k * z, lower.tail = TRUE, log.p = TRUE),
+             log1p(-pmin(1, w_right * pnorm(z / k, lower.tail = FALSE))))
+    } else {
+      ifelse(z < 0,
+             w_left * pnorm(k * z, lower.tail = TRUE),
+             1 - w_right * pnorm(z / k, lower.tail = FALSE))
+    }
+  } else {
+    if (log.p) {
+      ifelse(z >= 0,
+             log(w_right) + pnorm(z / k, lower.tail = FALSE, log.p = TRUE),
+             log1p(-pmin(1, w_left * pnorm(k * z, lower.tail = TRUE))))
+    } else {
+      ifelse(z >= 0,
+             w_right * pnorm(z / k, lower.tail = FALSE),
+             1 - w_left * pnorm(k * z, lower.tail = TRUE))
+    }
+  }
+}
+
+#' @rdname SplitNormal
+#' @export
+qsplit_normal <- function(p, mu = 0, sigma = 1, alpha = 0,
+                          lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (log.p) p <- exp(p)
+  if (!lower.tail) p <- 1 - p
+  
+  dp <- cp2dp_split_normal(mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  p_mode <- 1 / (1 + k^2)
+  z <- ifelse(p < p_mode,
+              (1 / k) * qnorm(pmin(1, p * (1 + k^2) / 2)),
+              k * qnorm(pmin(1, (1 - p) * (1 + k^2) / (2 * k^2)), lower.tail = FALSE))
+  m + omega * z
+}
+
+#' @rdname SplitNormal
+#' @export
+rsplit_normal <- function(n, mu = 0, sigma = 1, alpha = 0) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  dp <- cp2dp_split_normal(mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  
+  # Stochastic representation: half-normal magnitude assigned to left/right piece
+  abs_norm <- abs(rnorm(n))
+  right <- runif(n) < (k^2 / (1 + k^2))
+  z <- ifelse(right, k * abs_norm, -(1 / k) * abs_norm)
+  m + omega * z
+}
+
+# convert centered parameters to direct parameters for split_normal
+cp2dp_split_normal <- function(mu = 0, sigma = 1, alpha = 0) {
+  k <- exp(alpha)
+  s_k <- sqrt((k^2 + 1 / k^2 - 1) - (2 / pi) * (k - 1 / k)^2)
+  omega <- sigma / s_k
+  m <- mu - omega * (k - 1 / k) * sqrt(2 / pi)
+  list(k = k, omega = omega, m = m)
+}
+
 # CDF of the inverse gamma function
 pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
   pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)

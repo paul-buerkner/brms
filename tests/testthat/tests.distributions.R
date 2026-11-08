@@ -178,6 +178,36 @@ test_that("asym_laplace distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("split_normal distribution functions run without errors", {
+  n <- 10
+  x <- rnorm(n, 10, 3)
+  
+  # 1. Execution and vector length
+  res <- dsplit_normal(x, mu = 1, sigma = 2, alpha = 0.5)
+  expect_true(length(res) == n)
+  res <- psplit_normal(x, mu = rnorm(n), sigma = 1:n, alpha = 0.3)
+  expect_true(length(res) == n)
+  res <- qsplit_normal(runif(n), mu = 1, sigma = 2, alpha = 0.5)
+  expect_true(length(res) == n)
+  res <- rsplit_normal(n, mu = rnorm(n), sigma = 10, alpha = runif(n, -1, 1))
+  expect_true(length(res) == n)
+  # 2. Reduction to Gaussian when alpha = 0
+  expect_equal(dsplit_normal(x, mu = 1, sigma = 2, alpha = 0),
+               dnorm(x, mean = 1, sd = 2))
+  expect_equal(psplit_normal(x, mu = 1, sigma = 2, alpha = 0),
+               pnorm(x, mean = 1, sd = 2))
+  p <- runif(n)
+  expect_equal(qsplit_normal(p, mu = 1, sigma = 2, alpha = 0),
+               qnorm(p, mean = 1, sd = 2))
+  # 3. CDF and Quantile invertibility
+  q <- c(-1.5, 0, 1.2, 3.5)
+  expect_equal(qsplit_normal(psplit_normal(q, mu = 1, sigma = 2, alpha = 0.7),
+                             mu = 1, sigma = 2, alpha = 0.7),
+               q)
+  # 4. Error handling
+  expect_error(dsplit_normal(x, sigma = -1), "sigma must be positive")
+})
+
 test_that("zero-inflated distribution functions run without errors", {
   skip_if_not_installed("extraDistr")
   n <- 10

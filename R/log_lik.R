@@ -217,6 +217,20 @@ log_lik_skew_normal <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_split_normal <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
+  args <- nlist(mu, sigma, alpha)
+  out <- log_lik_censor(
+    dist = "split_normal", args = args, i = i, prep = prep
+  )
+  out <- log_lik_truncate(
+    out, cdf = psplit_normal, args = args, i = i, prep = prep
+  )
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_gaussian_mv <- function(i, prep) {
   Mu <- get_Mu(prep, i = i)
   Sigma <- get_Sigma(prep, i = i)
