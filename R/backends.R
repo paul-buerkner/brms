@@ -25,7 +25,8 @@ parse_model <- function(model, backend, ...) {
   require_package("cmdstanr")
   temp_file <- cmdstanr::write_stan_file(model)
   if (utils::packageVersion("cmdstanr") >= "0.9.0.9006") {
-    cmdstanr::check_syntax_stan_file(temp_file, quiet = TRUE, ...)
+    check_fun <- get("check_syntax_stan_file", asNamespace("cmdstanr"))
+    check_fun(temp_file, quiet = TRUE, ...)
   } else {
     out <- eval_silent(
       cmdstanr::cmdstan_model(temp_file, compile = FALSE, ...),

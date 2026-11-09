@@ -178,6 +178,19 @@ test_that("asym_laplace distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("skew_student distribution functions run without errors", {
+  n <- 10
+  x <- rnorm(n, 10, 3)
+  res <- dskew_student(x, df = 3, mu = 1, sigma = 2, alpha = 0.5)
+  expect_true(length(res) == n)
+  res <- pskew_student(x, df = 3, mu = rnorm(n), sigma = 1:n, alpha = 0.3)
+  expect_true(length(res) == n)
+  res <- qskew_student(runif(n), df = 3, mu = 1, sigma = 2, alpha = 0.5)
+  expect_true(length(res) == n)
+  res <- rskew_student(n, df = 3, mu = rnorm(n), sigma = 10, alpha = runif(n, -1, 1))
+  expect_true(length(res) == n)
+})
+
 test_that("zero-inflated distribution functions run without errors", {
   skip_if_not_installed("extraDistr")
   n <- 10

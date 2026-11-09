@@ -48,6 +48,17 @@
   )
 }
 
+.family_skew_student <- function() {
+  list(
+    links = c("identity", "log", "inverse", "softplus", "squareplus",
+              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
+    dpars = c("mu", "sigma", "alpha", "nu"), type = "real",
+    ybounds = c(-Inf, Inf), closed = c(NA, NA),
+    ad = c("weights", "subset", "mi", "index"),
+    include = c("fun_logm1.stan", "fun_skew_student.stan")
+  )
+}
+
 .family_binomial <- function() {
   list(
     links = c(

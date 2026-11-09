@@ -453,6 +453,218 @@ pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
   pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
 }
 
+# first absolute moment factor b_nu for Azzalini skew-t
+st_b_nu <- function(nu) {
+  sqrt(nu) * exp(lgamma((nu - 1) / 2) - lgamma(nu / 2)) / sqrt(pi)
+}
+
+# convert centered parameters to direct parameters for skew_student
+# @return a data.frame containing all relevant parameters expanded to matching length
+cp2dp_skew_student <- function(df, mu = 0, sigma = 1, alpha = 0,
+                               xi = NULL, omega = NULL, ...) {
+  delta <- alpha / sqrt(1 + alpha^2)
+  if (is.null(omega)) {
+    omega <- sigma / sqrt(1 - 2 * delta^2 / pi)
+  }
+  if (is.null(xi)) {
+    xi <- mu - omega * delta * st_b_nu(df)
+  }
+  expand(dots = nlist(df, mu, sigma, alpha, xi, omega, delta, ...))
+}
+
+#' The Skew Student-t Distribution
+#'
+#' Density, distribution function, quantile function and random generation for the
+#' skew Student-t distribution with mean \code{mu},
+#' scale \code{sigma}, skewness \code{alpha}, and degrees of freedom \code{df}.
+#'
+#' @name SkewStudent
+#'
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param p Vector of probabilities.
+#' @param n Number of observations.
+#' @param df Degrees of freedom (> 1).
+#' @param mu Vector of mean values.
+#' @param sigma Vector of scale values (> 0).
+#' @param alpha Vector of skewness values.
+#' @param xi Optional vector of location values.
+#'   If \code{NULL} (the default), will be computed internally.
+#' @param omega Optional vector of scale values.
+#'   If \code{NULL} (the default), will be computed internally.
+#' @param tol Tolerance of the approximation used in the
+#'   computation of quantiles.
+#'
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#'
+#' @export
+dskew_student <- function(x, df, mu = 0, sigma = 1, alpha = 0,
+                          xi = NULL, omega = NULL, log = FALSE) {
+  if (is.null(omega) && isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (!is.null(omega) && isTRUE(any(omega <= 0))) {
+    stop2("omega must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  
+  args <- cp2dp_skew_student(df, mu, sigma, alpha, xi = xi, omega = omega, x = x)
+  out <- with(args, {
+    z <- (x - xi) / omega
+    is_inf <- is.infinite(z)
+    z_finite <- replace(z, is_inf, 0)
+    x_skew <- alpha * z_finite * sqrt((df + 1) / (df + z_finite^2))
+    log_d <- log(2) - log(omega) + dt(z, df = df, log = TRUE) +
+      pt(x_skew, df = df + 1, log.p = TRUE)
+    log_d <- replace(log_d, is_inf, -Inf)
+    if (log) log_d else exp(log_d)
+  })
+  out
+}
+
+#' @rdname SkewStudent
+#' @export
+pskew_student <- function(q, df, mu = 0, sigma = 1, alpha = 0,
+                          xi = NULL, omega = NULL,
+                          lower.tail = TRUE, log.p = FALSE) {
+  if (is.null(omega) && isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (!is.null(omega) && isTRUE(any(omega <= 0))) {
+    stop2("omega must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  
+  args <- cp2dp_skew_student(df, mu, sigma, alpha, xi = xi, omega = omega, q = q)
+  out <- with(args, {
+    z <- (q - xi) / omega
+    nz <- length(z)
+    out <- numeric(nz)
+    for (k in seq_len(nz)) {
+      if (is.na(z[k])) {
+        out[k] <- NA_real_
+      } else if (is.infinite(z[k])) {
+        out[k] <- if (z[k] > 0) 1 else 0
+      } else if (alpha[k] == 0) {
+        out[k] <- pt(z[k], df = df[k])
+      } else {
+        p0 <- acos(delta[k]) / pi
+        if (z[k] == 0) {
+          out[k] <- p0
+        } else {
+          f_std <- function(u) {
+            x <- alpha[k] * u * sqrt((df[k] + 1) / (df[k] + u^2))
+            2 * dt(u, df = df[k]) * pt(x, df = df[k] + 1)
+          }
+          if (z[k] > 0) {
+            int_val <- integrate(f_std, 0, z[k], rel.tol = 1e-8, abs.tol = 1e-8,
+                                 stop.on.error = FALSE)$value
+            out[k] <- p0 + int_val
+          } else {
+            int_val <- integrate(f_std, z[k], 0, rel.tol = 1e-8, abs.tol = 1e-8,
+                                 stop.on.error = FALSE)$value
+            out[k] <- p0 - int_val
+          }
+        }
+      }
+    }
+    pmin(1, pmax(0, out))
+  })
+  
+  if (!lower.tail) {
+    out <- 1 - out
+  }
+  if (log.p) {
+    out <- log(out)
+  }
+  out
+}
+
+#' @rdname SkewStudent
+#' @export
+qskew_student <- function(p, df, mu = 0, sigma = 1, alpha = 0,
+                          xi = NULL, omega = NULL,
+                          lower.tail = TRUE, log.p = FALSE,
+                          tol = 1e-8) {
+  if (is.null(omega) && isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (!is.null(omega) && isTRUE(any(omega <= 0))) {
+    stop2("omega must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- cp2dp_skew_student(df, mu, sigma, alpha, xi = xi, omega = omega, p = p)
+  out <- with(args, {
+    np <- length(p)
+    z <- numeric(np)
+    for (k in seq_len(np)) {
+      if (is.na(p[k])) {
+        z[k] <- NA_real_
+      } else if (p[k] == 0) {
+        z[k] <- -Inf
+      } else if (p[k] == 1) {
+        z[k] <- Inf
+      } else if (alpha[k] == 0) {
+        z[k] <- qt(p[k], df = df[k])
+      } else {
+        # uniroot with dynamic bracket expansion around Student-t quantile
+        z_init <- qt(p[k], df = df[k])
+        lower <- min(-10, z_init - 5)
+        upper <- max(10, z_init + 5)
+        while (pskew_student(lower, df = df[k], alpha = alpha[k], xi = 0, omega = 1) > p[k]) {
+          lower <- lower * 2
+        }
+        while (pskew_student(upper, df = df[k], alpha = alpha[k], xi = 0, omega = 1) < p[k]) {
+          upper <- upper * 2
+        }
+        root_res <- uniroot(
+          function(u) pskew_student(u, df = df[k], alpha = alpha[k], xi = 0, omega = 1) - p[k],
+          interval = c(lower, upper), tol = tol
+        )
+        z[k] <- root_res$root
+      }
+    }
+    as.numeric(xi + omega * z)
+  })
+  out
+}
+
+#' @rdname SkewStudent
+#' @export
+rskew_student <- function(n, df, mu = 0, sigma = 1, alpha = 0,
+                          xi = NULL, omega = NULL) {
+  if (is.null(omega) && isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (!is.null(omega) && isTRUE(any(omega <= 0))) {
+    stop2("omega must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  
+  dp <- cp2dp_skew_student(df, mu, sigma, alpha, xi = xi, omega = omega)
+  xi <- dp$xi
+  omega <- dp$omega
+  delta <- dp$delta
+  
+  # Stochastic representation: Z is standard skew-normal(alpha),
+  # V ~ chi^2_df / df, and T = Z / sqrt(V) is standard skew-t
+  z <- delta * abs(rnorm(n)) + sqrt(1 - delta^2) * rnorm(n)
+  v <- rchisq(n, df = df) / df
+  t <- z / sqrt(v)
+  
+  xi + omega * t
+}
+
 #' The von Mises Distribution
 #'
 #' Density, distribution function, quantile function and random generation

@@ -583,6 +583,11 @@ stan_log_lik_skew_normal <- function(bterms, ...) {
   sdist("skew_normal", p$mu, p$omega, p$alpha)
 }
 
+stan_log_lik_skew_student <- function(bterms, ...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("skew_student", p$mu, p$sigma, p$alpha, p$nu, vec = FALSE)
+}
+
 stan_log_lik_poisson <- function(bterms, ...) {
   if (use_glm_primitive(bterms)) {
     p <- args_glm_primitive(bterms$dpars$mu, ...)

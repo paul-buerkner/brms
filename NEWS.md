@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Add family `skew_student` implementing the Azzalini–Capitanio skewed
+Student-t distribution (#513).
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
