@@ -248,6 +248,37 @@ test_that("projpred K-fold reference models use the 'dis' of their refit",
   expect_equal(ref_user$cvrefbuilder(fit_fold)$dis, dis_user)
 }))
 
+test_that("projpred K-fold CV uses a user-supplied 'cvrefbuilder'",
+          suppressWarnings({
+  fit <- brm(count ~ zAge + zBase, data = epilepsy, refresh = 0)
+  # the refit without the first 20 rows stands in for a K-fold refit
+  fit_fold <- update(fit, newdata = epilepsy[-(1:20), ], refresh = 0)
+  sigma_fold <- as.data.frame(fit_fold, variable = "sigma")$sigma
+
+  cvrb_ks <- integer()
+  cvrb <- function(cvfit) {
+    cvrb_ks <<- c(cvrb_ks, cvfit$projpred_k)
+    sigma <- as.data.frame(cvfit, variable = "sigma")$sigma
+    projpred::get_refmodel(cvfit, dis = 2 * sigma,
+                           called_from_cvrefbuilder = TRUE)
+  }
+  ref <- projpred::get_refmodel(fit, cvrefbuilder = cvrb)
+  expect_identical(ref$cvrefbuilder, cvrb)
+  expect_equal(ref$cvrefbuilder(fit_fold)$dis, 2 * sigma_fold)
+
+  # the 'cvfun' returns the full-data fit for each fold, so no refit is needed
+  cvfun <- function(folds, ...) rep(list(fit), max(folds))
+  ref <- projpred::get_refmodel(fit, cvfun = cvfun, cvrefbuilder = cvrb)
+  cvrb_ks <- integer()
+  cvvs <- projpred::cv_varsel(ref, cv_method = "kfold", K = 2,
+                              nterms_max = 1, verbose = FALSE)
+  expect_is(cvvs, "vsel")
+  expect_equal(cvrb_ks, 1:2)
+
+  expect_error(projpred::get_refmodel(fit, cvrefbuilder = "a"),
+               "'cvrefbuilder' should be a function")
+}))
+
 test_that("projpred methods can be run with monotonic terms",
           suppressWarnings({
   set.seed(1234)
