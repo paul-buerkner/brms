@@ -157,6 +157,20 @@ predictor_re <- function(prep, i) {
 # @param r random effects draws
 # @return linear predictor for random effects
 .predictor_re <- function(Z, r) {
+  if (inherits(Z, "dgCMatrix") && nrow(Z) == 1L &&
+      is.matrix(r) && is.double(r) && ncol(r) == ncol(Z)) {
+    # Pointwise predictions only need the nonzero columns of this row.
+    j <- which(diff(Z@p) > 0L)
+    rj <- r[, j, drop = FALSE]
+    # Keep Matrix's handling of non-finite products.
+    if (all(is.finite(rj)) && all(is.finite(Z@x))) {
+      out <- rj %*% Z@x
+      if (length(rownames(r)) || length(rownames(Z))) {
+        dimnames(out) <- list(rownames(r), rownames(Z))
+      }
+      return(out)
+    }
+  }
   Matrix::as.matrix(Matrix::tcrossprod(r, Z))
 }
 
