@@ -11,7 +11,8 @@ gr(
   id = NA,
   pw = NULL,
   cov = NULL,
-  dist = "gaussian"
+  dist = "gaussian",
+  s2z = FALSE
 )
 }
 \arguments{
@@ -41,8 +42,12 @@ can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
 of the same grouping factor are modeled as independent of each other.}
 
-\item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"gaussian"} is the only option.}
+\item{dist}{Name of the distribution of the group-level effects. Supported
+options are \code{"gaussian"} and \code{"student"}.}
+
+\item{s2z}{Logical. If \code{TRUE}, use the experimental physical
+sum-to-zero parameterization described in the section
+\dQuote{Physical sum-to-zero effects}. The default is \code{FALSE}.}
 }
 \description{
 Function used to set up a basic grouping term in \pkg{brms}.
@@ -51,6 +56,28 @@ it exists purely to help set up a model with grouping terms.
 \code{gr} is called implicitly inside the package
 and there is usually no need to call it directly.
 }
+\section{Physical sum-to-zero effects}{
+
+With \code{s2z = TRUE}, \pkg{brms} samples varying coefficients as
+zero-sum deviations over the grouping levels observed in the model data.
+For \code{1 + x + (1 + x | gr(g, s2z = TRUE))}, this constraint applies
+separately to the varying intercepts and \code{x} slopes. Omitted group-effect
+means are handled jointly with the population coefficients, and conventional
+population and group effects are reconstructed. Thus \code{fixef},
+\code{ranef}, \code{coef}, and prediction retain their usual interpretation;
+the reported group effects need not sum to zero.
+
+Each varying design column must match a population-level column in both
+coefficient name and numerical values, including factor contrasts and
+interactions. For example, \code{x * f} must appear on both sides of the
+grouping bar when all its expanded columns vary. At least two grouping
+levels must be observed. Unsupported model structures and prior
+specifications give an error. Custom Stan code using population- or
+group-level coefficients must run after their reconstruction in generated
+quantities. Add such code with
+\code{stanvar(..., block = "genquant", position = "end")}.
+}
+
 \examples{
 \dontrun{
 # model using basic lme4-style formula
@@ -70,6 +97,11 @@ epilepsy[['patient_samp_wgt']] <- c(1, rep(c(0.9, 1.1), each = 29))
 fit4 <- brm(count ~ Trt + (1|gr(patient, pw = patient_samp_wgt)),
             data = epilepsy)
 summary(fit4)
+
+# physical sum-to-zero varying intercepts, slopes, and interactions
+fit5 <- brm(count ~ zAge * Trt +
+              (1 + zAge * Trt | gr(patient, s2z = TRUE)),
+            data = epilepsy, family = poisson())
 }
 
 }

@@ -97,9 +97,23 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
   if (!has_rows(reframe)) {
     return(out)
   }
+  if (!save_pars$all && any(reframe$s2z)) {
+    # S2Z also replaces the population coefficients in each affected predictor.
+    # Hide those sampling coordinates along with the group-level auxiliaries;
+    # the conventional coefficients are reconstructed in generated quantities.
+    for (x in all_bframel(bframe)) {
+      if (has_re_s2z(x)) {
+        c(out) <- exclude_pars_fe_s2z(re_s2z_plan(x))
+      }
+    }
+  }
   rm_re_pars <- c(if (!save_pars$all) c("z", "L"), "Cor", "r")
   for (id in unique(reframe$id)) {
     c(out) <- paste0(rm_re_pars, "_", id)
+    r <- subset2(reframe, id = id)
+    if (!save_pars$all && isTRUE(r$s2z[1])) {
+      c(out) <- exclude_pars_re_s2z(r)
+    }
   }
   if (isFALSE(save_pars$group)) {
     p <- usc(combine_prefix(reframe))
@@ -116,6 +130,34 @@ exclude_pars_re <- function(bframe, save_pars, ...) {
     c(out) <- paste0(c("udf_", "dfm_"), reframe_t$ggn)
   }
   out
+}
+
+# Exclude the finite-population and zero-sum sampling coordinates, while
+# retaining the conventional coefficients used by extraction and prediction.
+exclude_pars_fe_s2z <- function(plan) {
+  p <- plan$p
+  c(
+    paste0(c("theta_s2z", "theta_s2z_active", "fixed_s2z",
+             "zfixed_s2z", "sdfixed_s2z"), p),
+    paste0("par_fixed_s2z", p, "_", seq_along(plan$inactive_q)),
+    paste0("udf_b_s2z", p, "_", seq_along(plan$qnames))
+  )
+}
+
+exclude_pars_re_s2z <- function(r) {
+  classes <- c(
+    "z_s2z", "z_mean_s2z", "rs2z", "H_s2z",
+    "q_explicit_s2z", "prior_mean_s2z", "prior_prec_s2z", "prior_scale_s2z",
+    "W_matheron_s2z", "sqrt_W_matheron_s2z", "L_W_matheron_s2z",
+    "theta_white_matheron_s2z", "group_scale_s2z", "group_prec_s2z",
+    "group_info_s2z", "L_Sigma_s2z", "Q_Sigma_s2z", "P_group_s2z",
+    "h_group_s2z", "P_s2z", "L_P_s2z", "H_joint_s2z", "h_joint_s2z",
+    "D_s2z", "sqrt_D_s2z", "D_diag_s2z", "intercept_map_s2z",
+    "rank1_info_s2z", "group_quad_s2z", "joint_quad_s2z", "mhat_s2z",
+    "qhat_s2z", "white_s2z", "mean_r_s2z", "q_recovered_s2z"
+  )
+  rp <- usc(combine_prefix(r))
+  c(paste0(classes, "_", r$id[1L]), paste0("rs2z_", r$id, rp, "_", r$cn))
 }
 
 # exclude variables related to noise-free variables

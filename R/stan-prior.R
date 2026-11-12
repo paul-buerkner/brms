@@ -80,8 +80,9 @@ stan_prior <- function(prior, class, coef = NULL, group = NULL,
   }
   bound <- convert_bounds2stan(base_bounds)
 
-  # generate stan prior statements
-  out <- list()
+  # Initialize both names so $tpar_prior cannot partially match
+  # $tpar_prior_const when fixed and estimated coefficients are mixed.
+  out <- list(tpar_prior = NULL, tpar_prior_const = NULL)
   par <- paste0(prefix, class, suffix)
   has_constant_priors <- FALSE
   has_coef_prior <- any(with(prior, nzchar(coef) & nzchar(prior)))
@@ -728,4 +729,48 @@ lpp <- function(wsp = 2, tag = NULL) {
   } else {
     paste0(wsp, "lprior_", tag, " += ")
   }
+}
+
+# Preserve stan_prior()'s coefficient-specific fallback before removing active
+# coefficients. In particular, inherited vector arguments must retain ordinary
+# Stan broadcasting, rather than being indexed or applied to a shorter vector.
+stan_re_s2z_inactive_priors <- function(prior, coef, fixef, px) {
+  local_prior <- subset2(
+    prior, class = "b", coef = c(fixef, ""), group = "", ls = px
+  )
+  if (!any(nzchar(local_prior$coef) & nzchar(local_prior$prior))) {
+    return(prior)
+  }
+  # The validated prior table already contains each fixed-only coefficient.
+  # Copy inherited priors and tags unchanged; keep explicit overrides intact.
+  take <- find_rows(prior, class = "b", coef = coef, group = "", ls = px) &
+    !nzchar(prior$prior)
+  prior$prior[take] <- stan_base_prior(local_prior)
+  prior$tag[take] <- stan_base_prior(local_prior, col = "tag")
+  prior
+}
+
+# Exact scalar population-prior statement for the explicit-mean path.
+stan_re_s2z_prior_target <- function(spec, par, normalize) {
+  stopifnot(is.list(spec), is.character(par), length(par) == 1L)
+  if (identical(spec$dist, "flat")) {
+    return("")
+  }
+  dist <- spec$dist
+  args <- c(spec$location, spec$scale)
+  if (dist == "student") {
+    dist <- "student_t"
+    args <- c(spec$df, args)
+  }
+  stopifnot(dist %in% c("normal", "student_t", "logistic"))
+  args <- vapply(args, stan_s2z_number, character(1))
+  prior <- glue("{dist}({sargs(args)})")
+  target <- stan_target_prior(prior, par, normalize = normalize)
+  paste0(lpp(), target, ";\n")
+}
+
+# Stable formatting for numeric constants inserted into generated Stan code.
+stan_s2z_number <- function(x) {
+  stopifnot(length(x) == 1L, is.finite(x))
+  trimws(formatC(x, digits = 17, format = "g"))
 }

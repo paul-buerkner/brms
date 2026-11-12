@@ -53,8 +53,8 @@ can be used, among others, to model pedigrees and phylogenetic effects. See
 \code{vignette("brms_phylogenetics")} for more details. By default, levels
 of the same grouping factor are modeled as independent of each other.}
 
-\item{dist}{Name of the distribution of the group-level effects.
-Currently \code{"gaussian"} is the only option.}
+\item{dist}{Name of the distribution of the group-level effects. Supported
+options are \code{"gaussian"} and \code{"student"}.}
 }
 \description{
 Function to set up a multi-membership grouping term in \pkg{brms}.
