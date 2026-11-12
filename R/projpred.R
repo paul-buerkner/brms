@@ -33,10 +33,14 @@
 #'   and \code{...} of the original call and with a fold-wise seed based on
 #'   \code{brms_seed}. A custom \code{cvrefbuilder} is needed, for example, if
 #'   the reference model uses custom functions that depend on the posterior
-#'   draws (see \code{\link[projpred:extend_family]{extend_family}}). It does
-#'   not get these arguments of the original call; it should call
-#'   \code{get_refmodel} with \code{called_from_cvrefbuilder = TRUE}, which
-#'   suppresses warnings that are repeated in each fold.
+#'   draws (see \code{\link[projpred:extend_family]{extend_family}}). A custom
+#'   \code{cvrefbuilder} gets only the fold-wise fit as its argument. brms
+#'   does not pass the arguments \code{resp}, \code{dis}, \code{latent},
+#'   \code{brms_seed}, and \code{...} of the original call to it, so set them
+#'   inside the custom function if they are needed. Inside the custom
+#'   function, call \code{get_refmodel} with
+#'   \code{called_from_cvrefbuilder = TRUE}. This suppresses the warnings
+#'   that projpred already showed for the full-data reference model.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
