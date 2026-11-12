@@ -156,6 +156,11 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
     draw_ids = draw_ids, ...
   )
   yrep <- do_call(method, pred_args)
+  if (is_cox(family) && any(yrep < 0, na.rm = TRUE)) {
+    stop2("Censored Cox replications require an external plotting function ",
+          "that handles their event indicators. They cannot be passed to ",
+          "this bayesplot wrapper as event times.")
+  }
 
   if (anyNA(y)) {
     warning2("NA responses are not shown in 'pp_check'.")
@@ -234,6 +239,9 @@ pp_check.brmsfit <- function(object, type, ndraws = NULL, prefix = c("ppc", "ppd
 
   # most ... arguments are meant for the prediction function
   for_pred <- names(dots) %in% names(formals(prepare_predictions.brmsfit))
+  if (is_cox(family)) {
+    for_pred <- for_pred | names(dots) %in% c("horizon", "nodes")
+  }
   ppc_args <- c(ppc_args, dots[!for_pred])
 
   do_call(ppc_fun, ppc_args)
