@@ -794,6 +794,16 @@ update_misc_env <- function(x, recompile = FALSE, only_windows = FALSE) {
   stopifnot(is.brmsfit(x))
   recompile <- as_one_logical(recompile)
   only_windows <- as_one_logical(only_windows)
+  if (is_equal(x$backend, "stanli")) {
+    if (recompile || !only_windows) {
+      require_package("stanli", version = stanli_min_version())
+      sdata <- standata(x)
+      class(sdata) <- "list"
+      model <- stanli::stanli_model(code = stancode(x), data = sdata)
+      x$fit <- stanli::as_stanfit(x$fit, model = model)
+    }
+    return(x)
+  }
   if (recompile || !has_rstan_model(x)) {
     x <- add_rstan_model(x, overwrite = TRUE)
   } else if (os_is_windows() || !only_windows) {
