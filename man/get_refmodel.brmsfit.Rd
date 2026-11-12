@@ -12,6 +12,7 @@ get_refmodel.brmsfit(
   dis = NULL,
   latent = FALSE,
   brms_seed = NULL,
+  cvrefbuilder = NULL,
   ...
 )
 }
@@ -46,6 +47,17 @@ and for sampling group-level effects for new levels (in multilevel models).
 If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
 \code{NULL}, then the pseudorandom number generator (PRNG) state is reset
 (to the state before calling this function) upon exiting this function.}
+
+\item{cvrefbuilder}{Optional function that creates the reference model for
+one fold of \eqn{K}-fold cross-validation
+(see \code{\link[projpred:init_refmodel]{init_refmodel}} for details).
+If \code{NULL} (the default), \code{cvrefbuilder} is defined internally
+and calls \code{get_refmodel} with the arguments of the original call.
+A custom function is needed, for example, if the reference model uses
+functions that depend on the posterior draws (see
+\code{\link[projpred:extend_family]{extend_family}}). It gets only the
+fold-wise fit, so set the other arguments of \code{get_refmodel} inside
+it.}
 
 \item{...}{Further arguments passed to
 \code{\link[projpred:init_refmodel]{init_refmodel}}.}

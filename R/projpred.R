@@ -24,6 +24,16 @@
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
 #'   \code{NULL}, then the pseudorandom number generator (PRNG) state is reset
 #'   (to the state before calling this function) upon exiting this function.
+#' @param cvrefbuilder Optional function that creates the reference model for
+#'   one fold of \eqn{K}-fold cross-validation
+#'   (see \code{\link[projpred:init_refmodel]{init_refmodel}} for details).
+#'   If \code{NULL} (the default), \code{cvrefbuilder} is defined internally
+#'   and calls \code{get_refmodel} with the arguments of the original call.
+#'   A custom function is needed, for example, if the reference model uses
+#'   functions that depend on the posterior draws (see
+#'   \code{\link[projpred:extend_family]{extend_family}}). It gets only the
+#'   fold-wise fit, so set the other arguments of \code{get_refmodel} inside
+#'   it.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
@@ -62,7 +72,7 @@
 #' @exportS3Method projpred::get_refmodel brmsfit
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                                  cvfun = NULL, dis = NULL, latent = FALSE,
-                                 brms_seed = NULL, ...) {
+                                 brms_seed = NULL, cvrefbuilder = NULL, ...) {
   require_package("projpred")
   object <- restructure(object)
   stopifnot_resp(object, resp)
@@ -209,17 +219,23 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
 
-  cvrefbuilder <- function(cvfit) {
-    # For `brms_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
-    # which is based on the original `brms_seed`:
-    if (is.null(brms_seed)) {
-      brms_seed_k <- NULL
-    } else {
-      brms_seed_k <- brms_seed + cvfit$projpred_k
+  if (is.null(cvrefbuilder)) {
+    cvrefbuilder <- function(cvfit) {
+      # For `brms_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new
+      # seed which is based on the original `brms_seed`:
+      if (is.null(brms_seed)) {
+        brms_seed_k <- NULL
+      } else {
+        brms_seed_k <- brms_seed + cvfit$projpred_k
+      }
+      projpred::get_refmodel(cvfit, resp = resp, dis = dis_user,
+                             latent = latent, brms_seed = brms_seed_k,
+                             called_from_cvrefbuilder = TRUE, ...)
     }
-    projpred::get_refmodel(cvfit, resp = resp, dis = dis_user, latent = latent,
-                           brms_seed = brms_seed_k,
-                           called_from_cvrefbuilder = TRUE, ...)
+  } else {
+    if (!is.function(cvrefbuilder)) {
+      stop2("'cvrefbuilder' should be a function.")
+    }
   }
 
   # prepare data passed to projpred
