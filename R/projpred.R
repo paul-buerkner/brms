@@ -24,23 +24,16 @@
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
 #'   \code{NULL}, then the pseudorandom number generator (PRNG) state is reset
 #'   (to the state before calling this function) upon exiting this function.
-#' @param cvrefbuilder Optional function that creates the reference model
-#'   object of a fold in \eqn{K}-fold cross-validation
+#' @param cvrefbuilder Optional function that creates the reference model for
+#'   one fold of \eqn{K}-fold cross-validation
 #'   (see \code{\link[projpred:init_refmodel]{init_refmodel}} for details).
-#'   If \code{NULL} (the default), \code{cvrefbuilder} is defined internally:
-#'   it calls \code{\link[projpred:get_refmodel]{get_refmodel}} on the
-#'   fold-wise fit with the arguments \code{resp}, \code{dis}, \code{latent},
-#'   and \code{...} of the original call and with a fold-wise seed based on
-#'   \code{brms_seed}. A custom \code{cvrefbuilder} is needed, for example, if
-#'   the reference model uses custom functions that depend on the posterior
-#'   draws (see \code{\link[projpred:extend_family]{extend_family}}). A custom
-#'   \code{cvrefbuilder} gets only the fold-wise fit as its argument. brms
-#'   does not pass the arguments \code{resp}, \code{dis}, \code{latent},
-#'   \code{brms_seed}, and \code{...} of the original call to it, so set them
-#'   inside the custom function if they are needed. Inside the custom
-#'   function, call \code{get_refmodel} with
-#'   \code{called_from_cvrefbuilder = TRUE}. This suppresses the warnings
-#'   that projpred already showed for the full-data reference model.
+#'   If \code{NULL} (the default), \code{cvrefbuilder} is defined internally
+#'   and calls \code{get_refmodel} with the arguments of the original call.
+#'   A custom function is needed, for example, if the reference model uses
+#'   functions that depend on the posterior draws (see
+#'   \code{\link[projpred:extend_family]{extend_family}}). It gets only the
+#'   fold-wise fit, so set the other arguments of \code{get_refmodel} inside
+#'   it.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
