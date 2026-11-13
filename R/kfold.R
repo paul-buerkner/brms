@@ -431,9 +431,10 @@ warn_kfold_intercept_prior <- function(x) {
     }
     predictors <- c(x$dpars, x$nlpars)
     any(vapply(predictors, function(p) {
-      stan_center_X(p) &&
-        (length(attr(terms(p$fe), "term.labels")) > 0L ||
-           !is.null(p$sm))
+      centered_fe <- stan_center_X(p) &&
+        length(attr(terms(p$fe), "term.labels")) > 0L
+      constrained_smooth <- !is.null(p$sm) && has_intercept(p$fe)
+      centered_fe || constrained_smooth
     }, logical(1)))
   }
   if (has_centered_predictors(brmsterms(x$formula))) {

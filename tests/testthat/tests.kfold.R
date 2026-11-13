@@ -23,7 +23,9 @@ test_that("kfold warns about intercept priors with centered predictors", {
   expect_warning(check_warning(bf(y ~ x, center = FALSE)), NA)
   expect_warning(check_warning(bf(y ~ s(x))), warning, fixed = TRUE)
   expect_warning(check_warning(bf(y ~ 0 + Intercept + s(x))), NA)
-  expect_warning(check_warning(bf(y ~ s(x), center = FALSE)), NA)
+  expect_warning(
+    check_warning(bf(y ~ s(x), center = FALSE)), warning, fixed = TRUE
+  )
 
   expect_warning(check_warning(bf(y ~ 1, sigma ~ x)), warning, fixed = TRUE)
   expect_warning(
@@ -42,6 +44,9 @@ test_that("kfold warns about intercept priors with centered predictors", {
   )
   expect_warning(check_warning(bf(y ~ 1, sigma ~ 0 + s(x))), NA)
   expect_warning(
-    check_warning(bf(y ~ 1, lf(sigma ~ s(x), center = FALSE))), NA
+    check_warning(
+      bf(y ~ 1, lf(sigma ~ s(x), center = FALSE))
+    ),
+    warning, fixed = TRUE
   )
 })
