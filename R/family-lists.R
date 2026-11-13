@@ -48,6 +48,17 @@
   )
 }
 
+.family_split_normal <- function() {
+  list(
+    links = c("identity", "log", "inverse", "softplus", "squareplus",
+              "logit", "probit", "probit_approx", "cloglog", "cauchit", "softit"),
+    dpars = c("mu", "sigma", "alpha"), type = "real",
+    ybounds = c(-Inf, Inf), closed = c(NA, NA),
+    ad = c("weights", "subset", "cens", "trunc", "mi", "index"),
+    include = "fun_split_normal.stan"
+  )
+}
+
 .family_binomial <- function() {
   list(
     links = c(
