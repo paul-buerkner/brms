@@ -362,6 +362,10 @@ posterior_epred_skew_normal <- function(prep) {
   prep$dpars$mu
 }
 
+posterior_epred_skew_student <- function(prep) {
+  prep$dpars$mu
+}
+
 posterior_epred_lognormal <- function(prep) {
   with(prep$dpars, exp(mu + sigma^2 / 2))
 }

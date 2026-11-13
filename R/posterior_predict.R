@@ -439,6 +439,17 @@ posterior_predict_skew_normal <- function(i, prep, output = "random", ...) {
                             sigma = sigma, alpha = alpha, ...)
 }
 
+posterior_predict_skew_student <- function(i, prep, output = "random", ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  alpha <- get_dpar(prep, "alpha", i = i)
+  nu <- get_dpar(prep, "nu", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "skew_student", df = nu, mu = mu,
+                            sigma = sigma, alpha = alpha, ...)
+}
+
 posterior_predict_gaussian_mv <- function(i, prep, output = "random", ...) {
   validate_pp_output_support("gaussian_mv", output)
   Mu <- get_Mu(prep, i = i)

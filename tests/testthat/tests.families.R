@@ -74,11 +74,21 @@ test_that("family functions returns expected results", {
   expect_error(xbeta(link_phi = "sqrt")$link_phi, "sqrt")
   expect_equal(xbeta(link_kappa = "identity")$link_kappa, "identity")
   expect_equal(xbeta(link_kappa = "log")$link_kappa, "log")
+
+  expect_equal(skew_student()$family, "skew_student")
+  expect_equal(skew_student()$link, "identity")
+  expect_equal(skew_student(log)$link, "log")
+  expect_equal(skew_student()$link_sigma, "log")
+  expect_equal(skew_student()$link_alpha, "identity")
+  expect_equal(skew_student()$link_nu, "logm1")
+  expect_error(skew_student("sqrt"), "skew_student")
+  expect_error(skew_student(link_sigma = "logit"))
 })
 
 test_that("print brmsfamily works correctly", {
     expect_output(print(weibull()), "Family: weibull \nLink function: log")
     expect_output(print(xbeta()), "Family: xbeta \nLink function: logit")
+    expect_output(print(skew_student()), "Family: skew_student \nLink function: identity")
 })
 
 test_that("mixture returns expected results and errors", {
@@ -111,10 +121,14 @@ test_that("response interval is defined correctly", {
     expect_equal(xbeta()$closed, rep(TRUE, 2))
     expect_equal(xbeta()$ybounds, c(0, 1))
     expect_equal(xbeta()$type, "real")
+    expect_equal(skew_student()$closed, rep(NA, 2))
+    expect_equal(skew_student()$ybounds, c(-Inf, Inf))
+    expect_equal(skew_student()$type, "real")
 })
 
 test_that("distributional parameters are as expected", {
     expect_identical(xbeta()$dpars, c("mu", "phi", "kappa"))
+    expect_identical(skew_student()$dpars, c("mu", "sigma", "alpha", "nu"))
 })
 
 test_that("default priors are as expected", {
@@ -124,5 +138,6 @@ test_that("default priors are as expected", {
 
 test_that("correct STAN code is used", {
     expect_equal(xbeta()$include, "fun_xbeta.stan")
+    expect_equal(skew_student()$include, c("fun_logm1.stan", "fun_skew_student.stan"))
 })
 

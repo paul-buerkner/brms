@@ -575,6 +575,16 @@ skew_normal <- function(link = "identity", link_sigma = "log",
 
 #' @rdname brmsfamily
 #' @export
+skew_student <- function(link = "identity", link_sigma = "log",
+                         link_alpha = "identity", link_nu = "logm1") {
+  slink <- substitute(link)
+  .brmsfamily("skew_student", link = link, slink = slink,
+              link_sigma = link_sigma, link_alpha = link_alpha,
+              link_nu = link_nu)
+}
+
+#' @rdname brmsfamily
+#' @export
 exponential <- function(link = "log") {
   slink <- substitute(link)
   .brmsfamily("exponential", link = link, slink = slink)
