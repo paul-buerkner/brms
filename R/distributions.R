@@ -448,7 +448,136 @@ skew_normal_cumulants <- function(xi = 0, omega = 1, alpha = 0, n = 4) {
   })
 }
 
+#' The Split Student-t Distribution
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the split Student-t distribution with mean \code{mu},
+#' scale \code{sigma}, skewness \code{alpha}, and degrees of freedom \code{df}.
+#'
+#' @name SplitStudent
+#'
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param p Vector of probabilities.
+#' @param n Number of observations.
+#' @param df Degrees of freedom (> 1).
+#' @param mu Vector of mean values.
+#' @param sigma Vector of scale values (> 0).
+#' @param alpha Vector of skewness values.
+#'
+#' @details See \code{vignette("brms_families")} for details
+#' on the parameterization.
+#'
+#' @export
+dsplit_student <- function(x, df, mu = 0, sigma = 1, alpha = 0, log = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  dp <- cp2dp_split_student(df, mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  z <- (x - m) / omega
+  u <- ifelse(z >= 0, z / k, k * z)
+  log_d <- log(2) - log(omega) - log(k + 1 / k) + dt(u, df = df, log = TRUE)
+  if (log) log_d else exp(log_d)
+}
+
+#' @rdname SplitStudent
+#' @export
+psplit_student <- function(q, df, mu = 0, sigma = 1, alpha = 0,
+                           lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  dp <- cp2dp_split_student(df, mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  z <- (q - m) / omega
+  w_left  <- 2 / (1 + k^2)
+  w_right <- (2 * k^2) / (1 + k^2)
+  
+  if (lower.tail) {
+    if (log.p) {
+      ifelse(z < 0,
+             log(w_left) + pt(k * z, df, lower.tail = TRUE, log.p = TRUE),
+             log1p(-pmin(1, w_right * pt(z / k, df, lower.tail = FALSE))))
+    } else {
+      ifelse(z < 0,
+             w_left * pt(k * z, df, lower.tail = TRUE),
+             1 - w_right * pt(z / k, df, lower.tail = FALSE))
+    }
+  } else {
+    if (log.p) {
+      ifelse(z >= 0,
+             log(w_right) + pt(z / k, df, lower.tail = FALSE, log.p = TRUE),
+             log1p(-pmin(1, w_left * pt(k * z, df, lower.tail = TRUE))))
+    } else {
+      ifelse(z >= 0,
+             w_right * pt(z / k, df, lower.tail = FALSE),
+             1 - w_left * pt(k * z, df, lower.tail = TRUE))
+    }
+  }
+}
+
+#' @rdname SplitStudent
+#' @export
+qsplit_student <- function(p, df, mu = 0, sigma = 1, alpha = 0,
+                           lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  if (log.p) p <- exp(p)
+  if (!lower.tail) p <- 1 - p
+  
+  dp <- cp2dp_split_student(df, mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  p_mode <- 1 / (1 + k^2)
+  z <- ifelse(p < p_mode,
+              (1 / k) * qt(pmin(1, p * (1 + k^2) / 2), df),
+              k * qt(pmin(1, (1 - p) * (1 + k^2) / (2 * k^2)), df, lower.tail = FALSE))
+  m + omega * z
+}
+
+#' @rdname SplitStudent
+#' @export
+rsplit_student <- function(n, df, mu = 0, sigma = 1, alpha = 0) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("sigma must be positive.")
+  }
+  if (isTRUE(any(df <= 1))) {
+    stop2("df must be greater than 1.")
+  }
+  dp <- cp2dp_split_student(df, mu, sigma, alpha)
+  k <- dp$k; omega <- dp$omega; m <- dp$m
+  abs_t <- abs(rt(n, df = df))
+  right <- runif(n) < (k^2 / (1 + k^2))
+  z <- ifelse(right, k * abs_t, -(1 / k) * abs_t)
+  m + omega * z
+}
+
+# helper function for split_student distributions
+fs_abs_mean <- function(nu) {
+  2 * sqrt(nu) * exp(lgamma((nu + 1) / 2) - lgamma(nu / 2)) / ((nu - 1) * sqrt(pi))
+}
+
+# convert centered parameters to direct parameters for split_student
+cp2dp_split_student <- function(df, mu = 0, sigma = 1, alpha = 0) {
+  k <- exp(alpha)
+  s_k <- sqrt((k^2 + 1 / k^2 - 1) - (2 / pi) * (k - 1 / k)^2)
+  omega <- sigma / s_k
+  m <- mu - omega * (k - 1 / k) * fs_abs_mean(df)
+  list(k = k, omega = omega, m = m)
+}
+
 # CDF of the inverse gamma function
+
 pinvgamma <- function(q, shape, rate, lower.tail = TRUE, log.p = FALSE) {
   pgamma(1/q, shape, rate = rate, lower.tail = !lower.tail, log.p = log.p)
 }
