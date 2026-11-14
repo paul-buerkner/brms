@@ -133,6 +133,13 @@ The \code{kfold} function performs exact \eqn{K}-fold
   \link[loo:kfold-helpers]{kfold-helpers} page).
   }
 
+  For group-level mixture models (argument \code{gr} of
+  \code{\link{mixture}}), the pointwise unit of the likelihood is the
+  mixture group rather than the observation: folds are always formed over
+  whole groups, arguments \code{group} and \code{joint} are not supported,
+  \code{folds = "loo"} performs exact leave-one-group-out cross-validation,
+  and a numeric \code{folds} vector must be constant within each group.
+
   When running \code{kfold} on a \code{brmsfit} created with the
   \pkg{cmdstanr} backend in a different \R session, several recompilations
   will be triggered because by default, \pkg{cmdstanr} writes the model

@@ -1350,7 +1350,7 @@ validate_formula.brmsformula <- function(
   if (is.mixfamily(out$family)) {
     # every mixture family needs to know about additional response information
     for (i in seq_along(out$family$mix)) {
-      for (term in c("cats", "thres", "bhaz")) {
+      for (term in c("cats", "thres", "bhaz", "mixgr_var")) {
         out$family$mix[[i]][[term]] <- out$family[[term]]
       }
     }
@@ -1443,6 +1443,22 @@ validate_formula.mvbrmsformula <- function(
     if (!allow_rescor) {
       stop2("Currently, estimating 'rescor' is only possible ",
             "in multivariate gaussian or student models.")
+    }
+  }
+  # multivariate group-level mixtures require all responses to be grouped
+  # mixtures over the same variable so that the group remains the pointwise
+  # unit of 'log_lik'
+  has_grmix <- ulapply(formula$forms, function(f) has_mix_groups(f$family))
+  if (any(has_grmix)) {
+    if (!all(has_grmix)) {
+      stop2("Group-level mixtures (via 'gr' in mixture()) are not yet ",
+            "supported in multivariate models unless all responses ",
+            "are grouped mixtures.")
+    }
+    grvars <- ulapply(formula$forms, function(f) get_mix_var(f$family))
+    if (length(unique(grvars)) > 1L) {
+      stop2("Group-level mixtures in multivariate models require the same ",
+            "'gr' variable for all responses.")
     }
   }
   # handle default of correlations between 'me' terms

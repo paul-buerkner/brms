@@ -153,6 +153,16 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
         out$dpars$theta <- data2draws(out$dpars$theta, dim = dim)
       }
     }
+    if (has_mix_groups(x$family)) {
+      # group-level mixture: the whole group shares one component
+      J <- as.integer(sdata[[paste0("Jmix", resp)]])
+      out$mixgr <- list(
+        J = J,
+        ngroups = as.integer(sdata[[paste0("Ngrmix", resp)]]),
+        # representative observation per group to read theta from
+        rep = match(seq_len(sdata[[paste0("Ngrmix", resp)]]), J)
+      )
+    }
   }
   if (is_ordinal(x$family)) {
     # it is better to handle ordinal thresholds outside the
