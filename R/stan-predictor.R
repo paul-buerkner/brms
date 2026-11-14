@@ -50,6 +50,9 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
   }
   args <- nlist(prior, normalize, nlpars = names(x$nlpars), ...)
   args$primitive <- use_glm_primitive(x) || use_glm_primitive_categorical(x)
+  # user code placed in the likelihood block shares scope with the
+  # distributional parameters; see is_scalar_dpar
+  x$lik_scode <- collapse_stanvars(list(...)$stanvars, block = "likelihood")
   for (nlp in names(x$nlpars)) {
     nlp_args <- list(x$nlpars[[nlp]])
     str_add_list(out) <- do_call(stan_predictor, c(nlp_args, args))
@@ -59,6 +62,7 @@ stan_predictor.brmsframe <- function(x, prior, normalize, ...) {
     dp_comment <- stan_dpar_comments(dp, family = x$family)
     if (is.btl(dp_terms) || is.btnl(dp_terms)) {
       # distributional parameter is predicted
+      args$scalar <- is_scalar_dpar(x, dp)
       str_add_list(out) <- do_call(stan_predictor, c(list(dp_terms), args))
     } else if (is.numeric(x$fdpars[[dp]]$value)) {
       # distributional parameter is fixed to constant
@@ -2032,7 +2036,8 @@ stan_Xme <- function(bframe, prior, threads, normalize) {
 # @param primitive use Stan's GLM likelihood primitives?
 # @param ... currently unused
 # @return list of character strings containing Stan code
-stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
+stan_eta_combine <- function(bframe, out, threads, primitive,
+                             scalar = FALSE, ...) {
   stopifnot(is.btl(bframe), is.list(out))
   if (primitive && !has_special_terms(bframe)) {
     # only overall effects and perhaps an intercept are present
@@ -2043,10 +2048,21 @@ stan_eta_combine <- function(bframe, out, threads, primitive, ...) {
   resp <- usc(bframe$resp)
   eta <- combine_prefix(px, keep_mu = TRUE, nlp = TRUE)
   out$eta <- sub("^[ \t\r\n]+\\+", "", out$eta, perl = TRUE)
-  str_add(out$model_def) <- glue(
-    "  // initialize linear predictor term\n",
-    "  vector[N{resp}] {eta} = rep_vector(0.0, N{resp});\n"
-  )
+  if (scalar) {
+    # the term is the same for every observation, so compute it once;
+    # vectorized lpdf functions accept a real in place of a vector
+    # (see is_scalar_dpar)
+    stopifnot(is_intercept_only(bframe))
+    str_add(out$model_def) <- glue(
+      "  // initialize linear predictor term\n",
+      "  real {eta} = 0;\n"
+    )
+  } else {
+    str_add(out$model_def) <- glue(
+      "  // initialize linear predictor term\n",
+      "  vector[N{resp}] {eta} = rep_vector(0.0, N{resp});\n"
+    )
+  }
   if (isTRUE(nzchar(out$eta))) {
     str_add(out$model_comp_eta_basic) <- glue("  {eta} +={out$eta};\n")
   }
