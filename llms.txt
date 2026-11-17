@@ -348,11 +348,13 @@ any model fitting, use the `stancode` method on your model formula.
 
 ### Can I avoid compiling models?
 
-When you fit your model for the first time with brms, there is currently
-no way to avoid compilation. However, if you have already fitted your
-model and want to run it again, for instance with more draws, you can do
-this without recompilation by using the `update` method. For more
-details see
+With `backend = "stanli"`, models run without a compilation step or a
+C++ toolchain (see
+[`help("brm")`](https://paulbuerkner.com/brms/reference/brm.md)). With
+the rstan and cmdstanr backends, a model is compiled the first time you
+fit it. If you have already fitted your model and want to run it again,
+for instance with more draws, you can do this without recompilation by
+using the `update` method. For more details see
 [`help("update.brmsfit")`](https://paulbuerkner.com/brms/reference/update.brmsfit.md).
 
 ### What is the difference between brms and rstanarm?

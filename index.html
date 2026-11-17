@@ -284,7 +284,7 @@
 <div class="section level3">
 <h3 id="can-i-avoid-compiling-models">Can I avoid compiling models?<a class="anchor" aria-label="anchor" href="#can-i-avoid-compiling-models"></a>
 </h3>
-<p>When you fit your model for the first time with brms, there is currently no way to avoid compilation. However, if you have already fitted your model and want to run it again, for instance with more draws, you can do this without recompilation by using the <code>update</code> method. For more details see <code><a href="reference/update.brmsfit.html">help("update.brmsfit")</a></code>.</p>
+<p>With <code>backend = "stanli"</code>, models run without a compilation step or a C++ toolchain (see <code><a href="reference/brm.html">help("brm")</a></code>). With the rstan and cmdstanr backends, a model is compiled the first time you fit it. If you have already fitted your model and want to run it again, for instance with more draws, you can do this without recompilation by using the <code>update</code> method. For more details see <code><a href="reference/update.brmsfit.html">help("update.brmsfit")</a></code>.</p>
 </div>
 <div class="section level3">
 <h3 id="what-is-the-difference-between-brms-and-rstanarm">What is the difference between brms and rstanarm?<a class="anchor" aria-label="anchor" href="#what-is-the-difference-between-brms-and-rstanarm"></a>
