@@ -46,6 +46,8 @@ jobs:
           rtools-version: ${{ matrix.config.rtools }}
           http-user-agent: ${{ matrix.config.http-user-agent }}
           use-public-rspm: true
+          extra-repositories: |
+            https://seantalts.r-universe.dev
 
       # As cmdstanr is not yet on CRAN, configure the action to only install the
       # 'Depends' packages by default and then manually specify the 'Suggests'
@@ -64,6 +66,7 @@ jobs:
             MCMCglmm
             ape
             stan-dev/cmdstanr
+            any::stanli
             RcppEigen
             testthat
             emmeans
@@ -84,6 +87,10 @@ jobs:
         run: |
           cmdstanr::check_cmdstan_toolchain(fix = TRUE)
           cmdstanr::install_cmdstan(cores = parallel::detectCores())
+        shell: Rscript {0}
+
+      - name: Install the stanli runtime
+        run: stanli::stanli_install()
         shell: Rscript {0}
 
       - name: Install colorspace manually
