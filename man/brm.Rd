@@ -250,10 +250,7 @@ current \R session via the
 \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
 respectively. The \code{"stanli"} backend runs the model with the
 \pkg{stanli} package (\url{https://github.com/seantalts/stanli}), which
-needs no C++ toolchain and has no compilation step. It supports
-every \code{algorithm}; \code{"pathfinder"} runs a single path whatever
-\code{chains} is. Install its runtime once with
-\code{stanli::stanli_install()}.
+needs no C++ toolchain and has no compilation step.
 Additionally a \code{"mock"} backend is available to make
 testing \pkg{brms} and packages that depend on it easier.
 The \code{"mock"} backend does not actually do any fitting, it only checks
