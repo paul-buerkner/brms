@@ -298,7 +298,10 @@ stan_thres <- function(bterms, prior, normalize, ...) {
     link <- bterms$family$link
     # Stan functions of the log-scale inverse links used in the lpmfs
     chunk <- switch(link,
-      cloglog = , cauchit = , softit = link, probit = "log_Phi"
+      cloglog = "cloglog",
+      cauchit = "cauchit",
+      softit = "softit",
+      probit = "log_Phi"
     )
     if (!is.null(chunk)) {
       str_add(out$fun) <- glue("  #include 'fun_{chunk}.stan'\n")
