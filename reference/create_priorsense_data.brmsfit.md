@@ -44,8 +44,8 @@ fit <- brm(rating ~ treat + period + carry,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000129 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.29 seconds.
+#> Chain 1: Gradient evaluation took 9.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.93 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -62,15 +62,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.652 seconds (Warm-up)
-#> Chain 1:                0.596 seconds (Sampling)
-#> Chain 1:                1.248 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.455 seconds (Warm-up)
+#> Chain 1:                0.408 seconds (Sampling)
+#> Chain 1:                0.863 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 9.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.92 seconds.
+#> Chain 2: Gradient evaluation took 6.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.66 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -87,15 +87,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.651 seconds (Warm-up)
-#> Chain 2:                0.599 seconds (Sampling)
-#> Chain 2:                1.25 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.462 seconds (Warm-up)
+#> Chain 2:                0.444 seconds (Sampling)
+#> Chain 2:                0.906 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 7.8e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.78 seconds.
+#> Chain 3: Gradient evaluation took 6.8e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.68 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -112,15 +112,15 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.633 seconds (Warm-up)
-#> Chain 3:                0.676 seconds (Sampling)
-#> Chain 3:                1.309 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.457 seconds (Warm-up)
+#> Chain 3:                0.426 seconds (Sampling)
+#> Chain 3:                0.883 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 7.9e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.79 seconds.
+#> Chain 4: Gradient evaluation took 6.5e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.65 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -137,9 +137,9 @@ fit <- brm(rating ~ treat + period + carry,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.645 seconds (Warm-up)
-#> Chain 4:                0.59 seconds (Sampling)
-#> Chain 4:                1.235 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.454 seconds (Warm-up)
+#> Chain 4:                0.44 seconds (Sampling)
+#> Chain 4:                0.894 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: sratio 
@@ -151,12 +151,12 @@ summary(fit)
 #> 
 #> Regression Coefficients:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept[1]     0.55      0.09     0.37     0.72 1.00     5901     3028
-#> Intercept[2]     2.24      0.22     1.82     2.69 1.00     5456     3088
-#> Intercept[3]     1.07      0.44     0.23     1.96 1.00     6400     2737
-#> treat           -0.65      0.20    -1.04    -0.27 1.00     4236     2828
-#> period           0.19      0.16    -0.11     0.51 1.00     4916     2853
-#> carry           -0.25      0.15    -0.54     0.03 1.00     4676     3295
+#> Intercept[1]     0.55      0.09     0.37     0.73 1.00     5792     2925
+#> Intercept[2]     2.24      0.22     1.82     2.69 1.00     5365     2941
+#> Intercept[3]     1.07      0.44     0.24     1.98 1.00     6355     3040
+#> treat           -0.64      0.20    -1.04    -0.25 1.00     4194     2928
+#> period           0.20      0.16    -0.11     0.51 1.00     5331     2860
+#> carry           -0.26      0.15    -0.56     0.04 1.00     3882     2891
 #> 
 #> Further Distributional Parameters:
 #>      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -173,27 +173,27 @@ library(priorsense)
 powerscale(fit, alpha = 1.5, component = "prior")
 #> # A draws_df: 1000 iterations, 4 chains, and 10 variables
 #>    b_Intercept[1] b_Intercept[2] b_Intercept[3] b_treat b_period b_carry disc
-#> 1            0.48            2.2           1.45   -0.48     0.16  -0.260    1
-#> 2            0.51            2.8           0.34   -0.64     0.30  -0.422    1
-#> 3            0.47            1.7           1.29   -0.87     0.19  -0.193    1
-#> 4            0.53            2.0           1.10   -0.78     0.10  -0.141    1
-#> 5            0.47            2.0           1.27   -0.66     0.24  -0.012    1
-#> 6            0.49            2.0           1.34   -0.83     0.21  -0.180    1
-#> 7            0.60            2.4           0.62   -0.65     0.16  -0.374    1
-#> 8            0.73            2.7           1.55   -0.72     0.25  -0.236    1
-#> 9            0.77            2.5           2.43   -0.79     0.22  -0.207    1
-#> 10           0.58            1.8           0.71   -0.49     0.28  -0.291    1
+#> 1            0.47            2.7           1.98   -0.77    0.282  -0.201    1
+#> 2            0.54            1.8           0.55   -0.54    0.137  -0.239    1
+#> 3            0.58            1.8           0.51   -0.42   -0.062  -0.255    1
+#> 4            0.51            2.5           1.25   -0.95    0.358  -0.205    1
+#> 5            0.48            1.9           0.98   -0.47    0.098  -0.408    1
+#> 6            0.63            2.6           1.24   -0.50    0.278  -0.486    1
+#> 7            0.66            1.9           0.70   -0.82    0.325  -0.103    1
+#> 8            0.59            2.1           1.19   -0.84    0.201  -0.280    1
+#> 9            0.51            2.2           0.73   -0.68    0.148  -0.352    1
+#> 10           0.35            1.8           0.59   -0.52    0.070   0.027    1
 #>    Intercept[1]
-#> 1          0.48
-#> 2          0.51
-#> 3          0.47
-#> 4          0.53
-#> 5          0.47
-#> 6          0.49
-#> 7          0.60
-#> 8          0.73
-#> 9          0.77
-#> 10         0.58
+#> 1          0.47
+#> 2          0.54
+#> 3          0.58
+#> 4          0.51
+#> 5          0.48
+#> 6          0.63
+#> 7          0.66
+#> 8          0.59
+#> 9          0.51
+#> 10         0.35
 #> # ... with 3990 more draws, and 2 more variables
 #> # ... hidden reserved variables {'.log_weight', '.chain', '.iteration', '.draw'}
 #> 
@@ -201,7 +201,7 @@ powerscale(fit, alpha = 1.5, component = "prior")
 #>  alpha: 1.5 
 #>  scaled component: prior 
 #>  selection: 
-#>  pareto-k: -0.11 
+#>  pareto-k: -0.24 
 #>  pareto-k threshold: 0.72 
 #>  resampled: FALSE 
 #>  transform: identity 
@@ -213,16 +213,16 @@ powerscale_sensitivity(fit)
 #> Likelihood selection: all data
 #> 
 #>        variable prior likelihood                           diagnosis
-#>  b_Intercept[1] 0.010      0.086                                   -
-#>  b_Intercept[2] 0.029      0.091                                   -
-#>  b_Intercept[3] 0.027      0.083                                   -
-#>         b_treat 0.077      0.117 potential prior-likelihood conflict
-#>        b_period 0.024      0.076                                   -
-#>         b_carry 0.027      0.085                                   -
+#>  b_Intercept[1] 0.011      0.092                                   -
+#>  b_Intercept[2] 0.029      0.087                                   -
+#>  b_Intercept[3] 0.027      0.088                                   -
+#>         b_treat 0.078      0.116 potential prior-likelihood conflict
+#>        b_period 0.025      0.081                                   -
+#>         b_carry 0.029      0.092                                   -
 #>            disc   NaN        NaN                                <NA>
-#>    Intercept[1] 0.010      0.085                                   -
-#>    Intercept[2] 0.029      0.091                                   -
-#>    Intercept[3] 0.027      0.083                                   -
+#>    Intercept[1] 0.010      0.092                                   -
+#>    Intercept[2] 0.029      0.087                                   -
+#>    Intercept[3] 0.027      0.088                                   -
 
 # create power-scaling sensitivity plots (for one variable)
 powerscale_plot_dens(fit, variable = "b_treat")

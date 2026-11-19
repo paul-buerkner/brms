@@ -342,8 +342,8 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 1: Gradient evaluation took 2.5e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -360,15 +360,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.987 seconds (Warm-up)
-#> Chain 1:                0.739 seconds (Sampling)
-#> Chain 1:                1.726 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.093 seconds (Warm-up)
+#> Chain 1:                0.805 seconds (Sampling)
+#> Chain 1:                1.898 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+#> Chain 2: Gradient evaluation took 1.8e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -385,15 +385,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.059 seconds (Warm-up)
-#> Chain 2:                0.758 seconds (Sampling)
-#> Chain 2:                1.817 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.177 seconds (Warm-up)
+#> Chain 2:                0.843 seconds (Sampling)
+#> Chain 2:                2.02 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.5e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
+#> Chain 3: Gradient evaluation took 1.9e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.19 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -410,15 +410,15 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.959 seconds (Warm-up)
-#> Chain 3:                0.771 seconds (Sampling)
-#> Chain 3:                1.73 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.077 seconds (Warm-up)
+#> Chain 3:                0.811 seconds (Sampling)
+#> Chain 3:                1.888 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.4e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+#> Chain 4: Gradient evaluation took 1.9e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.19 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -435,9 +435,9 @@ fit <- brm(count ~ zAge + zBase * Trt + (1 | patient),
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.063 seconds (Warm-up)
-#> Chain 4:                0.725 seconds (Sampling)
-#> Chain 4:                1.788 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.186 seconds (Warm-up)
+#> Chain 4:                0.809 seconds (Sampling)
+#> Chain 4:                1.995 seconds (Total)
 #> Chain 4: 
 
 ## plot all conditional effects
@@ -487,8 +487,8 @@ fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.1 seconds.
+#> Chain 1: Gradient evaluation took 8e-06 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -505,9 +505,9 @@ fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.033 seconds (Warm-up)
-#> Chain 1:                0.024 seconds (Sampling)
-#> Chain 1:                0.057 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.031 seconds (Warm-up)
+#> Chain 1:                0.023 seconds (Sampling)
+#> Chain 1:                0.054 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -530,9 +530,9 @@ fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.033 seconds (Warm-up)
+#> Chain 2:  Elapsed Time: 0.032 seconds (Warm-up)
 #> Chain 2:                0.022 seconds (Sampling)
-#> Chain 2:                0.055 seconds (Total)
+#> Chain 2:                0.054 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -555,8 +555,8 @@ fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.033 seconds (Warm-up)
-#> Chain 3:                0.022 seconds (Sampling)
+#> Chain 3:  Elapsed Time: 0.032 seconds (Warm-up)
+#> Chain 3:                0.023 seconds (Sampling)
 #> Chain 3:                0.055 seconds (Total)
 #> Chain 3: 
 #> 
@@ -581,8 +581,8 @@ fit3way <- brm(count ~ zAge * zBase * Trt, data = epilepsy)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
 #> Chain 4:  Elapsed Time: 0.034 seconds (Warm-up)
-#> Chain 4:                0.021 seconds (Sampling)
-#> Chain 4:                0.055 seconds (Total)
+#> Chain 4:                0.022 seconds (Sampling)
+#> Chain 4:                0.056 seconds (Total)
 #> Chain 4: 
 conditions <- make_conditions(fit3way, "zAge")
 conditional_effects(fit3way, "zBase:Trt", conditions = conditions)

@@ -68,8 +68,8 @@ fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.3e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
+#> Chain 1: Gradient evaluation took 2.9e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.29 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -86,15 +86,15 @@ fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 3.431 seconds (Warm-up)
-#> Chain 1:                0.26 seconds (Sampling)
-#> Chain 1:                3.691 seconds (Total)
+#> Chain 1:  Elapsed Time: 4.078 seconds (Warm-up)
+#> Chain 1:                0.317 seconds (Sampling)
+#> Chain 1:                4.395 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 2: Gradient evaluation took 2.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.25 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -111,15 +111,15 @@ fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 12.022 seconds (Warm-up)
-#> Chain 2:                13.045 seconds (Sampling)
-#> Chain 2:                25.067 seconds (Total)
+#> Chain 2:  Elapsed Time: 14.603 seconds (Warm-up)
+#> Chain 2:                15.905 seconds (Sampling)
+#> Chain 2:                30.508 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.6e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+#> Chain 3: Gradient evaluation took 2.3e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -136,15 +136,15 @@ fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.008 seconds (Warm-up)
-#> Chain 3:                0.606 seconds (Sampling)
-#> Chain 3:                1.614 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.216 seconds (Warm-up)
+#> Chain 3:                0.697 seconds (Sampling)
+#> Chain 3:                1.913 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.5e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.15 seconds.
+#> Chain 4: Gradient evaluation took 2.2e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -161,9 +161,9 @@ fit <- brm(x ~ arma(p = 2, q = 1), data = LakeHuron)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.118 seconds (Warm-up)
-#> Chain 4:                0.298 seconds (Sampling)
-#> Chain 4:                1.416 seconds (Total)
+#> Chain 4:  Elapsed Time: 1.336 seconds (Warm-up)
+#> Chain 4:                0.363 seconds (Sampling)
+#> Chain 4:                1.699 seconds (Total)
 #> Chain 4: 
 #> Warning: There were 65 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
@@ -194,7 +194,7 @@ summary(fit)
 #> 
 #> Correlation Structures:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> ar[1]     1.01      0.62     0.13     1.98 1.53        7       NA
+#> ar[1]     1.01      0.62     0.13     1.98 1.53        7        4
 #> ar[2]    -0.16      0.47    -0.86     0.60 1.53        7        4
 #> ma[1]    -0.05      0.78    -1.33     0.86 1.53        7        4
 #> 
@@ -204,7 +204,7 @@ summary(fit)
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.81      3.32     0.63     3.70 1.41        8       42
+#> sigma     1.81      3.32     0.63     3.70 1.41        8        4
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

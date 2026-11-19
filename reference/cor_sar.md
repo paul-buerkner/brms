@@ -67,31 +67,31 @@ fit2 <- brm(CRIME ~ INC + HOVAL, data = COL.OLD,
 #> Compiling Stan program...
 #> Start sampling
 summary(fit2)
-#> -0.96      0.40    -1.78    -0.20 1.00     1431     1390
-#> HOVAL        -0.30      0.10    -0.50    -0.11 1.00     1629     1244
+#> 0.97      0.39    -1.72    -0.23 1.00     1567     1485
+#> HOVAL        -0.30      0.10    -0.49    -0.11 1.00     1662     1321
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma    10.38      1.16     8.47    13.08 1.00     1460     1435
+#> sigma    10.37      1.10     8.52    12.82 1.00     1798     1586
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
 #> scale reduction factor on split chains (at convergence, Rhat = 1).
-#> n: 1800 / 2000 [ 90%]  (Sampling)
-#> Chain 2: Iteration: 1400 / 2000 [ 70%]  (Sampling)
+#>  1600 / 2000 [ 80%]  (Sampling)
+#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
+#> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
+#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.183 seconds (Warm-up)
-#> Chain 1:                0.132 seconds (Sampling)
-#> Chain 1:                0.315 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.238 seconds (Warm-up)
+#> Chain 1:                0.175 seconds (Sampling)
+#> Chain 1:                0.413 seconds (Total)
 #> Chain 1: 
-#> Chain 2: Iteration: 1600 / 2000 [ 80%]  (Sampling)
-#> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.197 seconds (Warm-up)
-#> Chain 2:                0.131 seconds (Sampling)
-#> Chain 2:                0.328 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.245 seconds (Warm-up)
+#> Chain 2:                0.155 seconds (Sampling)
+#> Chain 2:                0.4 seconds (Total)
 #> Chain 2: 
 plot(fit2)
 

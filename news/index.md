@@ -40,6 +40,15 @@
 
 #### Bug Fixes
 
+- Evaluate the Stan functions of ordinal models on the log scale, as
+  `log_lik` does, for all links of `sratio` and `cratio` and the links
+  other than logit of the other families, so improbable categories no
+  longer make the log density `-Inf`. Thanks to Ahmed Eldeeb.
+  ([\#1962](https://github.com/paul-buerkner/brms/issues/1962))
+- Fix compilation of models with the softit link, and of non-linear
+  `cumulative`, `hurdle_cumulative` and `acat` models with the cauchit
+  link. Thanks to Ahmed Eldeeb.
+  ([\#1962](https://github.com/paul-buerkner/brms/issues/1962))
 - Use the complementary CDFs in the Stan code of two-sided truncation
   and interval censoring once the CDF of the lower bound rounds towards
   1, for the `poisson`, `beta_binomial`, `weibull`, `lognormal`,
