@@ -39,6 +39,7 @@ jobs:
           extra-repositories: |
             https://community.r-multiverse.org
             https://stan-dev.r-universe.dev
+            https://seantalts.r-universe.dev
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:

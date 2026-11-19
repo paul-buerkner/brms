@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Fit models with the new `stanli` backend (`backend = "stanli"`), which
+needs no C++ toolchain or compilation step.
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -33,6 +35,11 @@ of the other families, so improbable categories no longer make the log
 density `-Inf`. Models with the softit link, and non-linear `cumulative`,
 `hurdle_cumulative` and `acat` models with the cauchit link, now compile.
 Thanks to Ahmed Eldeeb. (#1962)
+* Use the complementary CDFs in the Stan code of two-sided truncation and
+interval censoring once the CDF of the lower bound rounds towards 1, for
+the `poisson`, `beta_binomial`, `weibull`, `lognormal`, `shifted_lognormal`,
+`exgaussian`, and `student` families, whose truncated log density otherwise
+became inaccurate and then infinite. Thanks to Ahmed Eldeeb. (#1956)
 * Evaluate `log_lik` of ordinal models on the log scale throughout, so
 improbable categories no longer give `-Inf` or `NaN` where their log
 probability is representable, and stop it failing for two categories or a

@@ -541,6 +541,9 @@ family.brmsfit <- function(object, resp = NULL, ...) {
 expose_functions.brmsfit <- function(x, vectorize = FALSE,
                                      env = globalenv(), ...) {
   vectorize <- as_one_logical(vectorize)
+  if (is_equal(x$backend, "stanli")) {
+    stop2("'expose_functions' is not supported by backend 'stanli'.")
+  }
   stanmodel <- compiled_model(x)
   if (x$backend == "cmdstanr") {
     if ("expose_functions" %in% names(stanmodel)) {
