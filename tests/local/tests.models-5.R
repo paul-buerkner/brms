@@ -279,6 +279,275 @@ test_that("projpred K-fold CV uses a user-supplied 'cvrefbuilder'",
                "'cvrefbuilder' should be a function")
 }))
 
+# simulate the data for the tests of the projpred latent projection
+sim_latent_data <- function(N = 100) {
+  dat <- data.frame(x1 = rnorm(N), x2 = rnorm(N), x3 = rnorm(N))
+  eta <- 0.5 * dat$x1 - 0.3 * dat$x2
+  ctime <- runif(N, 0.5, 3)
+  y_weib <- rweibull(N, shape = 1.5, scale = exp(eta) / gamma(1 + 1 / 1.5))
+  dat$y_weib <- pmin(y_weib, ctime)
+  dat$c_weib <- as.numeric(y_weib > ctime)
+  y_lnorm <- rlnorm(N, meanlog = eta, sdlog = 0.5)
+  dat$y_lnorm <- pmin(y_lnorm, ctime)
+  dat$c_lnorm <- ifelse(y_lnorm > ctime, "right", "none")
+  dat$y_nb <- rnbinom(N, size = 2, mu = exp(1 + eta))
+  y_pois <- rpois(N, exp(1 + eta))
+  dat$y_pois <- pmin(y_pois, 5)
+  dat$c_pois <- as.numeric(y_pois > 5)
+  dat$y_bern <- rbinom(N, 1, plogis(eta))
+  dat$eta <- eta
+  dat
+}
+
+test_that("projpred latent projection has response-scale functions",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+
+  fits <- list(
+    bernoulli = brm(y_bern ~ x1 + x2 + x3, data = dat,
+                    family = bernoulli(), refresh = 0),
+    poisson = brm(y_pois | cens(c_pois) ~ x1 + x2 + x3, data = dat,
+                  family = poisson(), refresh = 0),
+    negbinomial = brm(y_nb ~ x1 + x2 + x3, data = dat,
+                      family = negbinomial(), refresh = 0),
+    weibull = brm(y_weib | cens(c_weib) ~ x1 + x2 + x3, data = dat,
+                  family = weibull(), refresh = 0),
+    # the censoring times are at most 3, and P(Y > 3) changes the results
+    lognormal = brm(y_lnorm | cens(c_lnorm) + trunc(ub = 3) ~ x1 + x2 + x3,
+                    data = dat, family = lognormal(), refresh = 0)
+  )
+  cens <- list(bernoulli = NULL, poisson = dat$c_pois, negbinomial = NULL,
+               weibull = dat$c_weib, lognormal = dat$c_lnorm)
+  # projpred versions with argument 'latent_epred' get the expected values
+  has_epred <- "latent_epred" %in% names(formals(projpred::extend_family))
+  for (fam in names(fits)) {
+    fit <- fits[[fam]]
+    ref <- projpred::get_refmodel(fit, latent = TRUE)
+    # with all draws, the functions give the brms results
+    ilpreds <- posterior_linpred(fit, transform = TRUE)
+    expect_equivalent(ref$family$latent_ilink(t(ref$mu), cl_ref = 1),
+                      ilpreds, info = fam)
+    ll <- ref$family$latent_ll_oscale(
+      ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = cens[[fam]],
+      cl_ref = seq_len(ndraws(fit))
+    )
+    expect_equivalent(ll, log_lik(fit), info = fam)
+    if (has_epred) {
+      epred <- ref$family$latent_epred(
+        ilpreds, dis = ref$dis, cl_ref = seq_len(ndraws(fit))
+      )
+      expect_equivalent(epred, posterior_epred(fit), info = fam)
+    }
+    if (fam == "lognormal") {
+      expect_equal(ref$dis, as.data.frame(fit, variable = "sigma")$sigma)
+    }
+
+    vs <- projpred::varsel(ref, nterms_max = 2, verbose = FALSE)
+    smry <- summary(vs, stats = "elpd")$perf_sub
+    expect_true(all(is.finite(smry$elpd)), info = fam)
+    prj <- projpred::project(ref, predictor_terms = "x1", nclusters = 5)
+    ppd <- projpred::proj_predict(prj, nresample_clusters = 30)
+    expect_equal(dim(ppd), c(30, N), info = fam)
+    expect_true(all(is.finite(ppd) & ppd >= 0), info = fam)
+    if (fam == "lognormal") {
+      expect_true(all(ppd <= 3))
+    }
+  }
+}))
+
+test_that("projpred latent functions use refits, clusters, and weights",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+  fit <- brm(y_weib | cens(c_weib) ~ x1 + x2 + x3, data = dat,
+             family = weibull(), refresh = 0)
+
+  # the K-fold reference models use the draws of their refit
+  fit_fold <- update(fit, newdata = dat[-(1:20), ], refresh = 0)
+  ref_fold <- projpred::get_refmodel(fit, latent = TRUE)$cvrefbuilder(fit_fold)
+  ll_fold <- ref_fold$family$latent_ll_oscale(
+    posterior_linpred(fit_fold, transform = TRUE), dis = ref_fold$dis,
+    y_oscale = ref_fold$y_oscale, cens = dat$c_weib[-(1:20)],
+    cl_ref = seq_len(ndraws(fit_fold))
+  )
+  expect_equivalent(ll_fold, log_lik(fit_fold))
+
+  # clustered draws and observation weights, compared with base R
+  ref <- projpred::get_refmodel(fit, latent = TRUE)
+  S <- ndraws(fit)
+  cl_ref <- rep(1:2, length.out = S)
+  wdraws_ref <- seq_len(S)
+  shape <- as.data.frame(fit, variable = "shape")$shape
+  shape_cl <- c(weighted.mean(shape[cl_ref == 1], wdraws_ref[cl_ref == 1]),
+                weighted.mean(shape[cl_ref == 2], wdraws_ref[cl_ref == 2]))
+  ilpreds <- rbind(exp(dat$eta), exp(0.5 * dat$eta))
+  wobs <- runif(N, 0.5, 2)
+  ll <- ref$family$latent_ll_oscale(
+    ilpreds, dis = c(NA, NA), y_oscale = dat$y_weib, wobs = wobs,
+    cens = dat$c_weib, cl_ref = cl_ref, wdraws_ref = wdraws_ref
+  )
+  scale <- ilpreds / gamma(1 + 1 / shape_cl)
+  y_mat <- matrix(dat$y_weib, 2, N, byrow = TRUE)
+  cens_mat <- matrix(dat$c_weib == 1, 2, N, byrow = TRUE)
+  ll_base <- ifelse(
+    cens_mat,
+    pweibull(y_mat, shape_cl, scale, lower.tail = FALSE, log.p = TRUE),
+    dweibull(y_mat, shape_cl, scale, log = TRUE)
+  )
+  expect_equivalent(ll, ll_base * rep(wobs, each = 2))
+
+  idxs <- c(2, 1, 2)
+  set.seed(5)
+  ppd <- ref$family$latent_ppd_oscale(
+    ilpreds[idxs, ], dis_resamp = rep(NA, 3), cl_ref = cl_ref,
+    wdraws_ref = wdraws_ref, idxs_prjdraws = idxs
+  )
+  set.seed(5)
+  ppd_base <- rweibull(3 * N, shape_cl[idxs], scale[idxs, ])
+  expect_equivalent(ppd, matrix(ppd_base, 3))
+}))
+
+test_that("projpred latent projection warns or stops for unsupported models",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+
+  # unsupported models give a warning and no functions
+  dat$c_int <- ifelse(dat$c_weib == 1, "interval", "none")
+  dat$y2 <- dat$y_weib + 1
+  dat$ub_var <- 100 + seq_len(N)
+  dat$denom <- runif(N, 0.5, 2)
+  fits_unsupp <- list(
+    "family 'gamma'" = brm(y_weib ~ x1, data = dat, family = Gamma("log"),
+                           empty = TRUE),
+    "interval censoring" = brm(y_weib | cens(c_int, y2) ~ x1, data = dat,
+                               family = weibull(), empty = TRUE),
+    "truncation bounds" = brm(y_nb | trunc(ub = ub_var) ~ x1, data = dat,
+                              family = negbinomial(), empty = TRUE),
+    "addition term 'rate'" = brm(y_nb | rate(denom) ~ x1, data = dat,
+                                 family = negbinomial(), empty = TRUE)
+  )
+  for (unsupp in names(fits_unsupp)) {
+    fit_unsupp <- fits_unsupp[[unsupp]]
+    expect_warning(
+      funs <- brms:::latent_oscale_funs(
+        fit_unsupp, family = family(fit_unsupp),
+        family_name = family(fit_unsupp)$family,
+        bterms = brmsterms(formula(fit_unsupp)), resp = NULL
+      ),
+      unsupp, fixed = TRUE
+    )
+    expect_null(funs)
+  }
+
+  # weights and trials other than 1 are not supported
+  dat$w <- runif(N, 0.5, 2)
+  fit_w <- brm(y_weib | weights(w) ~ x1, data = dat, family = weibull(),
+               empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_w, latent = TRUE),
+               "does not support 'weights' or 'trials'")
+  fit_tr <- brm(y_nb | trials(200) ~ x1, data = dat, family = binomial(),
+                empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_tr, latent = TRUE),
+               "does not support 'weights' or 'trials'")
+}))
+
+test_that("projpred latent projection keeps user-supplied functions",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+  fit <- brm(y_weib | cens(c_weib) ~ x1 + x2 + x3, data = dat,
+             family = weibull(), refresh = 0)
+
+  # functions passed by the user take precedence
+  ll_user <- function(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)),
+                      cens, cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    matrix(0, nrow(ilpreds), ncol(ilpreds))
+  }
+  ref <- projpred::get_refmodel(fit, latent = TRUE, latent_ll_oscale = ll_user)
+  expect_identical(ref$family$latent_ll_oscale, ll_user)
+  # brms adds none of its functions if the user passes one of them
+  ilink_user <- function(lpreds, cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    exp(lpreds)
+  }
+  ref <- projpred::get_refmodel(fit, latent = TRUE, latent_ilink = ilink_user)
+  S <- ndraws(fit)
+  ilpreds <- rbind(exp(dat$eta), exp(0.5 * dat$eta))
+  ll <- ref$family$latent_ll_oscale(
+    ilpreds, dis = c(NA, NA), y_oscale = dat$y_weib, cens = dat$c_weib,
+    cl_ref = rep(1:2, length.out = S), wdraws_ref = seq_len(S)
+  )
+  expect_true(all(is.na(ll)))
+
+  # with 'latent_y_unqs', projpred uses its functions for categories
+  dat$y_fac <- factor(dat$y_bern, labels = c("a", "b"))
+  fit_fac <- brm(y_fac ~ x1 + x2 + x3, data = dat, family = bernoulli(),
+                 refresh = 0)
+  ref <- projpred::get_refmodel(fit_fac, latent = TRUE,
+                                latent_y_unqs = c("a", "b"))
+  ilpreds <- ref$family$latent_ilink(t(ref$mu),
+                                     cl_ref = seq_len(ndraws(fit_fac)))
+  expect_equal(dim(ilpreds), c(ndraws(fit_fac), N, 2))
+}))
+
+test_that("projpred latent functions work with 'resp' and other links",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+  # projpred versions with argument 'latent_epred' get the expected values
+  has_epred <- "latent_epred" %in% names(formals(projpred::extend_family))
+
+  # in multivariate models, the functions are defined for the response 'resp'
+  fit_mv <- brm(
+    bf(y_weib | cens(c_weib) ~ x1 + x2 + x3, family = weibull()) +
+      bf(y_nb ~ x1 + x2 + x3, family = negbinomial()) + set_rescor(FALSE),
+    data = dat, refresh = 0
+  )
+  cens <- list(yweib = dat$c_weib, ynb = NULL)
+  for (resp in names(cens)) {
+    ref <- projpred::get_refmodel(fit_mv, resp = resp, latent = TRUE)
+    ilpreds <- posterior_linpred(fit_mv, resp = resp, transform = TRUE)
+    ll <- ref$family$latent_ll_oscale(
+      ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = cens[[resp]],
+      cl_ref = seq_len(ndraws(fit_mv))
+    )
+    expect_equivalent(ll, log_lik(fit_mv, resp = resp), info = resp)
+    if (has_epred) {
+      epred <- ref$family$latent_epred(
+        ilpreds, dis = ref$dis, cl_ref = seq_len(ndraws(fit_mv))
+      )
+      expect_equivalent(epred, posterior_epred(fit_mv, resp = resp),
+                        info = resp)
+    }
+  }
+
+  # with other links than the identity, 'sigma' is not the SD of the latent
+  # Gaussian distribution and comes from the draws of the model
+  dat$y_lninv <- rlnorm(N, meanlog = 1 / (2 + 0.3 * dat$x1), sdlog = 0.3)
+  fit_inv <- brm(y_lninv ~ x1, data = dat,
+                 family = lognormal(link = "inverse"), refresh = 0)
+  ref <- projpred::get_refmodel(fit_inv, latent = TRUE)
+  expect_true(all(is.na(ref$dis)))
+  ll <- ref$family$latent_ll_oscale(
+    posterior_linpred(fit_inv, transform = TRUE), dis = ref$dis,
+    y_oscale = ref$y_oscale, cens = NULL, cl_ref = seq_len(ndraws(fit_inv))
+  )
+  expect_equivalent(ll, log_lik(fit_inv))
+  if (has_epred) {
+    epred <- ref$family$latent_epred(
+      posterior_linpred(fit_inv, transform = TRUE), dis = ref$dis,
+      cl_ref = seq_len(ndraws(fit_inv))
+    )
+    expect_equivalent(epred, posterior_epred(fit_inv))
+  }
+}))
+
 test_that("projpred methods can be run with monotonic terms",
           suppressWarnings({
   set.seed(1234)
