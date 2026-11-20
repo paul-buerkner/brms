@@ -176,6 +176,7 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     warn_brmsfit_multiple(x)
     class(x) <- "brmsfit"
   }
+  warn_kfold_intercept_prior(x)
   if (is.null(newdata)) {
     newdata <- x$data
   } else {
@@ -415,6 +416,36 @@ kfold.brmsfit <- function(x, ..., K = 10, Ksub = NULL, folds = NULL,
     )
   }
   structure(out, dims = dim(lppds), class = c("kfold", "loo"))
+}
+
+# warn if k-fold cross-validation can change the meaning of an intercept prior
+warn_kfold_intercept_prior <- function(x) {
+  has_user_intercept_prior <- is.brmsprior(x$prior) &&
+    any(x$prior$class == "Intercept" & x$prior$source == "user")
+  if (!has_user_intercept_prior) {
+    return(invisible(NULL))
+  }
+  has_centered_predictors <- function(x) {
+    if (is.mvbrmsterms(x)) {
+      return(any(vapply(x$terms, has_centered_predictors, logical(1))))
+    }
+    predictors <- c(x$dpars, x$nlpars)
+    any(vapply(predictors, function(p) {
+      centered_fe <- stan_center_X(p) &&
+        length(attr(terms(p$fe), "term.labels")) > 0L
+      constrained_smooth <- !is.null(p$sm) && has_intercept(p$fe)
+      centered_fe || constrained_smooth
+    }, logical(1)))
+  }
+  if (has_centered_predictors(brmsterms(x$formula))) {
+    warning2(
+      "You are applying `kfold` to a model with a user-specified prior on ",
+      "the intercept and predictors or smooth terms that are centered or ",
+      "constrained using the supplied data. ",
+      "The meaning of this prior may vary across folds."
+    )
+  }
+  invisible(NULL)
 }
 
 #' Predictions from K-Fold Cross-Validation
