@@ -502,7 +502,7 @@ latent_oscale_funs <- function(object, family, family_name, bterms, resp,
   } else if (has_interval_cens(bterms)) {
     unsupported <- "interval censoring"
   } else if (is.formula(bterms$adforms$rate)) {
-    unsupported <- "addition term 'rate'"
+    unsupported <- "addition argument 'rate'"
   } else {
     # use the model data instead of prepare_predictions(), so that this check
     # also works for fits without draws ('empty = TRUE')

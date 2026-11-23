@@ -428,8 +428,8 @@ test_that("projpred latent projection warns or stops for unsupported models",
                                family = weibull(), empty = TRUE),
     "truncation bounds" = brm(y_nb | trunc(ub = ub_var) ~ x1, data = dat,
                               family = negbinomial(), empty = TRUE),
-    "addition term 'rate'" = brm(y_nb | rate(denom) ~ x1, data = dat,
-                                 family = negbinomial(), empty = TRUE)
+    "addition argument 'rate'" = brm(y_nb | rate(denom) ~ x1, data = dat,
+                                     family = negbinomial(), empty = TRUE)
   )
   for (unsupp in names(fits_unsupp)) {
     fit_unsupp <- fits_unsupp[[unsupp]]
