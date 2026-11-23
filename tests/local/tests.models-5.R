@@ -428,8 +428,8 @@ test_that("projpred latent projection warns or stops for unsupported models",
                                family = weibull(), empty = TRUE),
     "truncation bounds" = brm(y_nb | trunc(ub = ub_var) ~ x1, data = dat,
                               family = negbinomial(), empty = TRUE),
-    "addition term 'rate'" = brm(y_nb | rate(denom) ~ x1, data = dat,
-                                 family = negbinomial(), empty = TRUE)
+    "addition argument 'rate'" = brm(y_nb | rate(denom) ~ x1, data = dat,
+                                     family = negbinomial(), empty = TRUE)
   )
   for (unsupp in names(fits_unsupp)) {
     fit_unsupp <- fits_unsupp[[unsupp]]
@@ -443,6 +443,20 @@ test_that("projpred latent projection warns or stops for unsupported models",
     )
     expect_null(funs)
   }
+
+  # the reasons that the warning names
+  dat$sdy <- 0.3
+  unsupp_reason <- function(formula, family_name) {
+    brms:::latent_oscale_unsupported(family_name, brmsterms(formula),
+                                     data = dat)
+  }
+  expect_equal(unsupp_reason(y_weib | mi(sdy) ~ x1, "gaussian"),
+               "addition argument 'mi'")
+  expect_equal(unsupp_reason(y_weib | trunc(lb = 0) ~ x1, "student"),
+               "family 'student' with addition argument(s) 'trunc'")
+  expect_null(
+    unsupp_reason(y_weib | cens(c_weib) + trunc(lb = 0) ~ x1, "gaussian")
+  )
 
   # weights and trials other than 1 are not supported
   dat$w <- runif(N, 0.5, 2)
@@ -504,14 +518,20 @@ test_that("projpred latent functions work with 'resp' and other links",
   has_epred <- "latent_epred" %in% names(formals(projpred::extend_family))
 
   # in multivariate models, the functions are defined for the response 'resp'
+  dat$y_g <- rnorm(N, dat$eta)
   fit_mv <- brm(
     bf(y_weib | cens(c_weib) ~ x1 + x2 + x3, family = weibull()) +
-      bf(y_nb ~ x1 + x2 + x3, family = negbinomial()) + set_rescor(FALSE),
+      bf(y_nb ~ x1 + x2 + x3, family = negbinomial()) +
+      bf(y_g ~ x1 + x2 + x3, family = gaussian()) + set_rescor(FALSE),
     data = dat, refresh = 0
   )
-  cens <- list(yweib = dat$c_weib, ynb = NULL)
+  cens <- list(yweib = dat$c_weib, ynb = NULL, yg = NULL)
   for (resp in names(cens)) {
     ref <- projpred::get_refmodel(fit_mv, resp = resp, latent = TRUE)
+    if (resp == "yg") {
+      sigma_yg <- as.data.frame(fit_mv, variable = "sigma_yg")$sigma_yg
+      expect_equal(ref$dis, sigma_yg)
+    }
     ilpreds <- posterior_linpred(fit_mv, resp = resp, transform = TRUE)
     ll <- ref$family$latent_ll_oscale(
       ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = cens[[resp]],
@@ -546,6 +566,176 @@ test_that("projpred latent functions work with 'resp' and other links",
     )
     expect_equivalent(epred, posterior_epred(fit_inv))
   }
+}))
+
+test_that("projpred warns about addition terms if 'latent = FALSE'",
+          suppressWarnings({
+  set.seed(1234)
+  N <- 100
+  dat <- data.frame(x1 = rnorm(N))
+  dat$y <- abs(rnorm(N, dat$x1)) + 0.1
+  dat$se_y <- runif(N, 0.5, 1)
+  dat$c_y <- ifelse(dat$y > 1, "right", "none")
+  dat$c_none <- "none"
+  dat$lb_var <- -seq_len(N)
+  dat$count <- rpois(N, 3)
+  dat$expo <- runif(N, 1, 2)
+  dat$sdy <- 0.3
+
+  # the messages of the warnings for a model
+  ad_warning <- function(fit) {
+    capture_warnings(brms:::warn_projpred_ignored_ad(
+      family(fit)$family, brmsterms(formula(fit)), data = fit$data
+    ))
+  }
+  # the terms that the warning names, and if it recommends 'latent = TRUE'
+  cases <- list(
+    list(fit = brm(y | se(se_y, sigma = TRUE) ~ x1, dat, empty = TRUE),
+         terms = "'se'", latent_ok = FALSE),
+    list(fit = brm(y | trunc(lb = 0) ~ x1, dat, empty = TRUE),
+         terms = "'trunc'", latent_ok = TRUE),
+    list(fit = brm(y | trunc(lb = lb_var) ~ x1, dat, empty = TRUE),
+         terms = "'trunc'", latent_ok = FALSE),
+    list(fit = brm(y | cens(c_y) ~ x1, dat, empty = TRUE),
+         terms = "'cens'", latent_ok = TRUE),
+    list(fit = brm(y | cens(c_y) + trunc(lb = 0) ~ x1, dat, empty = TRUE),
+         terms = "'trunc', 'cens'", latent_ok = TRUE),
+    list(fit = brm(count | rate(expo) ~ x1, dat, family = poisson(),
+                   empty = TRUE),
+         terms = "'rate'", latent_ok = FALSE),
+    list(fit = brm(y | mi(sdy) ~ x1, dat, empty = TRUE),
+         terms = "'mi'", latent_ok = FALSE)
+  )
+  for (case in cases) {
+    msg <- ad_warning(case$fit)
+    expect_true(grepl(paste0("addition argument(s) ", case$terms, " of"), msg,
+                      fixed = TRUE), info = case$terms)
+    expect_equal(grepl("Use 'latent = TRUE'", msg, fixed = TRUE),
+                 case$latent_ok, info = case$terms)
+  }
+  # no warning without censored observations or addition terms
+  fit_none <- brm(y | cens(c_none) ~ x1, dat, empty = TRUE)
+  expect_equal(ad_warning(fit_none), character(0))
+  expect_equal(ad_warning(brm(y ~ x1, dat, empty = TRUE)), character(0))
+
+  # no warning before the projpred error for an unsupported family
+  fit_st <- brm(y | trunc(lb = 0) ~ x1, dat, family = student(), empty = TRUE)
+  w <- capture_warnings(
+    expect_error(projpred::get_refmodel(fit_st), "not supported")
+  )
+  expect_false(any(grepl("Projpred ignores", w, fixed = TRUE)))
+}))
+
+test_that("projpred stops for 'se' with 'sigma = FALSE' and missing responses",
+          suppressWarnings({
+  set.seed(1234)
+  N <- 100
+  dat <- data.frame(x1 = rnorm(N))
+  dat$y <- abs(rnorm(N, dat$x1)) + 0.1
+  dat$se_y <- runif(N, 0.5, 1)
+  dat$y_mis <- dat$y
+  dat$y_mis[1:3] <- NA
+
+  fit_se0 <- brm(y | se(se_y) ~ x1, dat, empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_se0),
+               "'se' with 'sigma = FALSE'", fixed = TRUE)
+  fit_mi <- brm(y_mis | mi() ~ x1, dat, empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_mi), "missing response values",
+               fixed = TRUE)
+  expect_error(projpred::get_refmodel(fit_mi, latent = TRUE),
+               "missing response values", fixed = TRUE)
+}))
+
+test_that("projpred latent projection supports Gaussian 'cens' and 'trunc'",
+          suppressWarnings({
+  set.seed(1234)
+  N <- 100
+  dat <- data.frame(x1 = rnorm(N), x2 = rnorm(N), x3 = rnorm(N))
+  eta <- 0.5 + 0.5 * dat$x1 - 0.3 * dat$x2
+  # normal distribution truncated at 0 and censored at 2
+  y <- qnorm(runif(N, pnorm(0, eta), 1), eta)
+  dat$c_y <- ifelse(y > 2, "right", "none")
+  dat$y <- pmin(y, 2)
+  fit <- brm(y | cens(c_y) + trunc(lb = 0) ~ x1 + x2 + x3, data = dat,
+             refresh = 0)
+
+  # 'latent = FALSE' gives one warning, also with K-fold CV
+  expect_warning(
+    projpred::get_refmodel(fit),
+    "addition argument(s) 'trunc', 'cens' of the response", fixed = TRUE
+  )
+  cvfun <- function(folds, ...) rep(list(fit), max(folds))
+  w <- capture_warnings(
+    projpred::cv_varsel(fit, cv_method = "kfold", K = 2, cvfun = cvfun,
+                        nterms_max = 1, verbose = FALSE)
+  )
+  expect_equal(sum(grepl("Projpred ignores", w, fixed = TRUE)), 1)
+
+  # with 'latent = TRUE' and all draws, the functions give the brms results
+  has_epred <- "latent_epred" %in% names(formals(projpred::extend_family))
+  ref <- projpred::get_refmodel(fit, latent = TRUE)
+  expect_equal(ref$dis, as.data.frame(fit, variable = "sigma")$sigma)
+  ilpreds <- posterior_linpred(fit, transform = TRUE)
+  ll <- ref$family$latent_ll_oscale(
+    ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = dat$c_y,
+    cl_ref = seq_len(ndraws(fit))
+  )
+  expect_equivalent(ll, log_lik(fit))
+  if (has_epred) {
+    epred <- ref$family$latent_epred(
+      ilpreds, dis = ref$dis, cl_ref = seq_len(ndraws(fit))
+    )
+    expect_equivalent(epred, posterior_epred(fit))
+  }
+  vs <- projpred::varsel(ref, nterms_max = 2, verbose = FALSE)
+  for (oscale in c(TRUE, FALSE)) {
+    smry <- summary(vs, stats = "elpd", resp_oscale = oscale)$perf_sub
+    expect_true(all(is.finite(smry$elpd)), info = paste("oscale:", oscale))
+  }
+  prj <- projpred::project(ref, predictor_terms = "x1", nclusters = 5)
+  ppd <- projpred::proj_predict(prj, nresample_clusters = 30)
+  expect_true(all(is.finite(ppd) & ppd >= 0))
+}))
+
+test_that("projpred latent projection warns for 'se'", suppressWarnings({
+  set.seed(1234)
+  N <- 100
+  dat <- data.frame(x1 = rnorm(N))
+  dat$se_y <- runif(N, 0.2, 0.5)
+  dat$y <- rnorm(N, dat$x1, sqrt(1 + dat$se_y^2))
+
+  fit_se <- brm(y | se(se_y, sigma = TRUE) ~ x1, data = dat, refresh = 0)
+  expect_warning(
+    ref <- projpred::get_refmodel(fit_se, latent = TRUE),
+    "addition argument 'se'", fixed = TRUE
+  )
+  # with 'se(sigma = TRUE)', 'sigma' is the SD of the latent Gaussian
+  # distribution
+  expect_equal(ref$dis, as.data.frame(fit_se, variable = "sigma")$sigma)
+  # no warning if the user passes the functions
+  ll_user <- function(ilpreds, dis, y_oscale, wobs = rep(1, ncol(ilpreds)),
+                      cens, cl_ref, wdraws_ref = rep(1, length(cl_ref))) {
+    matrix(0, nrow(ilpreds), ncol(ilpreds))
+  }
+  w <- capture_warnings(
+    projpred::get_refmodel(fit_se, latent = TRUE, latent_ll_oscale = ll_user)
+  )
+  expect_false(any(grepl("not yet implemented in brms", w, fixed = TRUE)))
+}))
+
+test_that("projpred latent projection warns for binomial 'trunc'",
+          suppressWarnings({
+  set.seed(1234)
+  N <- 100
+  dat <- data.frame(x1 = rnorm(N))
+  dat$y_bin <- rbinom(N, 1, plogis(dat$x1))
+  # the projpred functions for binomial models ignore truncation
+  fit_bin <- brm(y_bin | trials(1) + trunc(ub = 1) ~ x1, data = dat,
+                 family = binomial(), refresh = 0)
+  expect_warning(
+    projpred::get_refmodel(fit_bin, latent = TRUE),
+    "'trunc' in family 'binomial'", fixed = TRUE
+  )
 }))
 
 test_that("projpred methods can be run with monotonic terms",

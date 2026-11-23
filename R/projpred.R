@@ -19,9 +19,10 @@
 #' @param latent See argument \code{latent} of
 #'   \code{\link[projpred:extend_family]{extend_family}}. Setting this to
 #'   \code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For the families
-#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{weibull}, and
-#'   \code{lognormal}, \pkg{brms} defines the functions for response-scale
-#'   analyses (see the latent-projection vignette of \pkg{projpred}).
+#'   \code{gaussian}, \code{bernoulli}, \code{poisson}, \code{negbinomial},
+#'   \code{weibull}, and \code{lognormal}, \pkg{brms} defines the functions for
+#'   response-scale analyses (see the latent-projection vignette of
+#'   \pkg{projpred}). See 'Details' for addition terms.
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
@@ -48,6 +49,17 @@
 #'   \code{\link[projpred:proj_predict]{proj_predict}}, and
 #'   \code{\link[projpred:predict.refmodel]{predict.refmodel}} are passed to
 #'   \code{wrhs} and \code{orhs}, respectively.
+#'
+#'   With \code{latent = TRUE}, the response-scale functions of \pkg{brms}
+#'   support the addition terms \code{cens} (except interval censoring) and
+#'   \code{trunc} (with the same bounds for all observations). For other
+#'   families and addition terms, \pkg{brms} gives a warning, and the
+#'   response-scale results are \code{NA} or not valid. With
+#'   \code{latent = FALSE}, \pkg{projpred} ignores the addition terms
+#'   \code{se}, \code{mi} (with argument \code{sdy}), \code{trunc},
+#'   \code{cens}, and \code{rate}, and \pkg{brms} gives a warning. Models with
+#'   \code{se(sigma = FALSE)} and \code{latent = FALSE} and models with missing
+#'   response values (\code{mi()}) give an error.
 #'
 #' @return A \code{refmodel} object to be used in conjunction with the
 #'   \pkg{projpred} package.
@@ -155,6 +167,21 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
 
+  # projpred does not impute missing responses
+  if (is.formula(bterms$adforms$mi)) {
+    y <- model.response(model.frame(bterms$respform, object$data,
+                                    na.action = na.pass))
+    if (anyNA(y)) {
+      stop2("Projpred does not support missing response values ",
+            "(addition argument 'mi').")
+    }
+  }
+  # the traditional projection has no submodel with a fixed SD per observation
+  if (!latent && no_sigma(bterms)) {
+    stop2("Projpred does not support addition argument 'se' with ",
+          "'sigma = FALSE' if 'latent = FALSE'.")
+  }
+
   if (latent) {
     # the latent projection of projpred does not support observation weights
     mdata <- .extract_model_data(object, resp = resp, extract_y = FALSE)
@@ -185,7 +212,8 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     # the SD of the latent Gaussian distribution, if the family has a dpar
     # for it (see latent_oscale_families())
     dis_dpar <- latent_dis_dpar(family_name, family$link)
-    if (!is.null(dis_dpar)) {
+    # with 'se(sigma = FALSE)', 'sigma' is fixed at 0
+    if (!is.null(dis_dpar) && !no_sigma(bterms)) {
       dis <- paste0(dis_dpar, usc(resp))
       dis <- as.data.frame(object, variable = dis)[[dis]]
     }
@@ -273,6 +301,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     object, data, formula, family, dis, ref_predfun,
     cvfun, extract_model_data, cvrefbuilder, latent, ...
   )
+  from_cvrefbuilder <- isTRUE(args[["called_from_cvrefbuilder"]])
   if (aug_data) {
     c(args) <- list(
       augdat_link = get(paste0("link_", family$family), mode = "function"),
@@ -298,7 +327,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       c(args) <- latent_oscale_funs(
         object = object, family = family, family_name = family_name,
         bterms = bterms, resp = resp,
-        warn = !isTRUE(args[["called_from_cvrefbuilder"]])
+        warn = !from_cvrefbuilder
       )
     }
     # TODO: If requested by users, add response-scale support for more families.
@@ -307,7 +336,12 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     # for categorical responses). Families with a numeric response can be added
     # in latent_oscale_families().
   }
-  do_call(projpred::init_refmodel, args)
+  out <- do_call(projpred::init_refmodel, args)
+  # warn only after projpred accepted the model (for example the family)
+  if (!latent && !from_cvrefbuilder) {
+    warn_projpred_ignored_ad(family_name, bterms, data = object$data)
+  }
+  out
 }
 
 # auxiliary data required in predictions via projpred
@@ -456,6 +490,7 @@ latent_ilink_cumulative <- function(object, family, bterms, resp) {
 # if the link is the identity (see latent_dis_dpar()).
 latent_oscale_families <- function() {
   list(
+    gaussian = list(dis = "sigma"),
     bernoulli = list(),
     poisson = list(),
     negbinomial = list(),
@@ -478,6 +513,99 @@ latent_dis_dpar <- function(family_name, link) {
   latent_oscale_families()[[family_name]]$dis
 }
 
+# Check if brms can define the response-scale functions of the latent
+# projection for a family other than binomial, categorical, and ordinal ones.
+#
+# @param family_name The brms name of the family.
+# @param bterms A brmsterms object.
+# @param data The data of the model.
+#
+# @return NULL if brms can define the functions. Otherwise, the reason for the
+#   warning of latent_oscale_funs().
+latent_oscale_unsupported <- function(family_name, bterms, data) {
+  if (!family_name %in% names(latent_oscale_families())) {
+    out <- paste0("family '", family_name, "'")
+    ad <- c("se", "mi", "cens", "trunc", "rate")
+    ad <- ad[ulapply(bterms$adforms[ad], is.formula)]
+    if (length(ad)) {
+      out <- paste0(out, " with addition argument(s) ", collapse_comma(ad))
+    }
+    return(out)
+  }
+  if (is.formula(bterms$adforms$se)) {
+    # the functions do not get the standard errors of new observations
+    return("addition argument 'se'")
+  }
+  if (!is.null(get_ad_expr(bterms, "mi", "sdy"))) {
+    # the functions do not get the measurement errors of new observations
+    return("addition argument 'mi'")
+  }
+  if (has_interval_cens(bterms)) {
+    return("interval censoring")
+  }
+  if (is.formula(bterms$adforms$rate)) {
+    return("addition argument 'rate'")
+  }
+  bounds <- trunc_bounds(bterms, data = data)
+  if (length(unique(bounds$lb)) > 1L || length(unique(bounds$ub)) > 1L) {
+    return("truncation bounds that vary between observations")
+  }
+  NULL
+}
+
+# Warn if the model has addition terms of the response that the traditional
+# projection (`latent = FALSE`) ignores. projpred gets the formula without
+# these terms, so the projection and the performance statistics use the model
+# without them.
+#
+# @param family_name The brms name of the family.
+# @param bterms A brmsterms object.
+# @param data The data of the model. In multivariate models with addition term
+#   `subset`, it also has the rows that the response does not use. The checks
+#   of `trunc`, `cens`, and `rate` include these rows, so a warning without
+#   need is possible.
+#
+# @return NULL (invisibly).
+warn_projpred_ignored_ad <- function(family_name, bterms, data) {
+  ad <- character(0)
+  if (is.formula(bterms$adforms$se)) {
+    # 'se' with 'sigma = FALSE' stopped before
+    c(ad) <- "se"
+  }
+  if (!is.null(get_ad_expr(bterms, "mi", "sdy"))) {
+    # measurement error of the response
+    c(ad) <- "mi"
+  }
+  bounds <- trunc_bounds(bterms, data = data)
+  if (any(is.finite(c(bounds$lb, bounds$ub)))) {
+    c(ad) <- "trunc"
+  }
+  if (any(get_cens(bterms, data) != 0, na.rm = TRUE)) {
+    c(ad) <- "cens"
+  }
+  if (is.formula(bterms$adforms$rate) &&
+      any(get_ad_values(bterms, "rate", "denom", data) != 1, na.rm = TRUE)) {
+    c(ad) <- "rate"
+  }
+  if (!length(ad)) {
+    return(invisible(NULL))
+  }
+  msg <- paste0(
+    "Projpred ignores the addition argument(s) ", collapse_comma(ad),
+    " of the response if 'latent = FALSE'. The projection and the ",
+    "performance statistics use the model without these arguments."
+  )
+  # the latent projection does not support weights or trials other than 1
+  latent_ok <-
+    is.null(latent_oscale_unsupported(family_name, bterms, data = data)) &&
+    !is.formula(bterms$adforms$weights) && !is.formula(bterms$adforms$trials)
+  if (latent_ok) {
+    msg <- paste0(msg, " Use 'latent = TRUE', which supports these arguments.")
+  }
+  warning2(msg)
+  invisible(NULL)
+}
+
 # Construct the functions required for response-scale analyses with the latent
 # projection for the families in latent_oscale_families().
 #
@@ -491,25 +619,21 @@ latent_dis_dpar <- function(family_name, link) {
 #   supports it) `latent_epred` to be passed to projpred::extend_family().
 latent_oscale_funs <- function(object, family, family_name, bterms, resp,
                                warn = TRUE) {
-  if (family_name == "binomial" || is_categorical(family) ||
-      is_ordinal(family)) {
+  binom_ad <- c("cens", "trunc")
+  binom_ad <- binom_ad[ulapply(bterms$adforms[binom_ad], is.formula)]
+  if (family_name == "binomial" && length(binom_ad)) {
+    # the projpred functions for binomial models ignore these terms
+    unsupported <- paste0("addition argument(s) ", collapse_comma(binom_ad),
+                          " in family 'binomial'")
+  } else if (family_name == "binomial" || is_categorical(family) ||
+             is_ordinal(family)) {
     # projpred defines the functions for these families
     return(NULL)
-  }
-  unsupported <- NULL
-  if (!family_name %in% names(latent_oscale_families())) {
-    unsupported <- paste0("family '", family_name, "'")
-  } else if (has_interval_cens(bterms)) {
-    unsupported <- "interval censoring"
-  } else if (is.formula(bterms$adforms$rate)) {
-    unsupported <- "addition term 'rate'"
   } else {
     # use the model data instead of prepare_predictions(), so that this check
     # also works for fits without draws ('empty = TRUE')
-    bounds <- trunc_bounds(bterms, data = object$data)
-    if (length(unique(bounds$lb)) > 1L || length(unique(bounds$ub)) > 1L) {
-      unsupported <- "truncation bounds that vary between observations"
-    }
+    unsupported <- latent_oscale_unsupported(family_name, bterms,
+                                             data = object$data)
   }
   if (!is.null(unsupported)) {
     if (warn) {

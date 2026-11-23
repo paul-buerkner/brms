@@ -41,9 +41,10 @@ based on \code{\link{kfold.brmsfit}}.}
 \item{latent}{See argument \code{latent} of
 \code{\link[projpred:extend_family]{extend_family}}. Setting this to
 \code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For the families
-\code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{weibull}, and
-\code{lognormal}, \pkg{brms} defines the functions for response-scale
-analyses (see the latent-projection vignette of \pkg{projpred}).}
+\code{gaussian}, \code{bernoulli}, \code{poisson}, \code{negbinomial},
+\code{weibull}, and \code{lognormal}, \pkg{brms} defines the functions for
+response-scale analyses (see the latent-projection vignette of
+\pkg{projpred}). See 'Details' for addition terms.}
 
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).
@@ -87,6 +88,17 @@ The \code{extract_model_data} function used internally by
   \code{\link[projpred:proj_predict]{proj_predict}}, and
   \code{\link[projpred:predict.refmodel]{predict.refmodel}} are passed to
   \code{wrhs} and \code{orhs}, respectively.
+
+  With \code{latent = TRUE}, the response-scale functions of \pkg{brms}
+  support the addition terms \code{cens} (except interval censoring) and
+  \code{trunc} (with the same bounds for all observations). For other
+  families and addition terms, \pkg{brms} gives a warning, and the
+  response-scale results are \code{NA} or not valid. With
+  \code{latent = FALSE}, \pkg{projpred} ignores the addition terms
+  \code{se}, \code{mi} (with argument \code{sdy}), \code{trunc},
+  \code{cens}, and \code{rate}, and \pkg{brms} gives a warning. Models with
+  \code{se(sigma = FALSE)} and \code{latent = FALSE} and models with missing
+  response values (\code{mi()}) give an error.
 }
 \examples{
 \dontrun{
