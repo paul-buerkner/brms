@@ -296,7 +296,7 @@ test_that("Cox prediction controls use the existing posterior_predict interface"
   }
 })
 
-test_that("Cox pp_check rejects censoring codes but accepts event times", {
+test_that("Cox pp_check passes signed draws to plotting functions", {
   fit <- restructure(brms:::rename_pars(brms:::brmsfit_example1))
   y <- seq_len(nrow(fit$data))
   fit$formula <- bf(y ~ 1, family = cox())
@@ -310,13 +310,13 @@ test_that("Cox pp_check rejects censoring codes but accepts event times", {
   )
   expect_s3_class(pp_check(fit, type = "ecdf_overlay", ndraws = 2), "ggplot")
   yrep[1, 1] <- -1
-  expect_error(
+  expect_s3_class(
     pp_check(fit, type = "ecdf_overlay", ndraws = 2),
-    "Censored Cox replications require an external plotting function"
+    "ggplot"
   )
-  expect_error(
+  expect_s3_class(
     pp_check(fit, type = "dens_overlay", prefix = "ppd", ndraws = 2),
-    "Censored Cox replications require an external plotting function"
+    "ggplot"
   )
 })
 
