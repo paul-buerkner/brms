@@ -280,9 +280,18 @@ test_that("Cox prediction controls use the existing posterior_predict interface"
     list(output = "quantile", p = log(0.25), lower.tail = FALSE, log.p = TRUE)
   )
   for (args in cases) {
+    expected <- do.call(posterior_predict, c(list(prep), args))
     expect_equal(
       do.call(posterior_predict, c(list(fit), args)),
-      do.call(posterior_predict, c(list(prep), args))
+      expected
+    )
+    expect_equal(
+      do.call(predict, c(list(fit, summary = FALSE), args)),
+      expected
+    )
+    expect_equal(
+      do.call(predict, c(list(fit, robust = TRUE, probs = c(0.1, 0.9)), args)),
+      posterior_summary(expected, robust = TRUE, probs = c(0.1, 0.9))
     )
   }
 })

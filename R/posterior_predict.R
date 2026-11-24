@@ -290,11 +290,6 @@ posterior_predict.brmsprep <- function(object, transform = NULL, sort = FALSE,
 #' @param probs  The percentiles to be computed by the \code{quantile}
 #'  function. Only used if \code{summary} is \code{TRUE}.
 #'
-#' @details To specify \code{q}, \code{p}, \code{lower.tail}, \code{log.p},
-#'   or \code{log}, use \code{\link{posterior_predict.brmsfit}} directly.
-#'   These arguments are not forwarded by \code{predict}. To summarize the
-#'   resulting draws, use \code{\link{posterior_summary}}.
-#'
 #' @return An \code{array} of predicted response values.
 #'   If \code{summary = FALSE} the output resembles those of
 #'   \code{\link{posterior_predict.brmsfit}}.
@@ -342,7 +337,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
                             sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
                             robust = FALSE, probs = c(0.025, 0.975),
-                            output = "random", ...) {
+                            output = "random", q = NULL, p = NULL,
+                            lower.tail = TRUE, log.p = FALSE, log = FALSE, ...) {
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
@@ -352,7 +348,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   posterior_predict(
     prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs, output = output
+    probs = probs, output = output, q = q, p = p,
+    lower.tail = lower.tail, log.p = log.p, log = log
   )
 }
 
