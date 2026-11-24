@@ -4,8 +4,7 @@
 
 * Add native Cox predictive draws, CDFs, densities, and quantiles with explicit
 tail extrapolation policies, and restricted mean survival time with a required
-horizon. The Cox demo includes optional survival and censoring utility
-recipes. Thanks to Sebastian Weber. (#1963)
+horizon. Thanks to Sebastian Weber. (#1963)
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
