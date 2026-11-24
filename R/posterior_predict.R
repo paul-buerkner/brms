@@ -87,22 +87,23 @@
 #'   outputs other than \code{"random"} yet; requesting an unsupported
 #'   combination raises an error.
 #'
-#'   Cox predictions require fits from brms 2.23.2 or later with their stored
-#'   baseline spline. Beyond its upper boundary, \code{tail = "constant"}
-#'   (default) holds the baseline hazard constant; \code{"loglinear"} extends
-#'   log cumulative hazard linearly in log time, matching its boundary slope.
-#'   Both are extrapolation assumptions, not information identified by the
-#'   fitted spline. With \code{tail = "none"}, random draws and quantiles
-#'   beyond this boundary are right-censored there and encoded as negative
-#'   times. For predictions \code{x}, recover times with \code{abs(x)} and
-#'   event indicators with \code{x > 0}; ordinary summaries of signed values
-#'   are not survival-time summaries. See \code{demo("cox", package = "brms")}
-#'   for optional survival and censoring utility recipes, which are not part
-#'   of the package API.
-#'   CDFs and densities beyond the boundary are undefined with no tail.
-#'   Cox \code{output = "pit"} is a conditional CDF, not a censoring-aware
-#'   calibration diagnostic.
-#'   Censoring-aware plotting remains external to brms.
+#'   Cox predictions use a fitted baseline hazard spline. Its domain
+#'   is defined during model fitting and remains fixed afterward. The
+#'   \code{tail} argument selects extrapolation beyond its upper
+#'   boundary.  \code{tail = "constant"} (the default) keeps the
+#'   baseline hazard constant, giving an exponential survival
+#'   tail. \code{tail = "loglinear"} extends the log cumulative
+#'   baseline hazard linearly in log time, matching its boundary
+#'   slope. With \code{tail = "none"}, random draws and quantiles
+#'   beyond the upper boundary are right-censored at that boundary and
+#'   returned as its negative value. Note that the convention to use
+#'   positive values for events times and negative value for censored
+#'   observations requires aligned processing of the draws. CDFs and
+#'   densities beyond the upper boundary return \code{NA}. For Cox
+#'   models, \code{output = "pit"} evaluates the event-time CDF
+#'   conditional on covariates and any truncation bounds. It does not
+#'   adjust for censoring and is not a censoring-aware calibration
+#'   diagnostic.
 #'
 #'   For truncated discrete models only: In the absence of any general
 #'   algorithm to sample from truncated discrete distributions, rejection
