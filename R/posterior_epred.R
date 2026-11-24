@@ -494,8 +494,10 @@ posterior_epred_zero_inflated_asym_laplace <- function(prep) {
 posterior_epred_cox <- function(prep, horizon = NULL, nodes = 64) {
   prep <- prepare_cox_predictions(prep)
   if (is.null(horizon)) {
-    stop2("Please supply 'horizon' to compute Cox restricted mean survival ",
-          "time E[min(T, horizon)]. The unrestricted mean is not returned.")
+    stop2(
+      "For Cox models, supply 'horizon' to compute the expected event time ",
+      "capped at that horizon (restricted mean survival time)."
+    )
   }
   horizon <- as_one_numeric(horizon)
   nodes <- as_one_integer(nodes)
