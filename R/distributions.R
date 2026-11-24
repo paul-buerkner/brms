@@ -1931,14 +1931,14 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
 # @param mu positive location parameter
 # @param bhaz precomputed baseline hazard at x
 # @param cbhaz precomputed cumulative baseline hazard at x
-# @param log return the log density?
 # @param sbhaz matrix of simplex coefficients, one row per draw, for 'basis'
 # @param basis fitted M-spline basis defining the knots, boundaries and degree
 # @param tail upper-tail policy: "constant", "loglinear", or "none"
 # @param lb,ub optional lower and upper truncation bounds for the spline route
-dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
+# @param log return the log density?
+dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL,
                  sbhaz = NULL, basis = NULL, tail = "constant",
-                 lb = NULL, ub = NULL) {
+                 lb = NULL, ub = NULL, log = FALSE) {
   # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     if (!is.null(bhaz) || !is.null(cbhaz)) {
@@ -1964,8 +1964,9 @@ dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
 }
 
 # hazard function of the cox model
-hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
-                 sbhaz = NULL, basis = NULL, tail = "constant") {
+hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL,
+                 sbhaz = NULL, basis = NULL, tail = "constant",
+                 log = FALSE) {
   # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     bhaz <- bhaz_at(x, sbhaz, basis, tail)
@@ -1978,9 +1979,9 @@ hcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
 }
 
 # distribution function of the cox model
-pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL, lower.tail = TRUE,
-                 log.p = FALSE, sbhaz = NULL, basis = NULL, tail = "constant",
-                 lb = NULL, ub = NULL) {
+pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL,
+                 sbhaz = NULL, basis = NULL, tail = "constant",
+                 lb = NULL, ub = NULL, lower.tail = TRUE, log.p = FALSE) {
   # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
     H <- mu * bhaz_at(q, sbhaz, basis, tail, integrate = TRUE)
@@ -2016,7 +2017,7 @@ pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL, lower.tail = TRUE,
 }
 
 qcox <- function(p, mu, sbhaz, basis, tail = "constant",
-                 lower.tail = TRUE, log.p = FALSE, lb = NULL, ub = NULL) {
+                 lb = NULL, ub = NULL, lower.tail = TRUE, log.p = FALSE) {
   tail <- match.arg(tail, c("constant", "loglinear", "none"))
   # Invert on the cumulative-hazard scale: H(T) = -log(1 - p).
   target <- qexp(p, lower.tail = lower.tail, log.p = log.p)
