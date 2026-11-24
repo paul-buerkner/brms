@@ -845,13 +845,15 @@ posterior_predict_cox <- function(i, prep, output = "random", q = NULL, ...) {
     stop2("Cox predictions require finite positive values of 'mu'.")
   }
   if (is.null(prep$data$lb) && is.null(prep$data$ub)) {
-    return(do_call(predict_continuous_helper,
+    out <- do_call(predict_continuous_helper,
       c(list(i = i, prep = prep, output = output, distribution = "cox"),
         args, list(q = q, ...))
-    ))
+    )
+  } else {
+    # Generic pp helpers subtract CDFs, which saturate for large Cox hazards.
+    out <- posterior_predict_cox_trunc(i, prep, output, args, q = q, ...)
   }
-  # Generic pp helpers subtract CDFs, which saturate for large Cox hazards.
-  posterior_predict_cox_trunc(i, prep, output, args, q = q, ...)
+  out
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, output = "random", ...) {

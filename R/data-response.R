@@ -469,12 +469,8 @@ data_response_bhaz <- function(bframe, data, check_response = TRUE) {
     for (x in bframe$terms) {
       c(out) <- data_response_bhaz(x, data, check_response = check_response)
     }
-  } else if (is.brmsframe(bframe)) {
-    data <- subset_data(data, bframe)
-    for (x in bframe$dpars) {
-      c(out) <- data_response_bhaz(x, data, check_response = check_response)
-    }
   } else if (is_cox(bframe$family)) {
+    data <- subset_data(data, bframe)
     bhaz <- family_info(bframe, "bhaz")
     bs <- bhaz_basis(bframe, data, args = bhaz$args)
     y <- bframe$frame$resp$values
