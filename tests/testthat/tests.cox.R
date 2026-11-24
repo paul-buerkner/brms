@@ -153,6 +153,30 @@ test_that("Cox preparation uses native links and nonlinear parameter dispatch", 
   expect_true(all(is.finite(posterior_predict(prep))))
 })
 
+test_that("Cox density warns when spline inputs override precomputed values", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  sb <- prep$bhaz$sbhaz[[1]]
+  basis <- prep$bhaz$basis
+  mu <- prep$dpars$mu[, 1]
+  bhaz <- brms:::bhaz_at(1, sb, basis)
+  cbhaz <- brms:::bhaz_at(1, sb, basis, integrate = TRUE)
+  expect_silent(expected <- brms:::dcox(1, mu, sbhaz = sb, basis = basis))
+  expect_silent(cached <- brms:::dcox(1, mu, bhaz = bhaz, cbhaz = cbhaz))
+  expect_equal(cached, expected)
+  for (precomputed in list(list(bhaz = 0), list(cbhaz = 0),
+                          list(bhaz = 0, cbhaz = 0))) {
+    expect_warning(
+      got <- do.call(brms:::dcox, c(
+        list(x = 1, mu = mu, sbhaz = sb, basis = basis), precomputed
+      )),
+      "Ignoring precomputed 'bhaz' and 'cbhaz' because 'basis' is supplied",
+      fixed = TRUE
+    )
+    expect_equal(got, expected)
+  }
+})
+
 test_that("Cox inversion and tails agree with independent forward evaluation", {
   skip_if_not_installed("splines2")
   prep <- cox_test_prep()

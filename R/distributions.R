@@ -1922,16 +1922,28 @@ rwiener <- function(n, alpha, tau, beta, delta, types = c("q", "resp"),
 }
 
 # density of the cox proportional hazards model
-# The precomputed bhaz/cbhaz route is retained for existing log_lik callers;
-# the time-aware prediction route uses the stored basis and simplex draws.
+# Without 'basis', use precomputed bhaz/cbhaz at x for likelihood evaluation;
+# these values must already correspond to x and are not recomputed.
+# With 'basis', evaluate the baseline at x using sbhaz for prediction,
+# including the tail policy and optional truncation. Precomputed values
+# are ignored with a warning if both input representations are supplied.
+# @param x event time(s) at which to evaluate the density
 # @param mu positive location parameter
-# @param bhaz baseline hazard
-# @param cbhaz cumulative baseline hazard
+# @param bhaz precomputed baseline hazard at x
+# @param cbhaz precomputed cumulative baseline hazard at x
+# @param log return the log density?
+# @param sbhaz matrix of simplex coefficients, one row per draw, for 'basis'
+# @param basis fitted M-spline basis defining the knots, boundaries and degree
+# @param tail upper-tail policy: "constant", "loglinear", or "none"
+# @param lb,ub optional lower and upper truncation bounds for the spline route
 dcox <- function(x, mu, bhaz = NULL, cbhaz = NULL, log = FALSE,
                  sbhaz = NULL, basis = NULL, tail = "constant",
                  lb = NULL, ub = NULL) {
   # Time-aware prediction path; otherwise use precomputed likelihood inputs.
   if (!is.null(basis)) {
+    if (!is.null(bhaz) || !is.null(cbhaz)) {
+      warning2("Ignoring precomputed 'bhaz' and 'cbhaz' because 'basis' is supplied.")
+    }
     H <- mu * bhaz_at(x, sbhaz, basis, tail, integrate = TRUE)
     out <- log(mu) + log(bhaz_at(x, sbhaz, basis, tail)) - H
     if (!is.null(lb) || !is.null(ub)) {
