@@ -461,22 +461,25 @@ data_mixture <- function(bframe, data2, prior) {
   out
 }
 
-# Response-time matrices are separate from predictor dimensions and priors so
-# response checking also applies to nonlinear and multivariate Cox models.
-data_response_bhaz <- function(bframe, data, check_response = TRUE) {
+# Construct baseline matrices at response times. Called from .standata to use
+# its response-checking policy without extending predictor interfaces.
+data_response_bhaz <- function(bframe, data, use_response_placeholders = FALSE) {
   out <- list()
   if (is.mvbrmsframe(bframe)) {
     for (x in bframe$terms) {
-      c(out) <- data_response_bhaz(x, data, check_response = check_response)
+      c(out) <- data_response_bhaz(
+        x, data, use_response_placeholders = use_response_placeholders
+      )
     }
   } else if (is_cox(bframe$family)) {
     data <- subset_data(data, bframe)
     bhaz <- family_info(bframe, "bhaz")
     bs <- bhaz_basis(bframe, data, args = bhaz$args)
     y <- bframe$frame$resp$values
-    if (!check_response) {
-      # Use in-support placeholders for unchecked response-time matrices only.
-      # Native predictions evaluate requested times with a separate tail policy.
+    if (use_response_placeholders) {
+      # Missing times use the lower boundary; other times are clipped to support
+      # for these matrices only, leaving the response unchanged. Cox predictions
+      # evaluate requested times separately using the stored spline.
       bounds <- attr(bs, "Boundary.knots")
       y[is.na(y)] <- bounds[1]
       y <- pmin(pmax(y, bounds[1]), bounds[2])
