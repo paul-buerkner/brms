@@ -3,6 +3,62 @@ context("Tests for posterior_epred helper functions")
 # to reduce testing time on CRAN
 skip_on_cran()
 
+test_that("Cox RMST agrees with independent integration and truncation", {
+  skip_if_not_installed("splines2")
+  skip_if_not_installed("statmod")
+  prep <- cox_test_prep(ns = 3L, nobs = 1L)
+  sb <- prep$bhaz$sbhaz[[1]][1, , drop = FALSE]
+  basis <- prep$bhaz$basis
+  for (horizon in c(0, 2, 6)) {
+    got <- posterior_epred(prep, horizon = horizon, dpar = NULL,
+                            nlpar = NULL, sort = FALSE)
+    for (i in seq_len(3)) {
+      mu <- prep$dpars$mu[i, 1]
+      reference <- integrate(function(t) {
+        H <- as.vector(brms:::bhaz_basis_matrix(
+          pmin(t, 4), basis = basis, integrate = TRUE
+        ) %*% as.vector(sb))
+        rate <- as.vector(brms:::bhaz_basis_matrix(4, basis = basis) %*%
+                            as.vector(sb))
+        exp(-mu * (H + pmax(t - 4, 0) * rate))
+      }, 0, horizon, rel.tol = 1e-10, subdivisions = 1000)$value
+      expect_equal(got[i, 1], reference, tolerance = 1e-7)
+    }
+  }
+  prep$data$lb <- 1
+  prep$data$ub <- 2
+  expect_equal(as.vector(posterior_epred(
+    prep, horizon = 0.5, dpar = NULL, nlpar = NULL, sort = FALSE
+  )), rep(0.5, 3))
+  set.seed(42)
+  pred <- replicate(2000, posterior_predict(prep)[1, 1])
+  got <- posterior_epred(prep, horizon = 1.5, dpar = NULL,
+                          nlpar = NULL, sort = FALSE)
+  expect_equal(got[1, 1], mean(pmin(pred, 1.5)), tolerance = 0.02)
+  expect_error(posterior_epred(prep, dpar = NULL, nlpar = NULL,
+                               sort = FALSE), "horizon")
+  prep$bhaz$tail <- "none"
+  expect_error(posterior_epred(prep, horizon = 5, dpar = NULL,
+                               nlpar = NULL, sort = FALSE), "support")
+  prep <- cox_test_prep(ns = 2L)
+  prep$data$lb <- c(0.25, 1, 2)
+  prep$data$ub <- c(2.5, 3.5, Inf)
+  prep$bhaz$tail <- "loglinear"
+  got <- posterior_epred(prep, horizon = 6, dpar = NULL, nlpar = NULL,
+                          sort = FALSE)
+  for (i in seq_len(prep$nobs)) {
+    ref <- integrate(function(t) brms:::pcox(
+      t, prep$dpars$mu[1, i], sbhaz = prep$bhaz$sbhaz[[1]][1, , drop = FALSE],
+      basis = prep$bhaz$basis, tail = "loglinear", lower.tail = FALSE,
+      lb = prep$data$lb[i], ub = prep$data$ub[i]
+    ), 0, 6, subdivisions = 1000, rel.tol = 1e-9)$value
+    expect_equal(got[1, i], ref, tolerance = 1e-7)
+  }
+  prep$dpars$mu[] <- -1
+  expect_error(posterior_epred(prep, horizon = 6, dpar = NULL, nlpar = NULL,
+                               sort = FALSE), "finite positive")
+})
+
 test_that("posterior_epred helper functions run without errors", {
   # actually run posterior_epred.brmsfit that call the helper functions
   fit <- brms:::rename_pars(brms:::brmsfit_example1)
