@@ -163,16 +163,15 @@ qcox_baseline <- function(target, sbhaz, basis, tail, tol = 1e-10,
 }
 
 # Keep old likelihood preparation usable while requiring the canonical
-# response-level basis and fitting version for new time-aware features.
+# response-level basis for time-aware predictions.
 check_cox_prep <- function(prep) {
   if (!is_cox(prep$family) || is.mixfamily(prep$family) ||
       isTRUE(prep$bhaz$mixture)) {
     stop2("This method requires a non-mixture Cox response.")
   }
-  if (!isTRUE(prep$bhaz$version >= "2.23.2") ||
-      !inherits(prep$bhaz$basis, "MSpline")) {
-    stop2("Cox predictions require a model fitted with brms 2.23.2 or later ",
-          "and its stored baseline basis. Please refit your model.")
+  if (!inherits(prep$bhaz$basis, "MSpline")) {
+    stop2("Cox predictions require a stored baseline basis. ",
+          "Please refit your model.")
   }
   invisible(NULL)
 }

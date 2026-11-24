@@ -51,7 +51,7 @@ prepare_predictions.brmsfit <- function(
     prep_re = prep_re, resp = resp,
     sample_new_levels = sample_new_levels, nug = nug,
     new = !is.null(newdata), oos = oos,
-    stanvars = x$stanvars, cox_version = x$version$brms, tail = tail
+    stanvars = x$stanvars, tail = tail
   )
 }
 
@@ -844,7 +844,7 @@ prepare_predictions_thres <- function(bframe, draws, sdata, ...) {
 }
 
 # prepare predictions of baseline functions for the cox model
-prepare_predictions_bhaz <- function(bframe, draws, sdata, cox_version = NULL,
+prepare_predictions_bhaz <- function(bframe, draws, sdata,
                                      tail = "constant", ...) {
   if (!is_cox(bframe$family)) {
     return(NULL)
@@ -854,7 +854,6 @@ prepare_predictions_bhaz <- function(bframe, draws, sdata, cox_version = NULL,
   # sbhaz matrices, one per stratum; Jgrbhaz selects each observation's stratum.
   out <- list(
     basis = bframe$frame$basis$bhaz$basis_matrix,
-    version = cox_version,
     tail = match.arg(tail, c("constant", "loglinear", "none"))
   )
   p <- usc(combine_prefix(bframe))

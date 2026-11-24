@@ -14,7 +14,7 @@ cox_test_prep <- function(ns = 20L, nobs = 3L, tail = "constant") {
     data = list(Y = as.array(rep(1, nobs))),
     bhaz = list(
       basis = basis, sbhaz = list(sb), Jgrbhaz = rep(1L, nobs),
-      version = package_version("2.23.2"), tail = tail
+      tail = tail
     )
   ), class = "brmsprep")
 }
@@ -48,8 +48,7 @@ test_that("Cox Stan data use response-specific names", {
     matrix(0.2, 3, length(pars), dimnames = list(NULL, pars))
   )
   prep <- prepare_predictions(
-    frame, draws = draws, sdata = sdata,
-    cox_version = fit$version$brms, tail = "constant"
+    frame, draws = draws, sdata = sdata, tail = "constant"
   )
   expect_equal(prep$resps$y$bhaz$basis, fit$basis$resps$y$bhaz$basis_matrix)
   expect_equal(prep$resps$y2$bhaz$basis, fit$basis$resps$y2$bhaz$basis_matrix)
@@ -78,7 +77,7 @@ test_that("Cox preparation preserves singleton and absent strata", {
   for (rows in list(1:2, 1L)) {
     sdata <- standata(fit, newdata = dat[rows, ])
     prep <- brms:::prepare_predictions_bhaz(
-      frame$dpars$mu, draws, sdata, cox_version = fit$version$brms
+      frame$dpars$mu, draws, sdata
     )
     expect_equal(dim(prep$bhaz), c(3L, length(rows)))
     expect_equal(prep$basis, fit$basis$bhaz$basis_matrix)
@@ -130,8 +129,7 @@ test_that("Cox preparation uses native links and nonlinear parameter dispatch", 
              dimnames = list(NULL, pars))
     )
     prep <- prepare_predictions(
-      frame, draws = draws, sdata = standata(fit),
-      cox_version = fit$version$brms, tail = "constant"
+      frame, draws = draws, sdata = standata(fit), tail = "constant"
     )
     expect_equal(brms:::get_dpar(prep, "mu"),
                  matrix(brms:::inv_link(2, link), 3, 10))
@@ -146,8 +144,7 @@ test_that("Cox preparation uses native links and nonlinear parameter dispatch", 
            dimnames = list(NULL, pars))
   )
   prep <- prepare_predictions(
-    frame, draws = draws, sdata = standata(fit),
-    cox_version = fit$version$brms, tail = "constant"
+    frame, draws = draws, sdata = standata(fit), tail = "constant"
   )
   expect_equal(prep$bhaz$basis, fit$basis$bhaz$basis_matrix)
   expect_true(all(is.finite(posterior_predict(prep))))
@@ -248,8 +245,7 @@ test_that("Native Cox outputs and stable truncation use the same distribution", 
   expect_error(posterior_predict(prep), "truncation bounds")
   prep$data <- list(Y = rep(1, 3))
   prep$bhaz$version <- package_version("2.23.1")
-  expect_error(posterior_predict(prep), "Please refit")
-  prep$bhaz$version <- package_version("2.23.2")
+  expect_true(all(is.finite(posterior_predict(prep))))
   prep$bhaz$basis <- NULL
   expect_error(posterior_predict(prep), "Please refit")
   prep <- cox_test_prep()

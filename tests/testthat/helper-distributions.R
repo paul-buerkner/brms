@@ -1418,8 +1418,7 @@ dist_registry_populate <- function(reset = TRUE) {
       prep$data <- list(Y = rep(1, nobs))
       prep$bhaz <- list(
         basis = cox_basis, sbhaz = list(matrix(0.2, ns, 5)),
-        Jgrbhaz = rep(1L, nobs), version = package_version("2.23.2"),
-        tail = "constant"
+        Jgrbhaz = rep(1L, nobs), tail = "constant"
       )
       prep
     },
