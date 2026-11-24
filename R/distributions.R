@@ -2016,6 +2016,7 @@ pcox <- function(q, mu, bhaz = NULL, cbhaz = NULL,
   out
 }
 
+# quantile function of the Cox proportional hazards model
 qcox <- function(p, mu, sbhaz, basis, tail = "constant",
                  lb = NULL, ub = NULL, lower.tail = TRUE, log.p = FALSE) {
   tail <- match.arg(tail, c("constant", "loglinear", "none"))
@@ -2054,6 +2055,7 @@ qcox <- function(p, mu, sbhaz, basis, tail = "constant",
   out
 }
 
+# random generation for the Cox proportional hazards model
 rcox <- function(n, mu, sbhaz, basis, tail = "constant",
                  lb = NULL, ub = NULL) {
   n <- check_n_rdist(n, mu, sbhaz)
