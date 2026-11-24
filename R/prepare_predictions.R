@@ -51,7 +51,7 @@ prepare_predictions.brmsfit <- function(
     prep_re = prep_re, resp = resp,
     sample_new_levels = sample_new_levels, nug = nug,
     new = !is.null(newdata), oos = oos,
-    stanvars = x$stanvars, tail = tail
+    stanvars = x$stanvars, tail = tail, ...
   )
 }
 
@@ -845,7 +845,8 @@ prepare_predictions_thres <- function(bframe, draws, sdata, ...) {
 
 # prepare predictions of baseline functions for the cox model
 prepare_predictions_bhaz <- function(bframe, draws, sdata,
-                                     tail = "constant", ...) {
+                                     tail = "constant", horizon = NULL,
+                                     nodes = 64, ...) {
   if (!is_cox(bframe$family)) {
     return(NULL)
   }
@@ -854,7 +855,8 @@ prepare_predictions_bhaz <- function(bframe, draws, sdata,
   # sbhaz matrices, one per stratum; Jgrbhaz selects each observation's stratum.
   out <- list(
     basis = bframe$frame$basis$bhaz$basis_matrix,
-    tail = match.arg(tail, c("constant", "loglinear", "none"))
+    tail = match.arg(tail, c("constant", "loglinear", "none")),
+    horizon = horizon, nodes = nodes
   )
   p <- usc(combine_prefix(bframe))
   Zbhaz <- sdata[[paste0("Zbhaz", p)]]
@@ -1272,6 +1274,10 @@ is.bprepnl <- function(x) {
 #'   upper boundary: \code{"constant"} (default), \code{"loglinear"}, or
 #'   \code{"none"}. See \code{\link{posterior_predict.brmsfit}}.
 #' @param ... Further arguments passed to \code{\link{validate_newdata}}.
+#'   For Cox models, also accepts \code{horizon = NULL} and \code{nodes = 64},
+#'   stored for restricted mean survival time predictions. A horizon is
+#'   required only when computing restricted mean survival time; see
+#'   \code{\link{posterior_epred.brmsfit}}.
 #'
 #' @return An object of class \code{'brmsprep'} or \code{'mvbrmsprep'},
 #'   depending on whether a univariate or multivariate model is passed.

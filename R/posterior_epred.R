@@ -17,12 +17,22 @@
 #'  If specified, expected predictions of this parameters are returned.
 #' @param nlpar Optional name of a predicted non-linear parameter.
 #'  If specified, expected predictions of this parameters are returned.
-#' @param horizon For Cox response predictions, a required finite nonnegative
-#'   restriction horizon. Returns restricted mean survival time
-#'   \eqn{E[\min(T, horizon)]}, not the unrestricted mean. No horizon is
-#'   chosen implicitly. Ignored for other families and parameter predictions.
-#' @param nodes Number of Gauss-Legendre nodes per integration panel for Cox
-#'   restricted mean survival time (default 64). Requires \pkg{statmod}.
+#' @param ... Further arguments passed to \code{\link{prepare_predictions}}.
+#'   For Cox models, these include \code{horizon} and \code{nodes}; see
+#'   Details in \code{\link{posterior_epred.brmsfit}}.
+#'
+#' @details For Cox response predictions, supply a finite nonnegative
+#'   \code{horizon} through \code{...}. Predictions return restricted mean
+#'   survival time \eqn{E[\min(T, horizon)]}, where \eqn{T} is event time,
+#'   rather than the unrestricted mean. No horizon is chosen implicitly.
+#'   \code{nodes} controls the number of Gauss-Legendre nodes per integration
+#'   panel (default 64). This calculation requires \pkg{statmod}.
+#'   These controls are ignored for other families and parameter predictions.
+#'
+#'   When reusing a prepared prediction object, supply \code{horizon} and
+#'   \code{nodes} to \code{\link{prepare_predictions}}, not to subsequent
+#'   \code{posterior_epred} calls. Further arguments cannot be supplied to
+#'   \code{posterior_epred} for an already prepared object.
 #'
 #' @return An \code{array} of draws. For
 #'   categorical and ordinal models, the output is an S x N x C array.
@@ -53,8 +63,7 @@
 posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                                     re.form = NULL, resp = NULL, dpar = NULL,
                                     nlpar = NULL, ndraws = NULL, draw_ids = NULL,
-                                    sort = FALSE, horizon = NULL, nodes = 64,
-                                    ...) {
+                                    sort = FALSE, ...) {
   cl <- match.call()
   if ("re.form" %in% names(cl) && !missing(re.form)) {
     re_formula <- re.form
@@ -67,7 +76,7 @@ posterior_epred.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   posterior_epred(
     prep,  dpar = dpar, nlpar = nlpar, sort = sort,
-    scale = "response", summary = FALSE, horizon = horizon, nodes = nodes
+    scale = "response", summary = FALSE
   )
 }
 
@@ -82,8 +91,11 @@ posterior_epred.mvbrmsprep <- function(object, ...) {
 posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
                                      scale = "response", incl_thres = NULL,
                                      summary = FALSE, robust = FALSE,
-                                     probs = c(0.025, 0.975),
-                                     horizon = NULL, nodes = 64, ...) {
+                                     probs = c(0.025, 0.975), ...) {
+  if (length(list(...))) {
+    stop2("Further prediction arguments must be supplied when preparing ",
+          "the object with 'prepare_predictions'.")
+  }
   summary <- as_one_logical(summary)
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
@@ -148,9 +160,7 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
       for (dp in dpars) {
         object$dpars[[dp]] <- get_dpar(object, dpar = dp)
       }
-      if (is_cox(object$family) && !is.mixfamily(object$family)) {
-        out <- posterior_epred_cox(object, horizon = horizon, nodes = nodes)
-      } else if (is_trunc(object)) {
+      if (is_trunc(object)) {
         out <- posterior_epred_trunc(object)
       } else {
         posterior_epred_fun <- paste0("posterior_epred_", object$family$family)
@@ -263,8 +273,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                            resp = NULL, dpar = NULL, nlpar = NULL,
                            ndraws = NULL, draw_ids = NULL, sort = FALSE,
                            summary = TRUE, robust = FALSE,
-                           probs = c(0.025, 0.975), horizon = NULL, nodes = 64,
-                           ...) {
+                           probs = c(0.025, 0.975), ...) {
   scale <- match.arg(scale)
   summary <- as_one_logical(summary)
   contains_draws(object)
@@ -275,8 +284,7 @@ fitted.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   )
   posterior_epred(
     prep, dpar = dpar, nlpar = nlpar, sort = sort, scale = scale,
-    summary = summary, robust = robust, probs = probs,
-    horizon = horizon, nodes = nodes
+    summary = summary, robust = robust, probs = probs
   )
 }
 
@@ -491,8 +499,10 @@ posterior_epred_zero_inflated_asym_laplace <- function(prep) {
   posterior_epred_asym_laplace(prep) * (1 - prep$dpars$zi)
 }
 
-posterior_epred_cox <- function(prep, horizon = NULL, nodes = 64) {
+posterior_epred_cox <- function(prep) {
   prep <- prepare_cox_predictions(prep)
+  horizon <- prep$bhaz$horizon
+  nodes <- prep$bhaz$nodes
   if (is.null(horizon)) {
     stop2(
       "For Cox models, supply 'horizon' to compute the expected event time ",
@@ -851,6 +861,11 @@ posterior_epred_trunc <- function(prep) {
 # @param lb lower truncation bound
 # @param ub upper truncation bound
 # @return draws of the truncated mean parameter
+posterior_epred_trunc_cox <- function(prep, lb, ub) {
+  # The RMST engine already uses the observation-specific bounds in prep$data.
+  posterior_epred_cox(prep)
+}
+
 posterior_epred_trunc_gaussian <- function(prep, lb, ub) {
   zlb <- (lb - prep$dpars$mu) / prep$dpars$sigma
   zub <- (ub - prep$dpars$mu) / prep$dpars$sigma

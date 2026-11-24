@@ -1058,13 +1058,13 @@ test_that("Cox Stan data use response-specific names", {
     matrix(0.2, 3, length(pars), dimnames = list(NULL, pars))
   )
   prep <- prepare_predictions(
-    frame, draws = draws, sdata = sdata, tail = "constant"
+    frame, draws = draws, sdata = sdata, tail = "constant", horizon = 2
   )
   expect_equal(prep$resps$y$bhaz$basis, fit$basis$resps$y$bhaz$basis_matrix)
   expect_equal(prep$resps$y2$bhaz$basis, fit$basis$resps$y2$bhaz$basis_matrix)
   expect_equal(dim(posterior_predict(prep)), c(3L, 10L, 2L))
   expect_equal(dim(posterior_epred(
-    prep, horizon = 2, dpar = NULL, nlpar = NULL, sort = FALSE
+    prep, dpar = NULL, nlpar = NULL, sort = FALSE
   )), c(3L, 10L, 2L))
   expect_silent(sdata <- standata(
     fit, newdata = data.frame(x = 1:2), check_response = FALSE

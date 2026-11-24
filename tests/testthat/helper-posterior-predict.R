@@ -15,7 +15,7 @@ cox_test_prep <- function(ns = 20L, nobs = 3L, tail = "constant") {
     data = list(Y = as.array(rep(1, nobs))),
     bhaz = list(
       basis = basis, sbhaz = list(sb), Jgrbhaz = rep(1L, nobs),
-      tail = tail
+      tail = tail, horizon = NULL, nodes = 64
     )
   ), class = "brmsprep")
 }

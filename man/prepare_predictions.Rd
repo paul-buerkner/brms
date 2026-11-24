@@ -123,7 +123,11 @@ Defaults to \code{1}.}
 upper boundary: \code{"constant"} (default), \code{"loglinear"}, or
 \code{"none"}. See \code{\link{posterior_predict.brmsfit}}.}
 
-\item{...}{Further arguments passed to \code{\link{validate_newdata}}.}
+\item{...}{Further arguments passed to \code{\link{validate_newdata}}.
+For Cox models, also accepts \code{horizon = NULL} and \code{nodes = 64},
+stored for restricted mean survival time predictions. A horizon is
+required only when computing restricted mean survival time; see
+\code{\link{posterior_epred.brmsfit}}.}
 }
 \value{
 An object of class \code{'brmsprep'} or \code{'mvbrmsprep'},
