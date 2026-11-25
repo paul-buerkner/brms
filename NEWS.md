@@ -29,9 +29,8 @@ Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
-* Add the predictions of a `gp` term with a factor `by` variable to those
-of the other `gp` terms, matching the generated Stan code. They replaced
-them in the rows of each level. Thanks to Nicholas Clark. (#1979)
+* Fix predictions of `gp` terms with a factor `by` variable in models
+with other `gp` terms. Thanks to Nicholas Clark. (#1979)
 * Evaluate the Stan functions of ordinal models on the log scale, as `log_lik`
 does, for all links of `sratio` and `cratio` and the links other than logit
 of the other families, so improbable categories no longer make the log

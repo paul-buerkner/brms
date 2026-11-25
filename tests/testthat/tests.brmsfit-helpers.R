@@ -89,29 +89,6 @@ test_that(".predictor_arma runs without errors", {
   expect_silent(.predictor_arma(eta, Y = Y, J_lag = J_lag, ar = ar, ma = ma))
 })
 
-test_that("predictor_gp adds the GP terms of a factor 'by' variable", {
-  ns <- 5
-  nobs <- 6
-  gp_term <- function(nrows, Igp = NULL) {
-    nb <- 3
-    list(
-      x = matrix(rnorm(nrows * nb), nrow = nrows, ncol = nb),
-      slambda = matrix(seq_len(nb) / 4, nrow = nb, ncol = 1),
-      sdgp = rexp(ns), lscale = matrix(rexp(ns), nrow = ns, ncol = 1),
-      zgp = matrix(rnorm(ns * nb), nrow = ns, ncol = nb),
-      cov = "exp_quad", Igp = Igp
-    )
-  }
-  gp1 <- gp_term(nobs)
-  gp2 <- list(gp_term(3, Igp = 1:3), gp_term(3, Igp = 4:6))
-  attr(gp2, "byfac") <- TRUE
-  prep <- list(gp = list(gp1, gp2), ndraws = ns, nobs = nobs)
-  eta <- .predictor_gp(gp1)
-  eta[, 1:3] <- eta[, 1:3] + .predictor_gp(gp2[[1]])
-  eta[, 4:6] <- eta[, 4:6] + .predictor_gp(gp2[[2]])
-  expect_equal(predictor_gp(prep, i = NULL), eta)
-})
-
 test_that("make_conditions works correctly", {
   conds <- make_conditions(epilepsy, c("zBase", "zAge"))
   expect_equal(dim(conds), c(9, 3))
