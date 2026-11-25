@@ -350,6 +350,17 @@
   )
 }
 
+.family_shifted_logstudent <- function() {
+  list(
+    links = c("identity", "inverse"),
+    dpars = c("mu", "sigma", "nu", "ndt"), type = "real",
+    ybounds = c(0, Inf), closed = c(FALSE, NA),
+    ad = c("weights", "subset", "cens", "trunc", "index"),
+    include = "fun_shifted_logstudent.stan",
+    specials = "logscale"
+  )
+}
+
 .family_exgaussian <- function() {
   list(
     links = c("identity", "log", "inverse", "softplus", "squareplus"),

@@ -38,6 +38,14 @@ test_that("family functions returns expected results", {
   expect_equal(brmsfamily("gaussian", inverse)$link, "inverse")
   expect_equal(brmsfamily("geometric", "identity")$family, "geometric")
   expect_equal(brmsfamily("zi_poisson")$link_zi, "logit")
+  expect_equal(shifted_logstudent()$family, "shifted_logstudent")
+  expect_equal(shifted_logstudent()$link, "identity")
+  expect_equal(shifted_logstudent()$link_sigma, "log")
+  expect_equal(shifted_logstudent()$link_nu, "logm1")
+  expect_equal(shifted_logstudent()$link_ndt, "log")
+  expect_equal(logstudent()$family, "shifted_logstudent")
+  expect_equal(brmsfamily("logstudent")$family, "shifted_logstudent")
+  expect_error(shifted_logstudent("logit"), "is not a supported link")
 
   expect_error(weibull(link_shape = "logit"),
                "'logit' is not a supported link for parameter 'shape'")

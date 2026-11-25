@@ -9,6 +9,8 @@
 \alias{geometric}
 \alias{lognormal}
 \alias{shifted_lognormal}
+\alias{shifted_logstudent}
+\alias{logstudent}
 \alias{skew_normal}
 \alias{exponential}
 \alias{weibull}
@@ -80,6 +82,20 @@ geometric(link = "log")
 lognormal(link = "identity", link_sigma = "log")
 
 shifted_lognormal(link = "identity", link_sigma = "log", link_ndt = "log")
+
+shifted_logstudent(
+  link = "identity",
+  link_sigma = "log",
+  link_nu = "logm1",
+  link_ndt = "log"
+)
+
+logstudent(
+  link = "identity",
+  link_sigma = "log",
+  link_nu = "logm1",
+  link_ndt = "log"
+)
 
 skew_normal(link = "identity", link_sigma = "log", link_alpha = "identity")
 
@@ -170,7 +186,7 @@ variable to be used in the model. Currently, the following families are
 supported: \code{gaussian}, \code{student}, \code{binomial},
 \code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
 \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
-\code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+\code{shifted_lognormal}, \code{shifted_logstudent}, \code{exgaussian}, \code{wiener},
 \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
 \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
@@ -295,8 +311,9 @@ Below, we list common use cases for the different families.
   \item{Family \code{asym_laplace} allows for quantile regression when fixing
   the auxiliary \code{quantile} parameter to the quantile of interest.}
 
-  \item{Family \code{exgaussian} ('exponentially modified Gaussian') and
-  \code{shifted_lognormal} are especially suited to model reaction times.}
+  \item{Families \code{exgaussian} ('exponentially modified Gaussian'),
+  \code{shifted_lognormal}, and \code{shifted_logstudent} are especially
+  suited to model reaction times.}
 
   \item{Family \code{wiener} provides an implementation of the Wiener
   diffusion model. For this family, the main formula predicts the drift

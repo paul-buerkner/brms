@@ -108,6 +108,46 @@ test_that("exgaussian distribution functions run without errors", {
   expect_true(length(res) == n)
 })
 
+test_that("shifted_logstudent distribution functions run without errors", {
+  n <- 10
+  shift <- 0.5
+  x <- shift + rlnorm(n, 1, 0.5)
+  res <- dshifted_logstudent(x, mu = 1, sigma = 2, nu = 4, shift = shift)
+  expect_true(length(res) == n)
+  expect_equal(dshifted_logstudent(shift - 1, mu = 1, sigma = 2, nu = 4, shift = shift), 0)
+  expect_equal(dshifted_logstudent(shift - 1, mu = 1, sigma = 2, nu = 4, shift = shift, log = TRUE), -Inf)
+
+  # Integration of density
+  expect_equal(
+    integrate(dshifted_logstudent, lower = shift, upper = Inf, mu = 0.5, sigma = 1, nu = 4, shift = shift)$value,
+    1, tolerance = 1e-4
+  )
+
+  # Cumulative distribution and quantile inversion
+  p <- runif(n, 0.05, 0.95)
+  q <- qshifted_logstudent(p, mu = 0.5, sigma = 1.2, nu = 5, shift = shift)
+  expect_equal(
+    pshifted_logstudent(q, mu = 0.5, sigma = 1.2, nu = 5, shift = shift),
+    p, tolerance = 1e-6
+  )
+
+  # Boundary quantiles
+  ps <- c(-1, 0, 1, 1.5)
+  res <- SW(qshifted_logstudent(ps, mu = 0, sigma = 1, nu = 3, shift = shift))
+  expect_equal(res, c(NA, shift, Inf, NA))
+
+  # Random generation
+  res <- rshifted_logstudent(n, mu = 0, sigma = 1, nu = 4, shift = shift)
+  expect_true(length(res) == n)
+  expect_true(all(res > shift))
+
+  # Zero-shift alias dlogstudent
+  expect_equal(
+    dlogstudent(x - shift, mu = 1, sigma = 2, nu = 4),
+    dshifted_logstudent(x, mu = 1, sigma = 2, nu = 4, shift = shift)
+  )
+})
+
 test_that("frechet distribution functions run without errors", {
   n <- 10
   x <- 21:30

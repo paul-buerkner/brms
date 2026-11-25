@@ -2,6 +2,9 @@
 
 ### New Features
 
+* Add native family `shifted_logstudent` (with alias `logstudent`) to fit
+shifted log-Student-t models for response times.
+
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel

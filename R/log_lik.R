@@ -202,6 +202,17 @@ log_lik_shifted_lognormal <- function(i, prep) {
   log_lik_weight(out, i = i, prep = prep)
 }
 
+log_lik_shifted_logstudent <- function(i, prep) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  nu <- get_dpar(prep, "nu", i = i)
+  ndt <- get_dpar(prep, "ndt", i = i)
+  args <- list(mu = mu, sigma = sigma, nu = nu, shift = ndt)
+  out <- log_lik_censor("shifted_logstudent", args, i = i, prep = prep)
+  out <- log_lik_truncate(out, pshifted_logstudent, args, i = i, prep = prep)
+  log_lik_weight(out, i = i, prep = prep)
+}
+
 log_lik_skew_normal <- function(i, prep) {
   mu <- get_dpar(prep, "mu", i)
   sigma <- get_dpar(prep, "sigma", i = i)

@@ -39,6 +39,11 @@ test_that("posterior_epred helper functions run without errors", {
   expect_equal(dim(posterior_epred(fit, summary = FALSE)),
                c(ndraws, nobs))
 
+  # pseudo shifted log-student model
+  fit$family <- fit$formula$family <- shifted_logstudent()
+  expect_equal(dim(posterior_epred(fit, summary = FALSE)),
+               c(ndraws, nobs))
+
   # pseudo skew-normal model
   fit$family <- fit$formula$family <- skew_normal()
   expect_equal(dim(posterior_epred(fit, summary = FALSE)),

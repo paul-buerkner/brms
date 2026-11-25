@@ -56,6 +56,15 @@ test_that("log_lik for various skewed normal models works as expected", {
   ll <- brms:::log_lik_shifted_lognormal(1, prep = prep)
   expect_equal(ll, ll_shifted_lognormal)
 
+  prep$dpars$nu <- rgamma(ns, 4)
+  ll_shifted_logstudent <- dshifted_logstudent(
+    x = prep$data$Y[1], mu = prep$dpars$mu[, 1],
+    sigma = prep$dpars$sigma, nu = prep$dpars$nu,
+    shift = prep$dpars$ndt, log = TRUE
+  )
+  ll <- brms:::log_lik_shifted_logstudent(1, prep = prep)
+  expect_equal(ll, ll_shifted_logstudent)
+
   ll_exgaussian <- dexgaussian(
     x = prep$data$Y[1], mu = prep$dpars$mu[, 1],
     sigma = prep$dpars$sigma, beta = prep$dpars$beta, log = TRUE

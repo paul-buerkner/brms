@@ -14,7 +14,7 @@
 #'   supported: \code{gaussian}, \code{student}, \code{binomial},
 #'   \code{bernoulli}, \code{beta-binomial}, \code{poisson}, \code{negbinomial},
 #'   \code{geometric}, \code{Gamma}, \code{skew_normal}, \code{lognormal},
-#'   \code{shifted_lognormal}, \code{exgaussian}, \code{wiener},
+#'   \code{shifted_lognormal}, \code{shifted_logstudent}, \code{exgaussian}, \code{wiener},
 #'   \code{inverse.gaussian}, \code{exponential}, \code{weibull},
 #'   \code{frechet}, \code{Beta}, \code{dirichlet}, \code{von_mises},
 #'   \code{asym_laplace}, \code{gen_extreme_value}, \code{categorical},
@@ -109,8 +109,9 @@
 #'   \item{Family \code{asym_laplace} allows for quantile regression when fixing
 #'   the auxiliary \code{quantile} parameter to the quantile of interest.}
 #'
-#'   \item{Family \code{exgaussian} ('exponentially modified Gaussian') and
-#'   \code{shifted_lognormal} are especially suited to model reaction times.}
+#'   \item{Families \code{exgaussian} ('exponentially modified Gaussian'),
+#'   \code{shifted_lognormal}, and \code{shifted_logstudent} are especially
+#'   suited to model reaction times.}
 #'
 #'   \item{Family \code{wiener} provides an implementation of the Wiener
 #'   diffusion model. For this family, the main formula predicts the drift
@@ -248,8 +249,8 @@ brmsfamily <- function(family, link = NULL, link_sigma = "log",
                         refcat = NULL, ...) {
   family <- tolower(as_one_character(family))
   aux_links <- list(...)
-  pattern <- c("^normal$", "^zi_", "^hu_")
-  replacement <- c("gaussian", "zero_inflated_", "hurdle_")
+  pattern <- c("^normal$", "^zi_", "^hu_", "^logstudent$")
+  replacement <- c("gaussian", "zero_inflated_", "hurdle_", "shifted_logstudent")
   family <- rename(family, pattern, replacement, fixed = FALSE)
   ok_families <- lsp("brms", pattern = "^\\.family_")
   ok_families <- sub("^\\.family_", "", ok_families)
@@ -563,6 +564,19 @@ shifted_lognormal <- function(link = "identity", link_sigma = "log",
   .brmsfamily("shifted_lognormal", link = link, slink = slink,
               link_sigma = link_sigma, link_ndt = link_ndt)
 }
+
+#' @rdname brmsfamily
+#' @export
+shifted_logstudent <- function(link = "identity", link_sigma = "log",
+                               link_nu = "logm1", link_ndt = "log") {
+  slink <- substitute(link)
+  .brmsfamily("shifted_logstudent", link = link, slink = slink,
+              link_sigma = link_sigma, link_nu = link_nu, link_ndt = link_ndt)
+}
+
+#' @rdname brmsfamily
+#' @export
+logstudent <- shifted_logstudent
 
 #' @rdname brmsfamily
 #' @export
@@ -1955,7 +1969,7 @@ family_bounds.brmsterms <- function(x, ...) {
     out <- list(lb = 0, ub = paste0("trials", resp))
   } else if (family %in% "von_mises") {
     out <- list(lb = -pi, ub = pi)
-  } else if (family %in% c("wiener", "shifted_lognormal")) {
+  } else if (family %in% c("wiener", "shifted_lognormal", "shifted_logstudent")) {
     out <- list(lb = paste0("min_Y", resp), ub = Inf)
   } else if (family %in% c("hurdle_cumulative")) {
     out <- list(lb = 0, ub = paste0("ncat", resp))

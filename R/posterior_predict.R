@@ -428,6 +428,18 @@ posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
                             sdlog = sigma, shift = ndt, ...)
 }
 
+posterior_predict_shifted_logstudent <- function(i, prep, output = "random",
+                                                 ...) {
+  mu <- get_dpar(prep, "mu", i = i)
+  sigma <- get_dpar(prep, "sigma", i = i)
+  nu <- get_dpar(prep, "nu", i = i)
+  ndt <- get_dpar(prep, "ndt", i = i)
+
+  predict_continuous_helper(i = i, prep = prep, output = output,
+                            distribution = "shifted_logstudent", mu = mu,
+                            sigma = sigma, nu = nu, shift = ndt, ...)
+}
+
 posterior_predict_skew_normal <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)

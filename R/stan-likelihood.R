@@ -567,6 +567,11 @@ stan_log_lik_shifted_lognormal <- function(bterms, ...) {
   sdist("lognormal", p$mu, p$sigma, shift = paste0(" - ", p$ndt))
 }
 
+stan_log_lik_shifted_logstudent <- function(bterms, ...) {
+  p <- stan_log_lik_dpars(bterms, reqn = TRUE)
+  sdist("shifted_logstudent", p$mu, p$sigma, p$nu, p$ndt, vec = FALSE)
+}
+
 stan_log_lik_asym_laplace <- function(bterms,...) {
   p <- stan_log_lik_dpars(bterms, reqn = TRUE)
   sdist("asym_laplace", p$mu, p$sigma, p$quantile, vec = FALSE)

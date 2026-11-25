@@ -925,6 +925,188 @@ rshifted_lnorm <- function(n, meanlog = 0, sdlog = 1, shift = 0) {
   do_call(rshifted, args)
 }
 
+#' The Shifted Log-Student-t Distribution
+#'
+#' Density, distribution function, quantile function and random generation
+#' for the shifted log-Student-t distribution with location on the log scale \code{mu},
+#' scale on the log scale \code{sigma}, degrees of freedom \code{nu}, and shift
+#' parameter \code{shift}.
+#'
+#' @name Shifted_Logstudent
+#'
+#' @inheritParams StudentT
+#' @param x,q Vector of quantiles.
+#' @param mu Vector of location parameters on the log scale.
+#' @param sigma Vector of scale parameters on the log scale.
+#' @param nu Vector of degrees of freedom.
+#' @param shift Vector of shift parameters (non-decision time).
+#'
+#' @details The shifted log-Student-t distribution is defined such that
+#' \eqn{\log(Y - \text{shift}) \sim \text{Student-t}(\nu, \mu, \sigma)} for \eqn{Y > \text{shift}}.
+#' The density is given by
+#' \deqn{f(y) = \frac{1}{y - \text{shift}} \cdot \frac{1}{\sigma} t_\nu\left(\frac{\log(y - \text{shift}) - \mu}{\sigma}\right)}
+#' for \eqn{y > \text{shift}}. As \eqn{\nu \to \infty}, the distribution converges to the
+#' shifted lognormal distribution.
+#'
+#' @seealso \code{\link{shifted_logstudent}}, \code{\link{dshifted_lnorm}}
+#'
+#' @export
+dshifted_logstudent <- function(x, mu = 0, sigma = 1, nu = 3, shift = 0, log = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("Argument 'sigma' must be positive.")
+  }
+  if (isTRUE(any(nu <= 0))) {
+    stop2("Argument 'nu' must be positive.")
+  }
+  args <- expand(x = x, mu = mu, sigma = sigma, nu = nu, shift = shift)
+  x <- args$x
+  mu <- args$mu
+  sigma <- args$sigma
+  nu <- args$nu
+  shift <- args$shift
+
+  out <- rep(if (log) -Inf else 0, length(x))
+  dim(out) <- attributes(args)$max_dim
+
+  valid <- which(!is.na(x) & is.finite(x) & x > shift)
+  if (length(valid)) {
+    xv <- x[valid]
+    mup <- mu[valid]
+    sigp <- sigma[valid]
+    nup <- nu[valid]
+    shp <- shift[valid]
+
+    diff <- xv - shp
+    ldiff <- log(diff)
+    ll <- dstudent_t(ldiff, df = nup, mu = mup, sigma = sigp, log = TRUE) - ldiff
+    out[valid] <- if (log) ll else exp(ll)
+  }
+  out[is.na(x) | is.na(mu) | is.na(sigma) | is.na(nu) | is.na(shift)] <- NA
+  out
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+pshifted_logstudent <- function(q, mu = 0, sigma = 1, nu = 3, shift = 0,
+                                lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("Argument 'sigma' must be positive.")
+  }
+  if (isTRUE(any(nu <= 0))) {
+    stop2("Argument 'nu' must be positive.")
+  }
+  args <- expand(q = q, mu = mu, sigma = sigma, nu = nu, shift = shift)
+  q <- args$q
+  mu <- args$mu
+  sigma <- args$sigma
+  nu <- args$nu
+  shift <- args$shift
+
+  out <- rep(if (lower.tail) -Inf else 0, length(q))
+  dim(out) <- attributes(args)$max_dim
+
+  out[which(q == Inf)] <- if (lower.tail) 0 else -Inf
+  valid <- which(!is.na(q) & is.finite(q) & q > shift)
+  if (length(valid)) {
+    qv <- q[valid]
+    mup <- mu[valid]
+    sigp <- sigma[valid]
+    nup <- nu[valid]
+    shp <- shift[valid]
+
+    ldiff <- log(qv - shp)
+    out[valid] <- pstudent_t(ldiff, df = nup, mu = mup, sigma = sigp,
+                            lower.tail = lower.tail, log.p = TRUE)
+  }
+  out[is.na(q) | is.na(mu) | is.na(sigma) | is.na(nu) | is.na(shift)] <- NA
+  if (!log.p) {
+    out <- exp(out)
+  }
+  out
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+qshifted_logstudent <- function(p, mu = 0, sigma = 1, nu = 3, shift = 0,
+                                lower.tail = TRUE, log.p = FALSE) {
+  if (isTRUE(any(sigma <= 0))) {
+    stop2("Argument 'sigma' must be positive.")
+  }
+  if (isTRUE(any(nu <= 0))) {
+    stop2("Argument 'nu' must be positive.")
+  }
+  p <- validate_p_dist(p, lower.tail = lower.tail, log.p = log.p)
+  args <- expand(p = p, mu = mu, sigma = sigma, nu = nu, shift = shift)
+  p <- args$p
+  mu <- args$mu
+  sigma <- args$sigma
+  nu <- args$nu
+  shift <- args$shift
+
+  out <- rep(NA_real_, length(p))
+  dim(out) <- attributes(args)$max_dim
+
+  valid <- which(!is.na(p) & p >= 0 & p <= 1)
+  if (length(valid)) {
+    pv <- p[valid]
+    mup <- mu[valid]
+    sigp <- sigma[valid]
+    nup <- nu[valid]
+    shp <- shift[valid]
+
+    res <- rep(NA_real_, length(valid))
+    p0 <- which(pv == 0)
+    if (length(p0)) {
+      res[p0] <- shp[p0]
+    }
+    p1 <- which(pv == 1)
+    if (length(p1)) {
+      res[p1] <- Inf
+    }
+    pmid <- which(pv > 0 & pv < 1)
+    if (length(pmid)) {
+      z <- qstudent_t(pv[pmid], df = nup[pmid], mu = mup[pmid], sigma = sigp[pmid])
+      res[pmid] <- shp[pmid] + exp(z)
+    }
+    out[valid] <- res
+  }
+  out
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+rshifted_logstudent <- function(n, mu = 0, sigma = 1, nu = 3, shift = 0) {
+  n <- check_n_rdist(n, mu, sigma, nu, shift)
+  z <- rstudent_t(n, df = nu, mu = mu, sigma = sigma)
+  shift + exp(z)
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+dlogstudent <- function(x, mu = 0, sigma = 1, nu = 3, log = FALSE) {
+  dshifted_logstudent(x, mu = mu, sigma = sigma, nu = nu, shift = 0, log = log)
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+plogstudent <- function(q, mu = 0, sigma = 1, nu = 3, lower.tail = TRUE, log.p = FALSE) {
+  pshifted_logstudent(q, mu = mu, sigma = sigma, nu = nu, shift = 0,
+                      lower.tail = lower.tail, log.p = log.p)
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+qlogstudent <- function(p, mu = 0, sigma = 1, nu = 3, lower.tail = TRUE, log.p = FALSE) {
+  qshifted_logstudent(p, mu = mu, sigma = sigma, nu = nu, shift = 0,
+                      lower.tail = lower.tail, log.p = log.p)
+}
+
+#' @rdname Shifted_Logstudent
+#' @export
+rlogstudent <- function(n, mu = 0, sigma = 1, nu = 3) {
+  rshifted_logstudent(n, mu = mu, sigma = sigma, nu = nu, shift = 0)
+}
+
 #' The Inverse Gaussian Distribution
 #'
 #' Density, distribution function, quantile function and random generation

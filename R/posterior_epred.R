@@ -370,6 +370,10 @@ posterior_epred_shifted_lognormal <- function(prep) {
   with(prep$dpars, exp(mu + sigma^2 / 2) + ndt)
 }
 
+posterior_epred_shifted_logstudent <- function(prep) {
+  with(prep$dpars, exp(mu) + ndt)
+}
+
 posterior_epred_binomial <- function(prep) {
   trials <- data2draws(prep$data$trials, dim_mu(prep))
   prep$dpars$mu * trials

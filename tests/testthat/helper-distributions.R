@@ -809,6 +809,28 @@ dist_registry_populate <- function(reset = TRUE) {
   ))
 
   dist_registry_add(dist_entry(
+    name = "shifted_logstudent",
+    backend = "shifted_logstudent",
+    type = "continuous",
+    d = dshifted_logstudent,
+    p = pshifted_logstudent,
+    q = qshifted_logstudent,
+    r = rshifted_logstudent,
+    params = list(mu = 0, sigma = 1, nu = 4, shift = 0.3),
+    support = c(0.3, Inf),
+    pp_fun = brms:::posterior_predict_shifted_logstudent,
+    prep_builder = function(ns = 25, ...) {
+      make_prep_location(
+        ns = ns, mu = 0, sigma = 1,
+        extra = list(ndt = rep(0.3, ns), nu = rep(4, ns)),
+        ...
+      )
+    },
+    q_ref = 1.3,
+    flags = list(truncation = TRUE, skip_moments = TRUE, skip_integrate = TRUE)
+  ))
+
+  dist_registry_add(dist_entry(
     name = "skew_normal",
     backend = "skew_normal",
     type = "continuous",

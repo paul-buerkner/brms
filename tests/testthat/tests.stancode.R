@@ -1380,14 +1380,27 @@ test_that("Stan code of response times models is correct", {
   scode <- stancode(count ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode, "target += lognormal_lpdf(Y - ndt | mu, sigma)")
 
+  scode <- stancode(count ~ Trt, dat, family = shifted_logstudent())
+  expect_match2(scode, "target += shifted_logstudent_lpdf(Y[n] | mu[n], sigma, nu, ndt);")
+  expect_match2(scode, "lprior += uniform_lpdf(ndt | 0, min_Y)")
+  expect_match2(scode, "real min_Y = min(Y);")
+
   scode <- stancode(count | cens(cens) ~ Trt, dat, family = shifted_lognormal())
   expect_match2(scode,
     "target += lognormal_lcdf(Y[Jlcens[1:Nlcens]] - ndt | mu[Jlcens[1:Nlcens]], sigma);"
   )
 
+  scode <- stancode(count | cens(cens) ~ Trt, dat, family = shifted_logstudent())
+  expect_match2(scode, "target += shifted_logstudent_lcdf(Y[n] | mu[n], sigma, nu, ndt);")
+
   # test issue #837
   scode <- stancode(mvbind(count, zBase) ~ Trt, data = dat,
                          family = shifted_lognormal())
+  expect_match2(scode, "lprior += uniform_lpdf(ndt_count | 0, min_Y_count)")
+  expect_match2(scode, "lprior += uniform_lpdf(ndt_zBase | 0, min_Y_zBase)")
+
+  scode <- stancode(mvbind(count, zBase) ~ Trt, data = dat,
+                         family = shifted_logstudent())
   expect_match2(scode, "lprior += uniform_lpdf(ndt_count | 0, min_Y_count)")
   expect_match2(scode, "lprior += uniform_lpdf(ndt_zBase | 0, min_Y_zBase)")
 })
