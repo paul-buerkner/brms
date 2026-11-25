@@ -343,6 +343,12 @@ test_that("projpred latent projection has response-scale functions",
     if (fam == "lognormal") {
       expect_equal(ref$dis, as.data.frame(fit, variable = "sigma")$sigma)
     }
+    bounds_attr <- attr(ref$family$latent_ll_oscale, "trunc_bounds")
+    if (fam == "lognormal") {
+      expect_equal(bounds_attr, list(lb = -Inf, ub = 3))
+    } else {
+      expect_null(bounds_attr, info = fam)
+    }
 
     vs <- projpred::varsel(ref, nterms_max = 2, verbose = FALSE)
     smry <- summary(vs, stats = "elpd")$perf_sub

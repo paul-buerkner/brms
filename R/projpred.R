@@ -601,6 +601,10 @@ latent_oscale_funs <- function(object, family, family_name, bterms, resp,
     )
     attr(latent_ll_oscale, "cens_var") <- cens_var
   }
+  if (is.formula(bterms$adforms$trunc)) {
+    # mark that the log likelihood uses these truncation bounds
+    attr(latent_ll_oscale, "trunc_bounds") <- list(lb = lb, ub = ub)
+  }
   # predictions do not take censoring into account
   latent_ppd_oscale <- function(ilpreds_resamp, dis_resamp,
                                 wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
