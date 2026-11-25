@@ -24,6 +24,16 @@
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
 #'   \code{NULL}, then the pseudorandom number generator (PRNG) state is reset
 #'   (to the state before calling this function) upon exiting this function.
+#' @param cvrefbuilder Optional function that creates the reference model for
+#'   one fold of \eqn{K}-fold cross-validation
+#'   (see \code{\link[projpred:init_refmodel]{init_refmodel}} for details).
+#'   If \code{NULL} (the default), \code{cvrefbuilder} is defined internally
+#'   and calls \code{get_refmodel} with the arguments of the original call.
+#'   A custom function is needed, for example, if the reference model uses
+#'   functions that depend on the posterior draws (see
+#'   \code{\link[projpred:extend_family]{extend_family}}). It gets only the
+#'   fold-wise fit, so set the other arguments of \code{get_refmodel} inside
+#'   it.
 #' @param ... Further arguments passed to
 #' \code{\link[projpred:init_refmodel]{init_refmodel}}.
 #'
@@ -62,7 +72,7 @@
 #' @exportS3Method projpred::get_refmodel brmsfit
 get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
                                  cvfun = NULL, dis = NULL, latent = FALSE,
-                                 brms_seed = NULL, ...) {
+                                 brms_seed = NULL, cvrefbuilder = NULL, ...) {
   require_package("projpred")
   object <- restructure(object)
   stopifnot_resp(object, resp)
@@ -113,10 +123,32 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   if (length(bterms$nlpars) > 0L) {
     stop2("Projpred does not support non-linear models.")
   }
-  not_ok_term_types <- setdiff(all_term_types(), c("fe", "re", "offset", "sm"))
-  if (any(not_ok_term_types %in% names(bterms$dpars$mu))) {
-    stop2("Projpred only supports standard multilevel and smoothing terms as ",
-          "well as offsets.")
+  # get_effect() checks the terms of all dpars: if conv_cats_dpars(family),
+  # the dpars are 'mu<category>' (no 'mu'); other dpars stopped above
+  not_ok_term_types <- setdiff(
+    all_term_types(), c("fe", "re", "offset", "sm", "sp")
+  )
+  has_not_ok <- ulapply(not_ok_term_types, function(t) {
+    length(get_effect(bterms, target = t)) > 0L
+  })
+  if (any(has_not_ok)) {
+    stop2("Projpred only supports standard multilevel, smoothing, and ",
+          "monotonic terms as well as offsets.")
+  }
+  sp_terms <- get_effect(bterms, target = "sp")
+  if (length(sp_terms)) {
+    # 'sp' terms are mo(), me(), and mi() terms (see terms_sp())
+    uni_me <- ulapply(sp_terms, attr, "uni_me")
+    uni_mi <- ulapply(sp_terms, attr, "uni_mi")
+    if (length(uni_me) || length(uni_mi)) {
+      stop2("Projpred does not support me() or mi() terms.")
+    }
+    # check for the feature instead of a version number, so that development
+    # versions of projpred with mo() support also work
+    if (!"mo_effects" %in% getNamespaceExports("projpred")) {
+      stop2("Monotonic terms need a version of projpred that supports them. ",
+            "Please update package 'projpred'.")
+    }
   }
 
   # only use the raw formula for selection of terms
@@ -187,17 +219,23 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
 
-  cvrefbuilder <- function(cvfit) {
-    # For `brms_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new seed
-    # which is based on the original `brms_seed`:
-    if (is.null(brms_seed)) {
-      brms_seed_k <- NULL
-    } else {
-      brms_seed_k <- brms_seed + cvfit$projpred_k
+  if (is.null(cvrefbuilder)) {
+    cvrefbuilder <- function(cvfit) {
+      # For `brms_seed` in fold `cvfit$projpred_k` (= k) of K, choose a new
+      # seed which is based on the original `brms_seed`:
+      if (is.null(brms_seed)) {
+        brms_seed_k <- NULL
+      } else {
+        brms_seed_k <- brms_seed + cvfit$projpred_k
+      }
+      projpred::get_refmodel(cvfit, resp = resp, dis = dis_user,
+                             latent = latent, brms_seed = brms_seed_k,
+                             called_from_cvrefbuilder = TRUE, ...)
     }
-    projpred::get_refmodel(cvfit, resp = resp, dis = dis_user, latent = latent,
-                           brms_seed = brms_seed_k,
-                           called_from_cvrefbuilder = TRUE, ...)
+  } else {
+    if (!is.function(cvrefbuilder)) {
+      stop2("'cvrefbuilder' should be a function.")
+    }
   }
 
   # prepare data passed to projpred
