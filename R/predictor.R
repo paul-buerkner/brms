@@ -264,8 +264,9 @@ predictor_gp <- function(prep, i) {
     if (isTRUE(attr(gp, "byfac"))) {
       # categorical 'by' variable
       for (j in seq_along(gp)) {
-        if (length(gp[[j]][["Igp"]])) {
-          eta[, gp[[j]][["Igp"]]] <- .predictor_gp(gp[[j]])
+        Igp <- gp[[j]][["Igp"]]
+        if (length(Igp)) {
+          eta[, Igp] <- eta[, Igp] + .predictor_gp(gp[[j]])
         }
       }
     } else {
