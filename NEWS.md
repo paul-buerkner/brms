@@ -75,8 +75,8 @@ Thanks to Ahmed Eldeeb. (#1899)
 * Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
 definitions in Stan. (#1899)
 * Cox models now place the knots of the baseline hazard based on the event
-times only instead of both event and censoring times. Models fitted with
-brms 2.23.1 or earlier keep using their original knots in post-processing.
+times only instead of both event and censoring times.
+Cox models using the old baseline-basis layout must be refitted.
 Thanks to Sebastian Weber. (#1898)
 * The basis of the baseline hazard of Cox models is now stored with the
 response instead of with the predictor terms. As a result, `log_lik`, `loo`

@@ -886,6 +886,43 @@ prepare_predictions_bhaz <- function(bframe, draws, sdata,
   out
 }
 
+# Keep old likelihood preparation usable while requiring the canonical
+# response-level basis for time-aware predictions.
+check_cox_prep <- function(prep) {
+  if (!is_cox(prep$family) || is.mixfamily(prep$family) ||
+      isTRUE(prep$bhaz$mixture)) {
+    stop2("This method requires a non-mixture Cox response.")
+  }
+  if (!inherits(prep$bhaz$basis, "MSpline")) {
+    stop2("Cox predictions require a stored baseline basis. ",
+          "Please refit your model.")
+  }
+  invisible(NULL)
+}
+
+prepare_cox_predictions <- function(object, ..., check_response = FALSE) {
+  if (is.brmsprep(object)) {
+    if (length(list(...))) {
+      stop2("Prediction arguments must be supplied when preparing the object.")
+    }
+    prep <- object
+  } else {
+    prep <- prepare_predictions(object, check_response = check_response, ...)
+  }
+  if (!is.brmsprep(prep)) {
+    stop2("Please select a single Cox response via 'resp'.")
+  }
+  check_cox_prep(prep)
+  prep$dpars$mu <- get_dpar(prep, "mu")
+  if (is.null(dim(prep$dpars$mu))) {
+    prep$dpars$mu <- matrix(prep$dpars$mu, prep$ndraws, prep$nobs)
+  }
+  if (any(!is.finite(prep$dpars$mu) | prep$dpars$mu <= 0)) {
+    stop2("Cox predictions require finite positive values of 'mu'.")
+  }
+  prep
+}
+
 # extract data mainly related to the response variable
 prepare_predictions_data <- function(bframe, sdata, stanvars = NULL, ...) {
   resp <- usc(combine_prefix(bframe))

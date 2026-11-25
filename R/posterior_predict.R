@@ -856,6 +856,26 @@ posterior_predict_cox <- function(i, prep, output = "random", q = NULL, ...) {
   out
 }
 
+posterior_predict_cox_trunc <- function(i, prep, output, args, q = NULL,
+                                       p = NULL, lower.tail = TRUE,
+                                       log.p = FALSE, log = FALSE, ...) {
+  args$lb <- prep$data$lb[i]
+  args$ub <- prep$data$ub[i]
+  if (is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
+  switch(output,
+    random = do_call(rcox, c(list(n = prep$ndraws), args)),
+    probability = ,
+    pit = do_call(pcox, c(list(q = q, lower.tail = lower.tail, log.p = log.p),
+                          args)),
+    density = do_call(dcox, c(list(x = q, log = log), args)),
+    quantile = do_call(qcox, c(list(p = p, lower.tail = lower.tail,
+                                  log.p = log.p), args))
+  )
+}
+
 posterior_predict_hurdle_poisson <- function(i, prep, output = "random", ...) {
   hu <- get_dpar(prep, "hu", i = i)
   lambda <- get_dpar(prep, "mu", i = i)
