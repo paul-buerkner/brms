@@ -369,23 +369,23 @@ summary(fit_smooth1)
 
     Smoothing Spline Hyperparameters:
                      Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sds(sx1_1)           2.19      1.44     0.35     6.01 1.00      826      722
-    sds(sx2_1)          17.62      4.93    10.22    28.81 1.00      727      973
-    sds(sigma_sx0_1)     0.90      0.85     0.04     3.19 1.00      624     1119
+    sds(sx1_1)           2.20      1.47     0.35     5.91 1.00      975      654
+    sds(sx2_1)          17.56      4.96    10.44    29.06 1.00      665      942
+    sds(sigma_sx0_1)     0.84      0.85     0.04     3.13 1.00      696      996
 
     Multilevel Hyperparameters:
     ~fac (Number of levels: 4) 
                         Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)           4.81      2.15     2.34    10.12 1.00      984     1130
-    sd(sigma_Intercept)     0.15      0.19     0.00     0.65 1.00      698      790
+    sd(Intercept)           4.87      2.18     2.29    10.06 1.00      844      852
+    sd(sigma_Intercept)     0.16      0.23     0.00     0.71 1.01      452      769
 
     Regression Coefficients:
                     Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept          15.67      2.24    11.14    20.13 1.00      818      701
-    sigma_Intercept     0.76      0.12     0.49     0.97 1.00      920      543
-    sx1_1               8.89      4.50    -0.29    18.10 1.00     1214     1208
-    sx2_1              37.46     14.50     8.81    66.17 1.00     1406     1525
-    sigma_sx0_1         0.37      1.97    -3.82     4.57 1.00     1017      875
+    Intercept          15.73      2.17    11.42    20.26 1.00      954      875
+    sigma_Intercept     0.76      0.13     0.49     0.99 1.00      612      339
+    sx1_1               9.25      4.49    -0.30    18.36 1.00     1299     1361
+    sx2_1              37.07     13.91     9.03    64.21 1.00     1547     1505
+    sigma_sx0_1         0.28      1.82    -3.62     4.23 1.00     1022      697
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential

@@ -86,8 +86,8 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 3.2e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
+#> Chain 1: Gradient evaluation took 4e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.4 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -104,15 +104,15 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.7 seconds (Warm-up)
-#> Chain 1:                2.167 seconds (Sampling)
-#> Chain 1:                4.867 seconds (Total)
+#> Chain 1:  Elapsed Time: 4.981 seconds (Warm-up)
+#> Chain 1:                4.054 seconds (Sampling)
+#> Chain 1:                9.035 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.2e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.32 seconds.
+#> Chain 2: Gradient evaluation took 3.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -129,15 +129,15 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.522 seconds (Warm-up)
-#> Chain 2:                2.244 seconds (Sampling)
-#> Chain 2:                4.766 seconds (Total)
+#> Chain 2:  Elapsed Time: 5.009 seconds (Warm-up)
+#> Chain 2:                4.058 seconds (Sampling)
+#> Chain 2:                9.067 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 2.6e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 3: Gradient evaluation took 3.4e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.34 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -154,15 +154,15 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 2.482 seconds (Warm-up)
-#> Chain 3:                2.078 seconds (Sampling)
-#> Chain 3:                4.56 seconds (Total)
+#> Chain 3:  Elapsed Time: 5.248 seconds (Warm-up)
+#> Chain 3:                3.992 seconds (Sampling)
+#> Chain 3:                9.24 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 2.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 4: Gradient evaluation took 3.5e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -179,9 +179,9 @@ fit <- brm(y ~ s(x0) + s(x1) + s(x2) + s(x3), data = dat)
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 2.752 seconds (Warm-up)
-#> Chain 4:                2.171 seconds (Sampling)
-#> Chain 4:                4.923 seconds (Total)
+#> Chain 4:  Elapsed Time: 4.508 seconds (Warm-up)
+#> Chain 4:                4.042 seconds (Sampling)
+#> Chain 4:                8.55 seconds (Total)
 #> Chain 4: 
 #> Warning: There were 2 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
@@ -198,22 +198,22 @@ summary(fit)
 #> 
 #> Smoothing Spline Hyperparameters:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sds(sx0_1)     2.86      1.60     0.91     6.98 1.00     2484     2600
-#> sds(sx1_1)     2.82      1.74     0.60     7.30 1.00     1843     1579
-#> sds(sx2_1)    22.09      6.68    12.77    38.36 1.00      950     2088
-#> sds(sx3_1)     1.42      1.26     0.04     4.62 1.00     1682     1984
+#> sds(sx0_1)     2.84      1.53     0.88     6.49 1.00     2639     2533
+#> sds(sx1_1)     2.76      1.72     0.59     7.06 1.00     2048     1573
+#> sds(sx2_1)    21.86      6.20    12.82    37.42 1.00     1571     2206
+#> sds(sx3_1)     1.44      1.28     0.06     4.86 1.00     1689     1931
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     7.32      0.15     7.02     7.62 1.00     6613     3275
-#> sx0_1        -1.51      5.70   -13.98     9.78 1.00     2250     2330
-#> sx1_1        12.99      5.70     1.76    24.64 1.00     2408     2326
-#> sx2_1        33.19     18.32    -4.77    68.49 1.00     1670     2467
-#> sx3_1         0.67      3.52    -6.61     8.27 1.00     1937     2094
+#> Intercept     7.32      0.16     6.99     7.63 1.00     7382     2765
+#> sx0_1        -1.54      5.78   -13.97     9.99 1.00     2963     2420
+#> sx1_1        13.24      5.73     2.37    25.57 1.00     2741     2388
+#> sx2_1        33.91     18.50    -4.01    67.94 1.00     2742     2438
+#> sx3_1         0.59      4.02    -7.85     9.65 1.00     2513     1803
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.18      0.11     1.97     2.42 1.00     4938     2645
+#> sigma     2.18      0.12     1.96     2.42 1.00     6516     3268
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -221,6 +221,6 @@ summary(fit)
 
 newdata <- data.frame(x2 = seq(0, 1, 10))
 str(posterior_smooths(fit, smooth = "s(x2)", newdata = newdata))
-#>  num [1:4000, 1] -4.8 -4.54 -3.92 -4.31 -4.88 ...
+#>  num [1:4000, 1] -5.13 -5.13 -3.83 -5.38 -4.71 ...
 # }
 ```

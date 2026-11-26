@@ -121,8 +121,8 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 1.4e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.14 seconds.
+#> Chain 1: Gradient evaluation took 1.2e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.12 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -139,15 +139,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.066 seconds (Warm-up)
-#> Chain 1:                0.073 seconds (Sampling)
-#> Chain 1:                0.139 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.094 seconds (Warm-up)
+#> Chain 1:                0.104 seconds (Sampling)
+#> Chain 1:                0.198 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 8e-06 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
+#> Chain 2: Gradient evaluation took 9e-06 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -164,15 +164,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.071 seconds (Warm-up)
-#> Chain 2:                0.082 seconds (Sampling)
-#> Chain 2:                0.153 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.102 seconds (Warm-up)
+#> Chain 2:                0.118 seconds (Sampling)
+#> Chain 2:                0.22 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 8e-06 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.08 seconds.
+#> Chain 3: Gradient evaluation took 9e-06 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -189,15 +189,15 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 0.065 seconds (Warm-up)
-#> Chain 3:                0.067 seconds (Sampling)
-#> Chain 3:                0.132 seconds (Total)
+#> Chain 3:  Elapsed Time: 0.093 seconds (Warm-up)
+#> Chain 3:                0.097 seconds (Sampling)
+#> Chain 3:                0.19 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 7e-06 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.07 seconds.
+#> Chain 4: Gradient evaluation took 9e-06 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.09 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -214,9 +214,9 @@ fit <- brm(count ~ zAge + zBase * Trt,
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 0.069 seconds (Warm-up)
-#> Chain 4:                0.059 seconds (Sampling)
-#> Chain 4:                0.128 seconds (Total)
+#> Chain 4:  Elapsed Time: 0.099 seconds (Warm-up)
+#> Chain 4:                0.085 seconds (Sampling)
+#> Chain 4:                0.184 seconds (Total)
 #> Chain 4: 
 summary(fit)
 #>  Family: poisson 
@@ -240,7 +240,7 @@ summary(fit)
 
 # The following code requires the 'projpred' package to be installed:
 library(projpred)
-#> This is projpred version 2.11.0.
+#> This is projpred version 3.0.0.
 #> 
 #> Attaching package: ‘projpred’
 #> The following object is masked from ‘package:brms’:
@@ -298,11 +298,11 @@ summary(cv_vs)
 #> 
 #> Submodel performance evaluation summary with `deltas = FALSE` and `cumulate = FALSE`:
 #>  size ranking_fulldata cv_proportions_diag  elpd elpd.se elpd.diff elpd.diff.se
-#>     0      (Intercept)                  NA -1638     238   -763.48       210.88
-#>     1            zBase                   1  -894      97    -19.89        18.34
-#>     2             zAge                   1  -876      92     -1.17         7.67
-#>     3              Trt                   1  -874      90      0.46         2.88
-#>     4        zBase:Trt                   1  -875      90     -0.51         0.34
+#>     0      (Intercept)                  NA -1652     243   -777.10       215.80
+#>     1            zBase                1.00  -894      97    -19.91        18.48
+#>     2             zAge                0.98  -876      92     -1.28         7.75
+#>     3              Trt                0.98  -874      90      0.42         3.10
+#>     4        zBase:Trt                1.00  -875      90     -0.51         0.34
 #> 
 #> Reference model performance evaluation summary with `deltas = FALSE`:
 #>    elpd elpd.se 

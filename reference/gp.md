@@ -156,8 +156,8 @@ fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 4.8e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.48 seconds.
+#> Chain 1: Gradient evaluation took 5.8e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.58 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -174,15 +174,15 @@ fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.769 seconds (Warm-up)
-#> Chain 1:                0.766 seconds (Sampling)
-#> Chain 1:                1.535 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.525 seconds (Warm-up)
+#> Chain 1:                1.054 seconds (Sampling)
+#> Chain 1:                2.579 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.35 seconds.
+#> Chain 2: Gradient evaluation took 3.9e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.39 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -199,16 +199,16 @@ fit1 <- brm(y ~ gp(x2), dat, chains = 2)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.922 seconds (Warm-up)
-#> Chain 2:                0.73 seconds (Sampling)
-#> Chain 2:                1.652 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.487 seconds (Warm-up)
+#> Chain 2:                1.406 seconds (Sampling)
+#> Chain 2:                2.893 seconds (Total)
 #> Chain 2: 
-#> Warning: There were 1 divergent transitions after warmup. See
+#> Warning: There were 3 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
 summary(fit1)
-#> Warning: There were 1 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 3 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: gaussian 
 #>   Links: mu = identity 
 #> Formula: y ~ gp(x2) 
@@ -218,16 +218,16 @@ summary(fit1)
 #> 
 #> Gaussian Process Hyperparameters:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sdgp(gpx2)       3.80      1.67     1.20     7.64 1.01      415      651
-#> lscale(gpx2)     0.12      0.06     0.03     0.24 1.01      210      401
+#> sdgp(gpx2)       3.82      1.51     1.96     7.79 1.01      485      470
+#> lscale(gpx2)     0.12      0.07     0.05     0.27 1.01      205      540
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     7.22      1.63     3.63    10.29 1.00      574      460
+#> Intercept     7.53      1.83     3.61    10.89 1.00      770      806
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.65      0.48     1.94     3.70 1.00      689      835
+#> sigma     2.05      0.37     1.48     2.91 1.00      976     1456
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -243,8 +243,8 @@ fit2 <- brm(y ~ gp(x0) + x1 + gp(x2, k = 10) + x3, dat, chains = 2)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 5.5e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.55 seconds.
+#> Chain 1: Gradient evaluation took 7e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.7 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -261,15 +261,15 @@ fit2 <- brm(y ~ gp(x0) + x1 + gp(x2, k = 10) + x3, dat, chains = 2)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.025 seconds (Warm-up)
-#> Chain 1:                0.872 seconds (Sampling)
-#> Chain 1:                1.897 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.788 seconds (Warm-up)
+#> Chain 1:                2.366 seconds (Sampling)
+#> Chain 1:                4.154 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 3.7e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.37 seconds.
+#> Chain 2: Gradient evaluation took 4.6e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.46 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -286,19 +286,16 @@ fit2 <- brm(y ~ gp(x0) + x1 + gp(x2, k = 10) + x3, dat, chains = 2)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.08 seconds (Warm-up)
-#> Chain 2:                0.797 seconds (Sampling)
-#> Chain 2:                1.877 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.89 seconds (Warm-up)
+#> Chain 2:                1.233 seconds (Sampling)
+#> Chain 2:                3.123 seconds (Total)
 #> Chain 2: 
-#> Warning: There were 26 divergent transitions after warmup. See
+#> Warning: There were 6 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
 #> Warning: Examine the pairs() plot to diagnose sampling problems
-#> Warning: Tail Effective Samples Size (ESS) is too low, indicating posterior variances and tail quantiles may be unreliable.
-#> Running the chains for more iterations may help. See
-#> https://mc-stan.org/misc/warnings.html#tail-ess
 summary(fit2)
-#> Warning: There were 26 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 6 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: gaussian 
 #>   Links: mu = identity 
 #> Formula: y ~ gp(x0) + x1 + gp(x2, k = 10) + x3 
@@ -308,20 +305,20 @@ summary(fit2)
 #> 
 #> Gaussian Process Hyperparameters:
 #>              Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sdgp(gpx0)       0.87      0.88     0.02     3.30 1.00      455      293
-#> sdgp(gpx2)       5.41      2.32     2.08    10.62 1.00      559      249
-#> lscale(gpx0)     0.14      0.35     0.01     0.89 1.01      583      831
-#> lscale(gpx2)     0.07      0.05     0.01     0.23 1.02      275       68
+#> sdgp(gpx0)       0.82      0.65     0.03     2.41 1.00      885     1113
+#> sdgp(gpx2)       5.53      2.24     2.43    10.85 1.00     1226     1404
+#> lscale(gpx0)     0.23      3.53     0.01     0.61 1.00      991      561
+#> lscale(gpx2)     0.07      0.05     0.01     0.20 1.00     1749     1221
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     4.22      2.18    -0.98     7.92 1.01      225      100
-#> x1            4.94      1.51     2.13     7.78 1.00      761      635
-#> x3            0.89      1.53    -2.07     3.79 1.00      869     1202
+#> Intercept     6.27      2.21     1.65    10.39 1.00     1566     1177
+#> x1            3.25      1.71    -0.08     6.75 1.00     2612     1391
+#> x3           -1.08      1.66    -4.49     1.99 1.00     2000     1245
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     2.16      0.40     1.53     3.14 1.00      643      771
+#> sigma     1.93      0.35     1.36     2.70 1.00     1045     1222
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -340,8 +337,8 @@ fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 6.9e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.69 seconds.
+#> Chain 1: Gradient evaluation took 0.000119 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.19 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -358,15 +355,15 @@ fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.384 seconds (Warm-up)
-#> Chain 1:                1.14 seconds (Sampling)
-#> Chain 1:                2.524 seconds (Total)
+#> Chain 1:  Elapsed Time: 4.599 seconds (Warm-up)
+#> Chain 1:                3.092 seconds (Sampling)
+#> Chain 1:                7.691 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 5.5e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.55 seconds.
+#> Chain 2: Gradient evaluation took 0.000104 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.04 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -383,15 +380,13 @@ fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.323 seconds (Warm-up)
-#> Chain 2:                1.171 seconds (Sampling)
-#> Chain 2:                2.494 seconds (Total)
+#> Chain 2:  Elapsed Time: 4.612 seconds (Warm-up)
+#> Chain 2:                4.902 seconds (Sampling)
+#> Chain 2:                9.514 seconds (Total)
 #> Chain 2: 
-#> Warning: There were 20 divergent transitions after warmup. See
+#> Warning: There were 61 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #> to find out why this is a problem and how to eliminate them.
-#> Warning: There were 1 chains where the estimated Bayesian Fraction of Missing Information was low. See
-#> https://mc-stan.org/misc/warnings.html#bfmi-low
 #> Warning: Examine the pairs() plot to diagnose sampling problems
 #> Warning: Bulk Effective Samples Size (ESS) is too low, indicating posterior means and medians may be unreliable.
 #> Running the chains for more iterations may help. See
@@ -400,7 +395,7 @@ fit3 <- brm(y ~ gp(x1, x2, cov = "matern32"), dat, chains = 2)
 #> Running the chains for more iterations may help. See
 #> https://mc-stan.org/misc/warnings.html#tail-ess
 summary(fit3)
-#> Warning: There were 20 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
+#> Warning: There were 61 divergent transitions after warmup. Increasing adapt_delta above 0.8 may help. See http://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
 #>  Family: gaussian 
 #>   Links: mu = identity 
 #> Formula: y ~ gp(x1, x2, cov = "matern32") 
@@ -410,16 +405,16 @@ summary(fit3)
 #> 
 #> Gaussian Process Hyperparameters:
 #>                Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sdgp(gpx1x2)       3.71      1.26     1.38     6.63 1.01      255      179
-#> lscale(gpx1x2)     0.22      0.16     0.07     0.62 1.02      279      600
+#> sdgp(gpx1x2)       3.82      1.16     2.15     6.74 1.01      464      436
+#> lscale(gpx1x2)     0.28      0.18     0.12     0.69 1.01      310      533
 #> 
 #> Regression Coefficients:
 #>           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept     7.57      1.48     4.43    10.62 1.00      838      808
+#> Intercept     7.57      1.82     3.76    11.14 1.00      543     1029
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sigma     1.87      0.73     0.68     3.46 1.02      101       62
+#> sigma     1.62      0.47     0.80     2.58 1.02      104       93
 #> 
 #> Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -432,26 +427,26 @@ plot(me3, ask = FALSE, points = TRUE)
 
 # compare model fit
 loo(fit1, fit2, fit3)
-#> Warning: Found 1 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
-#> Warning: Found 3 observations with a pareto_k > 0.7 in model 'fit2'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
-#> Warning: Found 9 observations with a pareto_k > 0.7 in model 'fit3'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 4 observations with a pareto_k > 0.7 in model 'fit1'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 2 observations with a pareto_k > 0.7 in model 'fit2'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
+#> Warning: Found 8 observations with a pareto_k > 0.7 in model 'fit3'. We recommend to set 'moment_match = TRUE' in order to perform moment matching for problematic observations. 
 #> Output of model 'fit1':
 #> 
 #> Computed from 2000 by 30 log-likelihood matrix.
 #> 
 #>          Estimate  SE
-#> elpd_loo    -77.2 4.6
-#> p_loo         9.2 2.8
-#> looic       154.5 9.2
+#> elpd_loo    -70.8 4.8
+#> p_loo        10.5 3.6
+#> looic       141.6 9.6
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.3, 1.1]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.0]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     29    96.7%   119     
-#>    (0.7, 1]   (bad)       1     3.3%   <NA>    
-#>    (1, Inf)   (very bad)  0     0.0%   <NA>    
+#> (-Inf, 0.7]   (good)     26    86.7%   187     
+#>    (0.7, 1]   (bad)       3    10.0%   <NA>    
+#>    (1, Inf)   (very bad)  1     3.3%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit2':
@@ -459,18 +454,18 @@ loo(fit1, fit2, fit3)
 #> Computed from 2000 by 30 log-likelihood matrix.
 #> 
 #>          Estimate  SE
-#> elpd_loo    -72.4 4.0
-#> p_loo        10.8 2.6
-#> looic       144.7 8.0
+#> elpd_loo    -67.2 3.0
+#> p_loo         9.2 1.5
+#> looic       134.4 6.0
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.2, 0.8]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.5, 1.1]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     27    90.0%   83      
+#> (-Inf, 0.7]   (good)     28    93.3%   168     
 #>    (0.7, 1]   (bad)       2     6.7%   <NA>    
-#>    (1, Inf)   (very bad)  1     3.3%   <NA>    
+#>    (1, Inf)   (very bad)  0     0.0%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Output of model 'fit3':
@@ -478,25 +473,25 @@ loo(fit1, fit2, fit3)
 #> Computed from 2000 by 30 log-likelihood matrix.
 #> 
 #>          Estimate  SE
-#> elpd_loo    -71.7 4.0
-#> p_loo        19.5 3.4
-#> looic       143.4 8.0
+#> elpd_loo    -65.9 3.4
+#> p_loo        15.8 2.6
+#> looic       131.8 6.8
 #> ------
 #> MCSE of elpd_loo is NA.
-#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.0, 0.2]).
+#> MCSE and ESS estimates assume MCMC draws (r_eff in [0.0, 0.4]).
 #> 
 #> Pareto k diagnostic values:
 #>                          Count Pct.    Min. ESS
-#> (-Inf, 0.7]   (good)     21    70.0%   12      
-#>    (0.7, 1]   (bad)       9    30.0%   <NA>    
+#> (-Inf, 0.7]   (good)     22    73.3%   10      
+#>    (0.7, 1]   (bad)       8    26.7%   <NA>    
 #>    (1, Inf)   (very bad)  0     0.0%   <NA>    
 #> See help('pareto-k-diagnostic') for details.
 #> 
 #> Model comparisons:
 #>  model elpd_diff se_diff p_worse diag_diff      diag_elpd
-#>   fit3       0.0     0.0      NA           9 k_psis > 0.7
-#>   fit2      -0.7     2.0    0.63   N < 100 3 k_psis > 0.7
-#>   fit1      -5.5     2.9    0.97   N < 100 1 k_psis > 0.7
+#>   fit3       0.0     0.0      NA           8 k_psis > 0.7
+#>   fit2      -1.3     2.6    0.69   N < 100 2 k_psis > 0.7
+#>   fit1      -4.9     3.1    0.94   N < 100 4 k_psis > 0.7
 #> 
 #> Diagnostic flags present.
 #> See ?`loo-glossary` (sections `diag_diff` and `diag_elpd`)
@@ -513,8 +508,8 @@ fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000127 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.27 seconds.
+#> Chain 1: Gradient evaluation took 0.000155 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.55 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -531,15 +526,15 @@ fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 2.537 seconds (Warm-up)
-#> Chain 1:                2.37 seconds (Sampling)
-#> Chain 1:                4.907 seconds (Total)
+#> Chain 1:  Elapsed Time: 3.892 seconds (Warm-up)
+#> Chain 1:                3.607 seconds (Sampling)
+#> Chain 1:                7.499 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 9.6e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.96 seconds.
+#> Chain 2: Gradient evaluation took 0.000127 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.27 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -556,9 +551,9 @@ fit4 <- brm(y ~ gp(x2, by = fac), dat2, chains = 2)
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 2.567 seconds (Warm-up)
-#> Chain 2:                2.389 seconds (Sampling)
-#> Chain 2:                4.956 seconds (Total)
+#> Chain 2:  Elapsed Time: 3.914 seconds (Warm-up)
+#> Chain 2:                3.601 seconds (Sampling)
+#> Chain 2:                7.515 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 7 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup

@@ -93,16 +93,16 @@ summary(model_simple)
     Multilevel Hyperparameters:
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)    14.51      2.17    10.46    18.96 1.00      991     1809
+    sd(Intercept)    14.48      2.16    10.41    18.82 1.00      881     1796
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    38.22      6.78    25.16    51.41 1.00     2154     2636
-    cofactor      5.18      0.14     4.91     5.44 1.00     5881     3301
+    Intercept    38.37      6.99    24.43    52.06 1.00     2222     2430
+    cofactor      5.18      0.14     4.90     5.45 1.00     6027     3041
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     9.21      0.73     7.81    10.69 1.00     1200     2064
+    sigma     9.23      0.74     7.82    10.70 1.00     1311     2625
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -220,20 +220,20 @@ summary(model_repeat1)
     Multilevel Hyperparameters:
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)    16.46      1.89    12.97    20.39 1.00     1472     2037
+    sd(Intercept)    16.36      1.90    12.91    20.29 1.00     1372     2590
 
     ~species (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     5.00      0.83     3.36     6.60 1.00     1195     1526
+    sd(Intercept)     5.00      0.83     3.35     6.61 1.00     1043     1752
 
     Regression Coefficients:
                  Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept       36.25      7.89    20.84    51.98 1.00     3545     3546
-    spec_mean_cf     5.10      0.10     4.89     5.30 1.00     7478     3907
+    Intercept       36.21      7.89    20.51    51.39 1.00     2228     3019
+    spec_mean_cf     5.10      0.11     4.89     5.30 1.00     5746     4339
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     8.11      0.21     7.72     8.52 1.00     5190     4085
+    sigma     8.11      0.20     7.72     8.51 1.00     5398     4474
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -301,21 +301,21 @@ summary(model_repeat2)
     Multilevel Hyperparameters:
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)    16.41      1.91    12.91    20.31 1.00     1331     2084
+    sd(Intercept)    16.40      1.91    12.82    20.34 1.00     1789     2999
 
     ~species (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     4.98      0.83     3.34     6.62 1.00      980     1537
+    sd(Intercept)     5.02      0.83     3.36     6.65 1.00     1340     2052
 
     Regression Coefficients:
                    Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept         36.12      7.78    20.18    51.19 1.00     3338     3131
-    spec_mean_cf       5.10      0.10     4.90     5.30 1.00     6018     4153
-    within_spec_cf    -0.06      0.19    -0.42     0.31 1.00     9924     4511
+    Intercept         36.11      7.81    20.38    50.96 1.00     5037     4372
+    spec_mean_cf       5.10      0.10     4.89     5.30 1.00     8639     4580
+    within_spec_cf    -0.06      0.18    -0.43     0.32 1.00    10339     4060
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     8.11      0.20     7.73     8.53 1.00     5440     3888
+    sigma     8.11      0.20     7.72     8.52 1.00     6598     4851
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -334,7 +334,7 @@ hyp <- paste(
 
     Hypothesis Tests for class :
                     Hypothesis Estimate Est.Error CI.Lower CI.Upper Evid.Ratio Post.Prob Star
-    1 (sd_phylo__Interc... = 0     0.74      0.06     0.62     0.84          0         0    *
+    1 (sd_phylo__Interc... = 0     0.74      0.06     0.61     0.84          0         0    *
     ---
     'CI': 90%-CI for one-sided and 95%-CI for two-sided hypotheses.
     '*': For one-sided hypotheses, the posterior probability exceeds 95%;
@@ -406,15 +406,15 @@ summary(model_fisher)
     Multilevel Hyperparameters:
     ~obs (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.05      0.03     0.00     0.10 1.00      908     1553
+    sd(Intercept)     0.05      0.03     0.00     0.10 1.00     1360     2437
 
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.06      0.04     0.00     0.15 1.00      731     1419
+    sd(Intercept)     0.07      0.04     0.00     0.15 1.00      984     2209
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept     0.16      0.04     0.07     0.23 1.00     2285     1326
+    Intercept     0.16      0.04     0.07     0.24 1.00     5189     3371
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
@@ -494,16 +494,16 @@ summary(model_pois)
     Multilevel Hyperparameters:
     ~obs (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.18      0.09     0.01     0.34 1.01      446      374
+    sd(Intercept)     0.19      0.08     0.02     0.34 1.00      536      826
 
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.18      0.10     0.02     0.42 1.01      512      678
+    sd(Intercept)     0.18      0.10     0.03     0.40 1.00      597      697
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -2.08      0.21    -2.50    -1.68 1.00     2061     2004
-    cofactor      0.25      0.01     0.23     0.27 1.00     3407     2847
+    Intercept    -2.08      0.21    -2.50    -1.67 1.00     2180     2134
+    cofactor      0.25      0.01     0.23     0.27 1.00     3138     2722
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -545,16 +545,16 @@ summary(model_normal)
     Multilevel Hyperparameters:
     ~phylo (Number of levels: 200) 
                   Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sd(Intercept)     0.67      0.50     0.02     1.85 1.00     1239     1905
+    sd(Intercept)     0.69      0.51     0.03     1.94 1.00     1263     2263
 
     Regression Coefficients:
               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    Intercept    -3.06      0.63    -4.34    -1.84 1.00     4548     2244
-    cofactor      0.68      0.04     0.60     0.76 1.00    12488     2515
+    Intercept    -3.06      0.63    -4.38    -1.80 1.00     5017     2917
+    cofactor      0.68      0.04     0.60     0.77 1.00    10487     2373
 
     Further Distributional Parameters:
           Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-    sigma     3.44      0.18     3.10     3.82 1.00     7660     3059
+    sigma     3.44      0.18     3.10     3.81 1.00     5572     2484
 
     Draws were sampled using sampling(NUTS). For each parameter, Bulk_ESS
     and Tail_ESS are effective sample size measures, and Rhat is the potential
@@ -598,17 +598,17 @@ loo(model_pois, model_normal)
     Computed from 4000 by 200 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -348.6 17.0
-    p_loo        30.1  3.5
-    looic       697.3 34.1
+    elpd_loo   -348.3 17.0
+    p_loo        30.3  3.4
+    looic       696.6 33.9
     ------
     MCSE of elpd_loo is NA.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.4]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.4, 1.3]).
 
     Pareto k diagnostic values:
                              Count Pct.    Min. ESS
-    (-Inf, 0.7]   (good)     197   98.5%   129     
-       (0.7, 1]   (bad)        3    1.5%   <NA>    
+    (-Inf, 0.7]   (good)     198   99.0%   157     
+       (0.7, 1]   (bad)        2    1.0%   <NA>    
        (1, Inf)   (very bad)   0    0.0%   <NA>    
     See help('pareto-k-diagnostic') for details.
 
@@ -617,20 +617,20 @@ loo(model_pois, model_normal)
     Computed from 4000 by 200 log-likelihood matrix.
 
              Estimate   SE
-    elpd_loo   -536.1 15.9
-    p_loo         9.9  2.2
-    looic      1072.1 31.8
+    elpd_loo   -535.8 15.8
+    p_loo         9.9  2.1
+    looic      1071.6 31.5
     ------
     MCSE of elpd_loo is 0.1.
-    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 2.0]).
+    MCSE and ESS estimates assume MCMC draws (r_eff in [0.6, 1.8]).
 
     All Pareto k estimates are good (k < 0.7).
     See help('pareto-k-diagnostic') for details.
 
     Model comparisons:
             model elpd_diff se_diff p_worse diag_diff      diag_elpd
-       model_pois       0.0     0.0      NA           3 k_psis > 0.7
-     model_normal    -187.4    18.0    1.00                         
+       model_pois       0.0     0.0      NA           2 k_psis > 0.7
+     model_normal    -187.5    18.0    1.00                         
 
 Since smaller values of loo indicate better fit, it is again evident
 that the Poisson model fits the data better than the normal model. Of

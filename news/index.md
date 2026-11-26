@@ -40,6 +40,9 @@
 
 #### Bug Fixes
 
+- Fix predictions of `gp` terms with a factor `by` variable in models
+  with other `gp` terms. Thanks to Nicholas Clark.
+  ([\#1979](https://github.com/paul-buerkner/brms/issues/1979))
 - Evaluate the Stan functions of ordinal models on the log scale, as
   `log_lik` does, for all links of `sratio` and `cratio` and the links
   other than logit of the other families, so improbable categories no

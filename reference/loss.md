@@ -57,8 +57,8 @@ fit_loss <- brm(
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 2.6e-05 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.26 seconds.
+#> Chain 1: Gradient evaluation took 3.3e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.33 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -75,9 +75,9 @@ fit_loss <- brm(
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.131 seconds (Warm-up)
-#> Chain 1:                0.543 seconds (Sampling)
-#> Chain 1:                1.674 seconds (Total)
+#> Chain 1:  Elapsed Time: 2.037 seconds (Warm-up)
+#> Chain 1:                0.981 seconds (Sampling)
+#> Chain 1:                3.018 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
@@ -85,8 +85,8 @@ fit_loss <- brm(
 #> Chain 2:   Error evaluating the log probability at the initial value.
 #> Chain 2: Exception: normal_lpdf: Location parameter[1] is nan, but must be finite! (in 'anon_model', line 68, column 4 to column 41)
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 1.8e-05 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.18 seconds.
+#> Chain 2: Gradient evaluation took 2.4e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.24 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -103,9 +103,9 @@ fit_loss <- brm(
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.162 seconds (Warm-up)
-#> Chain 2:                0.629 seconds (Sampling)
-#> Chain 2:                1.791 seconds (Total)
+#> Chain 2:  Elapsed Time: 2.083 seconds (Warm-up)
+#> Chain 2:                1.133 seconds (Sampling)
+#> Chain 2:                3.216 seconds (Total)
 #> Chain 2: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 3).
@@ -116,8 +116,8 @@ fit_loss <- brm(
 #> Chain 3:   Error evaluating the log probability at the initial value.
 #> Chain 3: Exception: normal_lpdf: Location parameter[1] is nan, but must be finite! (in 'anon_model', line 68, column 4 to column 41)
 #> Chain 3: 
-#> Chain 3: Gradient evaluation took 1.6e-05 seconds
-#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+#> Chain 3: Gradient evaluation took 2.2e-05 seconds
+#> Chain 3: 1000 transitions using 10 leapfrog steps per transition would take 0.22 seconds.
 #> Chain 3: Adjust your expectations accordingly!
 #> Chain 3: 
 #> Chain 3: 
@@ -134,9 +134,9 @@ fit_loss <- brm(
 #> Chain 3: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 3: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 3: 
-#> Chain 3:  Elapsed Time: 1.079 seconds (Warm-up)
-#> Chain 3:                0.515 seconds (Sampling)
-#> Chain 3:                1.594 seconds (Total)
+#> Chain 3:  Elapsed Time: 1.942 seconds (Warm-up)
+#> Chain 3:                0.933 seconds (Sampling)
+#> Chain 3:                2.875 seconds (Total)
 #> Chain 3: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 4).
@@ -147,8 +147,8 @@ fit_loss <- brm(
 #> Chain 4:   Error evaluating the log probability at the initial value.
 #> Chain 4: Exception: normal_lpdf: Location parameter[1] is nan, but must be finite! (in 'anon_model', line 68, column 4 to column 41)
 #> Chain 4: 
-#> Chain 4: Gradient evaluation took 1.6e-05 seconds
-#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.16 seconds.
+#> Chain 4: Gradient evaluation took 2.3e-05 seconds
+#> Chain 4: 1000 transitions using 10 leapfrog steps per transition would take 0.23 seconds.
 #> Chain 4: Adjust your expectations accordingly!
 #> Chain 4: 
 #> Chain 4: 
@@ -165,9 +165,9 @@ fit_loss <- brm(
 #> Chain 4: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 4: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 4: 
-#> Chain 4:  Elapsed Time: 1.208 seconds (Warm-up)
-#> Chain 4:                0.66 seconds (Sampling)
-#> Chain 4:                1.868 seconds (Total)
+#> Chain 4:  Elapsed Time: 2.183 seconds (Warm-up)
+#> Chain 4:                1.177 seconds (Sampling)
+#> Chain 4:                3.36 seconds (Total)
 #> Chain 4: 
 
 # basic summaries
