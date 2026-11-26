@@ -843,6 +843,8 @@ add_rstan_model <- function(x, overwrite = FALSE) {
     ))
     x$fit@stanmodel <- stanfit@stanmodel
     x$fit@.MISC <- stanfit@.MISC
+    x$fit@model_pars <- stanfit@model_pars
+    x$fit@par_dims <- stanfit@par_dims
     message("Recompilation done")
   }
   x
