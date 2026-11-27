@@ -302,11 +302,49 @@ sim_latent_data <- function(N = 100) {
   dat
 }
 
+# compare the response-scale functions of brms for the latent projection with
+# the brms results, and run varsel(), project(), and proj_predict()
+# @param cens censoring indicators of the observations or NULL
+# @param trials number of trials of all observations or NULL
+# @return a list with the reference model 'ref' and the draws 'ppd' of
+#   proj_predict()
+check_latent_oscale <- function(fit, cens = NULL, trials = NULL, info = NULL) {
+  ref <- projpred::get_refmodel(fit, latent = TRUE)
+  # with all draws, the functions give the brms results
+  ilpreds <- posterior_linpred(fit, transform = TRUE)
+  if (!is.null(trials)) {
+    # for families with trials, 'latent_ilink' gives 'trials * mu'
+    ilpreds <- trials * ilpreds
+  }
+  expect_equivalent(ref$family$latent_ilink(t(ref$mu), cl_ref = 1),
+                    ilpreds, info = info)
+  ll <- ref$family$latent_ll_oscale(
+    ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = cens,
+    cl_ref = seq_len(ndraws(fit))
+  )
+  expect_equivalent(ll, log_lik(fit), info = info)
+  # projpred versions with argument 'latent_epred' get the expected values
+  if ("latent_epred" %in% names(formals(projpred::extend_family))) {
+    epred <- ref$family$latent_epred(
+      ilpreds, dis = ref$dis, cl_ref = seq_len(ndraws(fit))
+    )
+    expect_equivalent(epred, posterior_epred(fit), info = info)
+  }
+
+  vs <- projpred::varsel(ref, nterms_max = 2, verbose = FALSE)
+  smry <- summary(vs, stats = "elpd")$perf_sub
+  expect_true(all(is.finite(smry$elpd)), info = info)
+  prj <- projpred::project(ref, predictor_terms = "x1", nclusters = 5)
+  ppd <- projpred::proj_predict(prj, nresample_clusters = 30)
+  expect_equal(dim(ppd), c(30, nobs(fit)), info = info)
+  expect_true(all(is.finite(ppd) & ppd >= 0), info = info)
+  list(ref = ref, ppd = ppd)
+}
+
 test_that("projpred latent projection has response-scale functions",
           suppressWarnings({
   set.seed(1234)
   dat <- sim_latent_data()
-  N <- nrow(dat)
 
   fits <- list(
     bernoulli = brm(y_bern ~ x1 + x2 + x3, data = dat,
@@ -319,7 +357,32 @@ test_that("projpred latent projection has response-scale functions",
                   family = weibull(), refresh = 0),
     # the censoring times are at most 3, and P(Y > 3) changes the results
     lognormal = brm(y_lnorm | cens(c_lnorm) + trunc(ub = 3) ~ x1 + x2 + x3,
-                    data = dat, family = lognormal(), refresh = 0),
+                    data = dat, family = lognormal(), refresh = 0)
+  )
+  cens <- list(bernoulli = NULL, poisson = dat$c_pois, negbinomial = NULL,
+               weibull = dat$c_weib, lognormal = dat$c_lnorm)
+  for (fam in names(fits)) {
+    fit <- fits[[fam]]
+    out <- check_latent_oscale(fit, cens = cens[[fam]], info = fam)
+    bounds_attr <- attr(out$ref$family$latent_ll_oscale, "trunc_bounds")
+    if (fam == "lognormal") {
+      expect_equal(out$ref$dis, as.data.frame(fit, variable = "sigma")$sigma)
+      expect_equal(bounds_attr, list(lb = -Inf, ub = 3))
+      expect_true(all(out$ppd <= 3))
+    } else {
+      expect_null(bounds_attr, info = fam)
+    }
+  }
+}))
+
+test_that("projpred latent projection supports families with trials",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- sim_latent_data()
+  N <- nrow(dat)
+  trials <- dat$n_bb[1]
+
+  fits <- list(
     beta_binomial = brm(y_bb | trials(n_bb) ~ x1 + x2 + x3, data = dat,
                         family = beta_binomial(), refresh = 0),
     zero_inflated_binomial = brm(y_zi | trials(n_bb) ~ x1 + x2 + x3,
@@ -329,71 +392,25 @@ test_that("projpred latent projection has response-scale functions",
                                       data = dat, refresh = 0,
                                       family = zero_inflated_beta_binomial())
   )
-  cens <- list(bernoulli = NULL, poisson = dat$c_pois, negbinomial = NULL,
-               weibull = dat$c_weib, lognormal = dat$c_lnorm,
-               beta_binomial = NULL, zero_inflated_binomial = NULL,
-               zero_inflated_beta_binomial = NULL)
-  fams_trials <- c("beta_binomial", "zero_inflated_binomial",
-                   "zero_inflated_beta_binomial")
-  # projpred versions with argument 'latent_epred' get the expected values
-  has_epred <- "latent_epred" %in% names(formals(projpred::extend_family))
   for (fam in names(fits)) {
     fit <- fits[[fam]]
-    ref <- projpred::get_refmodel(fit, latent = TRUE)
-    # with all draws, the functions give the brms results
-    ilpreds <- posterior_linpred(fit, transform = TRUE)
-    if (fam %in% fams_trials) {
-      # for families with trials, 'latent_ilink' gives 'trials * mu'
-      ilpreds <- dat$n_bb[1] * ilpreds
-    }
-    expect_equivalent(ref$family$latent_ilink(t(ref$mu), cl_ref = 1),
-                      ilpreds, info = fam)
-    ll <- ref$family$latent_ll_oscale(
-      ilpreds, dis = ref$dis, y_oscale = ref$y_oscale, cens = cens[[fam]],
-      cl_ref = seq_len(ndraws(fit))
+    out <- check_latent_oscale(fit, trials = trials, info = fam)
+    ref <- out$ref
+    expect_null(attr(ref$family$latent_ll_oscale, "trunc_bounds"), info = fam)
+    # the trials go to the response-scale functions, not to the weights
+    expect_equal(ref$wobs, rep(1, N), info = fam)
+    expect_true(all(out$ppd <= trials & out$ppd == round(out$ppd)),
+                info = fam)
+    dat_new <- dat[1:5, ]
+    expect_equal(ref$extract_model_data(fit, newdata = dat_new,
+                                        extract_y = FALSE)$weights,
+                 rep(1, 5), info = fam)
+    dat_new$n_bb <- 10
+    expect_error(
+      ref$extract_model_data(fit, newdata = dat_new, extract_y = FALSE),
+      paste0("number of trials of the reference model (", trials, ")"),
+      fixed = TRUE
     )
-    expect_equivalent(ll, log_lik(fit), info = fam)
-    if (has_epred) {
-      epred <- ref$family$latent_epred(
-        ilpreds, dis = ref$dis, cl_ref = seq_len(ndraws(fit))
-      )
-      expect_equivalent(epred, posterior_epred(fit), info = fam)
-    }
-    if (fam == "lognormal") {
-      expect_equal(ref$dis, as.data.frame(fit, variable = "sigma")$sigma)
-    }
-    bounds_attr <- attr(ref$family$latent_ll_oscale, "trunc_bounds")
-    if (fam == "lognormal") {
-      expect_equal(bounds_attr, list(lb = -Inf, ub = 3))
-    } else {
-      expect_null(bounds_attr, info = fam)
-    }
-
-    vs <- projpred::varsel(ref, nterms_max = 2, verbose = FALSE)
-    smry <- summary(vs, stats = "elpd")$perf_sub
-    expect_true(all(is.finite(smry$elpd)), info = fam)
-    prj <- projpred::project(ref, predictor_terms = "x1", nclusters = 5)
-    ppd <- projpred::proj_predict(prj, nresample_clusters = 30)
-    expect_equal(dim(ppd), c(30, N), info = fam)
-    expect_true(all(is.finite(ppd) & ppd >= 0), info = fam)
-    if (fam == "lognormal") {
-      expect_true(all(ppd <= 3))
-    }
-    if (fam %in% fams_trials) {
-      # the trials go to the response-scale functions, not to the weights
-      expect_equal(ref$wobs, rep(1, N), info = fam)
-      expect_true(all(ppd <= 20 & ppd == round(ppd)), info = fam)
-      dat_new <- dat[1:5, ]
-      expect_equal(ref$extract_model_data(fit, newdata = dat_new,
-                                          extract_y = FALSE)$weights,
-                   rep(1, 5), info = fam)
-      dat_new$n_bb <- 10
-      expect_error(
-        ref$extract_model_data(fit, newdata = dat_new, extract_y = FALSE),
-        "support only the number of trials of the reference model (20)",
-        fixed = TRUE
-      )
-    }
   }
 }))
 
@@ -514,7 +531,7 @@ test_that("projpred latent projection warns or stops for unsupported models",
                "does not support 'weights' or 'trials'")
 }))
 
-test_that("projpred latent projection works with varying numbers of trials",
+test_that("projpred latent projection handles varying numbers of trials",
           suppressWarnings({
   set.seed(1234)
   dat <- sim_latent_data()
