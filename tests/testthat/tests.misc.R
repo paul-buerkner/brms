@@ -56,6 +56,20 @@ test_that("nlist works correctly", {
   expect_equal(nlist(x = x, y = y), exlist)
   expect_equal(nlist(x, y), exlist)
   expect_equal(nlist(x = x, y), exlist)
+  expect_identical(nlist(x, b = 2, sqrt(4)), list(x = 1, b = 2, `sqrt(4)` = 2))
+  expect_identical(names(nlist()), character(0))
+  f <- function(...) nlist(x, ...)
+  expect_identical(do.call(f, list(z = 1:3)), list(x = 1, z = 1:3))
+  expect_identical(names(do.call(f, list(1, z = 2))), c("x", "1", "z"))
+})
+
+test_that("nlist does not deparse named values passed via do.call()", {
+  skip_on_cran()
+  x <- 1
+  f <- function(...) nlist(x, ...)
+  # non-integer doubles: deparsing 1e6 of them takes several seconds
+  big <- sqrt(seq_len(1e6))
+  expect_lt(system.time(do.call(f, list(z = big)))[["elapsed"]], 1)
 })
 
 test_that("use_alias works correctly", {

@@ -4,29 +4,53 @@
 \alias{Hurdle}
 \alias{dhurdle_poisson}
 \alias{phurdle_poisson}
+\alias{qhurdle_poisson}
+\alias{rhurdle_poisson}
 \alias{dhurdle_negbinomial}
 \alias{phurdle_negbinomial}
+\alias{qhurdle_negbinomial}
+\alias{rhurdle_negbinomial}
 \alias{dhurdle_gamma}
 \alias{phurdle_gamma}
+\alias{qhurdle_gamma}
+\alias{rhurdle_gamma}
 \alias{dhurdle_lognormal}
 \alias{phurdle_lognormal}
+\alias{qhurdle_lognormal}
+\alias{rhurdle_lognormal}
 \title{Hurdle Distributions}
 \usage{
 dhurdle_poisson(x, lambda, hu, log = FALSE)
 
 phurdle_poisson(q, lambda, hu, lower.tail = TRUE, log.p = FALSE)
 
+qhurdle_poisson(p, lambda, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_poisson(n, lambda, hu)
+
 dhurdle_negbinomial(x, mu, shape, hu, log = FALSE)
 
 phurdle_negbinomial(q, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_negbinomial(p, mu, shape, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_negbinomial(n, mu, shape, hu)
 
 dhurdle_gamma(x, shape, scale, hu, log = FALSE)
 
 phurdle_gamma(q, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
 
+qhurdle_gamma(p, shape, scale, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_gamma(n, shape, scale, hu)
+
 dhurdle_lognormal(x, mu, sigma, hu, log = FALSE)
 
 phurdle_lognormal(q, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
+
+qhurdle_lognormal(p, mu, sigma, hu, lower.tail = TRUE, log.p = FALSE)
+
+rhurdle_lognormal(n, mu, sigma, hu)
 }
 \arguments{
 \item{x}{Vector of quantiles.}
@@ -42,6 +66,10 @@ Else, return P(X > x) .}
 
 \item{log.p}{Logical; If \code{TRUE}, values are returned on the log scale.}
 
+\item{p}{Vector of probabilities.}
+
+\item{n}{Number of draws to sample from the distribution.}
+
 \item{mu, lambda}{location parameter}
 
 \item{shape}{shape parameter}
@@ -49,7 +77,8 @@ Else, return P(X > x) .}
 \item{sigma, scale}{scale parameter}
 }
 \description{
-Density and distribution functions for hurdle distributions.
+Density, distribution function, quantile function and random generation
+for hurdle distributions.
 }
 \details{
 The density of a hurdle distribution can be specified as follows.

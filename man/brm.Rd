@@ -37,7 +37,7 @@ brm(
   algorithm = getOption("brms.algorithm", "sampling"),
   backend = getOption("brms.backend", "rstan"),
   future = getOption("future", FALSE),
-  silent = 1,
+  silent = getOption("brms.silent", 1),
   seed = NA,
   save_model = NULL,
   stan_model_args = list(),
@@ -70,7 +70,8 @@ linear \code{gaussian} model is applied. In multivariate models,
 
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
+\code{c} method or the \code{+} operator. See also
+\code{\link[brms:default_prior.default]{default_prior}}
 for more help.}
 
 \item{autocor}{(Deprecated) An optional \code{\link{cor_brms}} object
@@ -241,12 +242,16 @@ values. Can be set globally for the current \R session via the
 \code{"brms.algorithm"} option (see \code{\link{options}}).}
 
 \item{backend}{Character string naming the package to use as the backend for
-fitting the Stan model. Options are \code{"rstan"} (the default) or
-\code{"cmdstanr"}. Can be set globally for the current \R session via the
+fitting the Stan model. Options are \code{"rstan"} (the default),
+\code{"cmdstanr"}, or \code{"stanli"}. Can be set globally for the
+current \R session via the
 \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 \pkg{rstan} and \pkg{cmdstanr} packages are available at
 \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-respectively. Additionally a \code{"mock"} backend is available to make
+respectively. The \code{"stanli"} backend runs the model with the
+\pkg{stanli} package (\url{https://github.com/seantalts/stanli}), which
+needs no C++ toolchain and has no compilation step.
+Additionally a \code{"mock"} backend is available to make
 testing \pkg{brms} and packages that depend on it easier.
 The \code{"mock"} backend does not actually do any fitting, it only checks
 the generated Stan code for correctness and then returns whatever is passed
@@ -264,7 +269,9 @@ informational messages of compiler and sampler are suppressed.
 If \code{2}, even more messages are suppressed. The actual
 sampling progress is still printed. Set \code{refresh = 0} to turn this off
 as well. If using \code{backend = "rstan"} you can also set
-\code{open_progress = FALSE} to prevent opening additional progress bars.}
+\code{open_progress = FALSE} to prevent opening additional progress bars.
+Can be set globally for the current \R session via the
+\code{"brms.silent"} option (see \code{\link{options}}).}
 
 \item{seed}{The seed for random number generation to make results
 reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
@@ -321,7 +328,11 @@ Stan model outside of \pkg{brms} and want to feed it back into the package.}
 For \code{backend = "rstan"} the arguments are passed to
 \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 For \code{backend = "cmdstanr"} the arguments are passed to the
-\code{cmdstanr::sample} or \code{cmdstanr::variational} method.}
+\code{cmdstanr::sample} or \code{cmdstanr::variational} method.
+For \code{backend = "stanli"} the arguments are passed to
+\code{stanli::sample_model}, \code{stanli::variational_model},
+\code{stanli::pathfinder_model} or \code{stanli::laplace_model},
+depending on \code{algorithm}.}
 }
 \value{
 An object of class \code{brmsfit}, which contains the posterior
@@ -333,7 +344,8 @@ Fit Bayesian generalized (non-)linear multivariate multilevel models
 using Stan for full Bayesian inference. A wide range of distributions
 and link functions are supported, allowing users to fit -- among others --
 linear, robust linear, count data, survival, response times, ordinal,
-zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
+zero-inflated, hurdle, extended-support beta regression, and even
+self-defined mixture models all in a
 multilevel context. Further modeling options include non-linear and
 smooth terms, auto-correlation structures, censored data, meta-analytic
 standard errors, and quite a few more. In addition, all parameters of the

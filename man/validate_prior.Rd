@@ -19,7 +19,8 @@ validate_prior(
 \arguments{
 \item{prior}{One or more \code{brmsprior} objects created by
 \code{\link{set_prior}} or related functions and combined using the
-\code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
+\code{c} method or the \code{+} operator. See also
+\code{\link[brms:default_prior.default]{default_prior}}
 for more help.}
 
 \item{formula}{An object of class \code{\link[stats:formula]{formula}},

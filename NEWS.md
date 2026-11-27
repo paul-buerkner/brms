@@ -2,6 +2,8 @@
 
 ### New Features
 
+* Fit models with the new `stanli` backend (`backend = "stanli"`), which
+needs no C++ toolchain or compilation step.
 * Specify a prior `tag` for use in prior sensitivity analysis
 via `priorsense` thanks to Kallioinen. (#1585)
 * Specify group-level prior weights via argument `pw` in multilevel
@@ -16,9 +18,88 @@ function thanks to Daniel Sabanes Bove. (#1734)
 * Add a new global option `brms.cache_folder`, which allows users to define a 
 default directory for saving and loading cached brmsfit objects.
 Thanks to Sermet Pekin. (#1790)
+* Extend `posterior_predict` beyond random draws via argument `output`,
+which can be `"random"` (the default), `"probability"`, `"pit"`,
+`"density"`, or `"quantile"`, with supporting arguments `q`, `p`,
+`lower.tail`, `log.p`, and `log` thanks to Aki Vehtari and
+Florence Bockting. (#1857)
+* Predict all mixing proportions of a `mixture` family without a reference
+category via `refcat = NA`, analogous to `refcat = NA` in categorical models.
+Thanks to Gidon Frischkorn. (#1450)
 
 ### Bug Fixes
 
+* Fix predictions of `gp` terms with a factor `by` variable in models
+with other `gp` terms. Thanks to Nicholas Clark. (#1979)
+* Evaluate the Stan functions of ordinal models on the log scale, as `log_lik`
+does, for all links of `sratio` and `cratio` and the links other than logit
+of the other families, so improbable categories no longer make the log
+density `-Inf`. Thanks to Ahmed Eldeeb. (#1962)
+* Fix compilation of models with the softit link, and of non-linear
+`cumulative`, `hurdle_cumulative` and `acat` models with the cauchit link.
+Thanks to Ahmed Eldeeb. (#1962)
+* Use the complementary CDFs in the Stan code of two-sided truncation and
+interval censoring once the CDF of the lower bound rounds towards 1, for
+the `poisson`, `beta_binomial`, `weibull`, `lognormal`, `shifted_lognormal`,
+`exgaussian`, and `student` families, whose truncated log density otherwise
+became inaccurate and then infinite. Thanks to Ahmed Eldeeb. (#1956)
+* Evaluate `log_lik` of ordinal models on the log scale throughout, so
+improbable categories no longer give `-Inf` or `NaN` where their log
+probability is representable, and stop it failing for two categories or a
+single draw. Thanks to Ahmed Eldeeb. (#1192)
+* Factor out the largest category in `log_softmax()`, which overflowed or
+underflowed for large linear predictors. Thanks to Ahmed Eldeeb. (#1951)
+* Index the top category as `nthres + 1` in the Stan code of logit
+`hurdle_cumulative` models with a predicted `disc` or `cs()` terms, which
+stopped sampling with an index error. Thanks to Ahmed Eldeeb. (#1952)
+* Improve numerical consistency of COM-Poisson probabilities and means.
+Refit models where the previous approximation was inaccurate. (#1938)
+* Account for censoring and truncation in COM-Poisson `log_lik()`. (#1938)
+* Fix COM-Poisson CDF vectorization and support boundaries. (#1938)
+* Return `-Inf` rather than `NaN` from `log_sum_exp()` when both arguments
+are `-Inf`, matching Stan. This also affects `nlf()` formulas that call it.
+Thanks to Ahmed Eldeeb. (#1899)
+* Evaluate the cdf and survival function of `frechet`, `gen_extreme_value`,
+`discrete_weibull`, `asym_laplace`, `inverse.gaussian`, `exgaussian` and the
+zero-inflated and hurdle families on the log scale, so that truncated
+`log_lik` reaches them too. Thanks to Ahmed Eldeeb. (#1899)
+* Preserve the matrix structure of factors in `newdata`, which is required for
+matrix predictors of smooth terms such as `mrf`. Thanks to Sebastian
+Weber. (#1935)
+* Stop rounding `posterior_predict` output to integers for discrete models
+unless `output` is `"random"`, which collapsed probabilities and densities
+to 0 or 1. Thanks to Ahmed Eldeeb. (#1923)
+* Include the lower bound in `posterior_predict` outputs `"probability"`,
+`"pit"`, `"density"` and `"quantile"` for truncated discrete models,
+matching the other post-processing methods. Thanks to Ahmed Eldeeb. (#1923)
+* Include the lower bound when computing `posterior_epred` for truncated
+discrete models, matching the generated Stan code and `log_lik`.
+Thanks to Ahmed Eldeeb. (#1923)
+* Normalize truncated `log_lik` by `P(lb <= Y <= ub)` for integer
+responses, matching the generated Stan code, so that `loo` and `waic`
+agree with the model that was fitted. Thanks to Ahmed Eldeeb. (#1903)
+* Improve the numerical stability of `log_lik` for truncated and 
+interval-censored models, which previously returned `Inf` or `NaN` whenever 
+both bounds fell far into the same tail. Families whose CDF is not itself 
+accurate on the log scale are not yet covered. 
+Thanks to Ahmed Eldeeb. (#1899)
+* Warn when `log_lik` returns infinite values, which the existing check for 
+`NA` values did not catch. (#1899)
+* Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
+definitions in Stan. (#1899)
+* Cox models now place the knots of the baseline hazard based on the event
+times only instead of both event and censoring times. Models fitted with
+brms 2.23.1 or earlier keep using their original knots in post-processing.
+Thanks to Sebastian Weber. (#1898)
+* The basis of the baseline hazard of Cox models is now stored with the
+response instead of with the predictor terms. As a result, `log_lik`, `loo`
+and `kfold` applied to new data reuse the knots chosen at fitting time also
+for non-linear formulas. Thanks to Sebastian Weber. (#1898)
+* `kfold_predict()` supports now families whose predictions are not draws x 
+observations matrices (e.g. categorical models). (#1889)
+* `bayes_R2` now uses model-based residual variances for Gaussian and Bernoulli 
+models and falls back to residual-based computation for other families. This 
+change may lead to changes in plotting results. (#1815)
 * Avoid the creation of zombie workers when executing `log_lik`
 in parallel thanks to Aki Vehtari and Noa Kallioinen. 
 For now, `log_lik` will use PSOCK clusters if run
@@ -31,6 +112,20 @@ such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 * Make `read_csv_as_stanfit()` store `adapt_delta` and `max_treedepth` values in
 `$control` so rstan can find these values. Thanks to Tristan Mahr (#1767).
 * Enable updating argument `data2` for `brmsfit_multiple` objects. (#1776)
+* Restore the mode parameterization of the `com_poisson` family on the Stan
+side, which had switched to the classical parameterization in #1765 while the
+R-side density functions did not, so that R-side post-processing no longer
+disagrees with the sampled density whenever `shape != 1`. Also correct the
+condition selecting the asymptotic normalizing constant, which was left
+unchanged by that switch and so no longer described the intended region.
+Models fitted with `com_poisson` and `shape != 1` using affected versions
+were sampled under the classical parameterization and should be
+refitted. (#1927)
+* Compare magnitudes when skipping unrelated levels in `gr(..., cov = M)` terms
+with correlated coefficients, so that negative entries of the covariance
+matrix's Cholesky factor are no longer silently discarded. This affected
+multivariate and random-slope models using genomic or pedigree relationship
+matrices. (#1939)
 * Fix several other minor bugs.
 
 ### Other Changes
@@ -39,6 +134,7 @@ such that `step(0) == 1` thanks to Daniel Sabanes Bov. (#1734)
 * Improve efficiency of non-factorizable log-likelihoods 
 for Student-t models thanks to Seth Axen. (#1820)
 * Improve documentation in several places.
+* Support the upcoming CmdStanR 1.0 release.
 
 # brms 2.22.0
 

@@ -76,6 +76,7 @@ log_lik.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
         "Alternatively, use 'newdata' to predict only complete cases."
       )
     }
+    warn_infinite_log_lik(log_lik)
   }
   log_lik
 }
@@ -523,8 +524,10 @@ log_lik_com_poisson <- function(i, prep) {
     mu = get_dpar(prep, "mu", i),
     shape = get_dpar(prep, "shape", i = i)
   )
-  # no censoring or truncation allowed yet
-  out <- do_call(dcom_poisson, c(prep$data$Y[i], args, log = TRUE))
+  out <- log_lik_censor(dist = "com_poisson", args = args, i = i, prep = prep)
+  out <- log_lik_truncate(
+    out, cdf = pcom_poisson, args = args, i = i, prep = prep
+  )
   log_lik_weight(out, i = i, prep = prep)
 }
 
@@ -760,10 +763,8 @@ log_lik_hurdle_cumulative <- function(i, prep) {
     out <- log_ccdf(eta[, y - 1L], prep$family$link) +
       dbinom(0, size = 1, prob = hu, log = TRUE)
   } else {
-    out <- log_diff_exp(
-      log_cdf(eta[, y], prep$family$link),
-      log_cdf(eta[, y - 1L], prep$family$link)
-    ) + dbinom(0, size = 1, prob = hu, log = TRUE)
+    out <- log_diff_cdf(eta[, y], eta[, y - 1L], prep$family$link) +
+      dbinom(0, size = 1, prob = hu, log = TRUE)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -901,10 +902,7 @@ log_lik_cumulative <- function(i, prep) {
   } else if (y == nthres + 1L) {
     out <- log_ccdf(eta[, y - 1L], prep$family$link)
   } else {
-    out <- log_diff_exp(
-      log_cdf(eta[, y], prep$family$link),
-      log_cdf(eta[, y - 1L], prep$family$link)
-    )
+    out <- log_diff_cdf(eta[, y], eta[, y - 1L], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -916,17 +914,18 @@ log_lik_sratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (thres - mu)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
-    function(k) log_ccdf(eta[, k], prep$family$link)
-  )
-  if (y == 1L) {
-    out <- log1m_exp(q[, 1L])
-  } else if (y == 2L) {
-    out <- log1m_exp(q[, 2L]) + q[, 1L]
-  } else if (y == nthres + 1L) {
-    out <- rowSums(q)
-  } else {
-    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
+  # log probabilities of passing each threshold below y. The first category
+  # passes none, and the p*() link functions drop the dimensions of an empty
+  # matrix, so it is skipped rather than summed
+  out <- 0
+  if (y > 1L) {
+    q <- eta[, seq_len(min(y - 1L, nthres)), drop = FALSE]
+    out <- rowSums(log_ccdf(q, prep$family$link))
+  }
+  if (y <= nthres) {
+    # and of stopping at the y-th, taken from the log CDF directly rather
+    # than as the complement of a log probability that rounds to 0
+    out <- out + log_cdf(eta[, y], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -938,17 +937,17 @@ log_lik_cratio <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  q <- sapply(seq_len(min(y, nthres)),
-    function(k) log_cdf(eta[, k], prep$family$link)
-  )
-  if (y == 1L) {
-    out <- log1m_exp(q[, 1L])
-  } else if (y == 2L) {
-    out <- log1m_exp(q[, 2L]) + q[, 1L]
-  } else if (y == nthres + 1L) {
-    out <- rowSums(q)
-  } else {
-    out <- log1m_exp(q[, y]) + rowSums(q[, 1L:(y - 1L)])
+  # log probabilities of continuing past each threshold below y, skipping
+  # the empty product for the first category as in log_lik_sratio()
+  out <- 0
+  if (y > 1L) {
+    q <- eta[, seq_len(min(y - 1L, nthres)), drop = FALSE]
+    out <- rowSums(log_cdf(q, prep$family$link))
+  }
+  if (y <= nthres) {
+    # and of stopping at the y-th, taken from the log CCDF directly rather
+    # than as the complement of a log probability that rounds to 0
+    out <- out + log_ccdf(eta[, y], prep$family$link)
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -960,29 +959,26 @@ log_lik_acat <- function(i, prep) {
   nthres <- NCOL(thres)
   eta <- disc * (mu - thres)
   y <- prep$data$Y[i]
-  # TODO: check if computation can be made more numerically stable
   if (prep$family$link == "logit") {
-    # more efficient computation for logit link
-    q <- sapply(1:nthres, function(k) eta[, k])
-    p <- cbind(rep(0, nrow(eta)), q[, 1],
-               matrix(0, nrow = nrow(eta), ncol = nthres - 1))
-    if (nthres > 1L) {
-      p[, 3:(nthres + 1)] <-
-        sapply(3:(nthres + 1), function(k) rowSums(q[, 1:(k - 1)]))
+    # more efficient computation for logit link: the log category
+    # probabilities are a log-softmax of the cumulative sums of eta
+    p <- matrix(0, nrow = nrow(eta), ncol = nthres + 1)
+    for (k in seq_len(nthres)) {
+      p[, k + 1] <- p[, k] + eta[, k]
     }
-    out <- p[, y] - log(rowSums(exp(p)))
+    out <- log_softmax(p)[, y]
   } else {
-    q <- sapply(1:nthres, function(k)
-      inv_link(eta[, k], prep$family$link))
-    p <- cbind(apply(1 - q[, 1:nthres], 1, prod),
-               matrix(0, nrow = nrow(eta), ncol = nthres))
-    if (nthres > 1L) {
-      p[, 2:nthres] <- sapply(2:nthres, function(k)
-        apply(as.matrix(q[, 1:(k - 1)]), 1, prod) *
-          apply(as.matrix(1 - q[, k:nthres]), 1, prod))
+    # category k is proportional to prod(q[j < k]) * prod(1 - q[j >= k]),
+    # with q the inverse link of eta, so its log is a sum of log CDFs and
+    # log CCDFs; the products themselves underflow
+    lq <- log_cdf(eta, prep$family$link)
+    l1mq <- log_ccdf(eta, prep$family$link)
+    p <- matrix(0, nrow = nrow(eta), ncol = nthres + 1)
+    for (k in seq_len(nthres + 1)) {
+      p[, k] <- rowSums(lq[, seq_len(nthres) < k, drop = FALSE]) +
+        rowSums(l1mq[, seq_len(nthres) >= k, drop = FALSE])
     }
-    p[, nthres + 1] <- apply(q[, 1:nthres], 1, prod)
-    out <- log(p[, y]) - log(apply(p, 1, sum))
+    out <- log_softmax(p)[, y]
   }
   log_lik_weight(out, i = i, prep = prep)
 }
@@ -1029,9 +1025,69 @@ log_lik_censor <- function(dist, args, i, prep) {
     x <- do_call(cdf, c(y, args, log.p = TRUE))
   } else if (cens == 2) {
     rcens <- prep$data$rcens[i]
-    x <- log(do_call(cdf, c(rcens, args)) - do_call(cdf, c(y, args)))
+    # interval censoring needs log[F(rcens) - F(y)], which cancels in the
+    # tails for the same reason truncation does; see log_prob_interval()
+    x <- log_prob_interval(cdf, args, lower = y, upper = rcens)
   }
   x
+}
+
+# log of the probability mass between two bounds, log[F(upper) - F(lower)],
+# taken as F(upper) - F(lower) when F(lower) <= 1/2 and as S(lower) - S(upper)
+# otherwise, where S = 1 - F. Only one form is usable in a given tail, since a
+# probability near 1 carries no relative precision while its complement does.
+# Accuracy also needs cdf itself to be exact on the log scale there (#1899).
+# @param cdf a cumulative distribution function accepting `log.p` and
+#   `lower.tail`, as log_lik_censor() already assumes
+# @param args arguments passed to cdf
+# @param lower,upper bounds; NULL means unbounded on that side and at least
+#   one of the two must be supplied. The caller owns the bound convention
+#   for discrete responses; see #1903.
+# @return vector of log probabilities
+log_prob_interval <- function(cdf, args, lower = NULL, upper = NULL) {
+  stopifnot(!is.null(lower) || !is.null(upper))
+  lcdf <- function(q) do_call(cdf, c(q, args, log.p = TRUE))
+  lccdf <- function(q) {
+    do_call(cdf, c(q, args, log.p = TRUE, lower.tail = FALSE))
+  }
+  # one-sided intervals are just a CDF or CCDF evaluation
+  if (is.null(lower)) {
+    return(lcdf(upper))
+  }
+  if (is.null(upper)) {
+    return(lccdf(lower))
+  }
+  lcdf_lower <- lcdf(lower)
+  out <- lcdf_lower
+  out[] <- NA_real_
+  upper_tail <- which(lcdf_lower > -log(2))
+  lower_tail <- which(lcdf_lower <= -log(2))
+  if (length(lower_tail)) {
+    out[lower_tail] <- log_diff_exp(
+      lcdf(upper)[lower_tail], lcdf_lower[lower_tail]
+    )
+  }
+  if (length(upper_tail)) {
+    out[upper_tail] <- log_diff_exp(
+      lccdf(lower)[upper_tail], lccdf(upper)[upper_tail]
+    )
+  }
+  out
+}
+
+# warn about infinite log_lik values
+# @param x matrix or array of log_lik values
+# @return TRUE if a warning was issued, invisibly
+warn_infinite_log_lik <- function(x) {
+  out <- any(is.infinite(x))
+  if (out) {
+    warning2(
+      "Infinite values were found in the log-likelihood. Most commonly\n",
+      "this happens in truncated or censored models when the bounds\n",
+      "contain no probability mass under some posterior draws."
+    )
+  }
+  invisible(out)
 }
 
 # adjust log_lik in truncated models
@@ -1047,17 +1103,13 @@ log_lik_truncate <- function(x, cdf, args, i, prep) {
   if (is.null(lb) && is.null(ub)) {
     return(x)
   }
-  if (!is.null(lb)) {
-    log_cdf_lb <- do_call(cdf, c(lb, args, log.p = TRUE))
-  } else {
-    log_cdf_lb <- rep(-Inf, length(x))
+  if (!is.null(lb) && use_int(prep$family)) {
+    # inclusive lower bound, mirroring the 'lb - 1' of stan_log_lik_trunc().
+    # ceiling() additionally keeps a non-integer bound, which newdata can
+    # introduce, on the support it actually admits
+    lb <- ceiling(lb) - 1
   }
-  if (!is.null(ub)) {
-    log_cdf_ub <- do_call(cdf, c(ub, args, log.p = TRUE))
-  } else {
-    log_cdf_ub <- rep(0, length(x))
-  }
-  x - log_diff_exp(log_cdf_ub, log_cdf_lb)
+  x - log_prob_interval(cdf, args, lower = lb, upper = ub)
 }
 
 # weight log_lik values according to defined weights

@@ -138,9 +138,12 @@ prepare_predictions.brmsframe <- function(x, draws, sdata, ...) {
     if (any(ulapply(out$dpars[thetas], is.list))) {
       # theta was predicted
       missing_id <- which(ulapply(out$dpars[thetas], is.null))
-      out$dpars[[paste0("theta", missing_id)]] <- structure(
-        data2draws(0, c(ndraws, nobs)), predicted = TRUE
-      )
+      if (length(missing_id)) {
+        # a reference category exists; fill in its (zero) linear predictor
+        out$dpars[[paste0("theta", missing_id)]] <- structure(
+          data2draws(0, c(ndraws, nobs)), predicted = TRUE
+        )
+      }
     } else {
       # theta was not predicted
       out$dpars$theta <- do_call(cbind, out$dpars[thetas])
@@ -375,8 +378,8 @@ prepare_predictions_sp <- function(bframe, draws, sdata, new = FALSE, ...) {
         } else {
           warn_me <- warn_me || !new
           sdy <- data2draws(sdy, dim)
-          out$Yl[[i]] <- rcontinuous(
-            n = prod(dim), dist = "norm",
+          out$Yl[[i]] <- pp_random(
+            n = prod(dim), distribution = "norm",
             mean = Y, sd = sdy,
             lb = sdata[[paste0("lbmi_", vmi)]],
             ub = sdata[[paste0("ubmi_", vmi)]]

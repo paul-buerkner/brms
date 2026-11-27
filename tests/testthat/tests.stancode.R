@@ -337,7 +337,7 @@ test_that("link functions appear in the Stan code", {
   expect_match2(scode, "mu = inv_cauchit(mu);")
 
   scode <- stancode(y ~ x, dat, family = cumulative('cauchit'))
-  expect_match2(scode, "p = inv_cauchit(disc * (thres[1] - mu));")
+  expect_match2(scode, "return log_inv_cauchit(disc * (thres[1] - mu));")
 })
 
 test_that("Stan GLM primitives are applied correctly", {
@@ -388,6 +388,8 @@ test_that("customized covariances appear in the Stan code", {
                          data = inhaler, data2 = dat2)
   expect_match2(scode, "r_1 = scale_r_cor_cov(z_1, sd_1, L_1, Lcov_1);")
   expect_match2(scode, "cor_1[choose(k - 1, 2) + j] = Cor_1[j, k];")
+  # test issue #1939: negative entries of Lcov must not be skipped
+  expect_match2(scode, "if (abs(Lcov[icov, jcov]) > 1e-10) {")
 
   scode <- stancode(rating ~ (1 + treat | gr(subject, cor = FALSE, cov = M)),
                          data = inhaler, data2 = dat2)
@@ -398,6 +400,7 @@ test_that("customized covariances appear in the Stan code", {
   scode <- stancode(rating ~ (1 + treat | gr(subject, by = by, cov = M)),
                          data = inhaler, data2 = dat2)
   expect_match2(scode, "r_1 = scale_r_cor_by_cov(z_1, sd_1, L_1, Jby_1, Lcov_1);")
+  expect_match2(scode, "if (abs(Lcov[icov, jcov]) > 1e-10) {")
 
   expect_warning(
     scode <- stancode(rating ~ treat + period + carry + (1|subject),
@@ -422,8 +425,10 @@ test_that("truncation appears in the Stan code", {
   scode <- stancode(count | trunc(0, 150) ~ Trt,
                          data = epilepsy, family = "poisson")
   expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]) -")
+  expect_match2(scode, "(poisson_lcdf(lb[n] - 1 | mu[n]) > -1e-10 ?")
+  expect_match2(scode, "(is_inf(ub[n]) || poisson_lpmf(ub[n] | mu[n]) < -600 ?")
   expect_match2(scode,
-    "log_diff_exp(poisson_lcdf(ub[n] | mu[n]), poisson_lcdf(lb[n] - 1 | mu[n]));"
+    "log_diff_exp(poisson_lccdf(lb[n] - 1 | mu[n]), poisson_lccdf(ub[n] | mu[n]))"
   )
 })
 
@@ -914,7 +919,9 @@ test_that("Stan code of ordinal models is correct", {
     prior = prior(normal(0, 2), Intercept)
   )
   expect_match2(scode, "real cumulative_probit_lpmf(int y")
-  expect_match2(scode, "p = Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "real log_Phi(real y)")
+  expect_match2(scode, "return log_Phi(disc * (thres[1] - mu));")
+  expect_match2(scode, "if (lcdf_lower > -log2()) {")
   expect_match2(scode, "real<lower=0> delta;")
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
   expect_match2(scode, "b_Intercept = Intercept + dot_product(means_X, b);")
@@ -923,7 +930,14 @@ test_that("Stan code of ordinal models is correct", {
 
   scode <- stancode(y ~ x1, dat, family = cratio("probit"))
   expect_match2(scode, "real cratio_probit_lpmf(int y")
-  expect_match2(scode, "q[k] = std_normal_lcdf(disc * (mu - thres[k]));")
+  expect_match2(scode, "out += log_Phi(disc * (mu - thres[k]));")
+
+  scode <- stancode(
+    bf(y ~ a * x1, a ~ 1, nl = TRUE), dat, family = acat("softit"),
+    prior = prior(normal(0, 1), nlpar = "a")
+  )
+  expect_match2(scode, "real log1m_inv_softit(real y)")
+  expect_match2(scode, "l1mq[k] = log1m_inv_softit(disc * (mu - thres[k]));")
 
   scode <- stancode(y ~ x1 + cs(x2) + cs(g), dat, family = sratio())
   expect_match2(scode, "real sratio_logit_lpmf(int y")
@@ -1086,7 +1100,9 @@ test_that("Stan code of hurdle cumulative model is correct", {
   )
 
   expect_match2(scode, "real hurdle_cumulative_ordered_probit_lpmf(int y")
-  expect_match2(scode, "p = Phi(disc * (thres[1] - mu)) * (1 - hu);")
+  expect_match2(scode,
+    "return log_Phi(disc * (thres[1] - mu)) + bernoulli_lpmf(0 | hu);"
+  )
   expect_match2(scode, "Intercept[k] = first_Intercept + (k - 1.0) * delta;")
 
   # sum-to-zero thresholds
@@ -1446,6 +1462,7 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = poisson())
   expect_match2(scode, "target += poisson_lpmf(Y[n] | mu[n]);")
   expect_match2(scode, "poisson_lcdf(rcens[n] | mu[n])")
+  expect_match2(scode, "target += (poisson_lcdf(Y[n] | mu[n]) > -1e-10 ?")
 
   scode <- stancode(y | cens(x) ~ 1, dat, family = asym_laplace())
   expect_match2(scode, "target += asym_laplace_lccdf(Y[n] | mu[n], sigma, quantile);")
@@ -1455,8 +1472,10 @@ test_that("weighted, censored, and truncated likelihoods are correct", {
 
   dat$x[1] <- 2
   scode <- stancode(y | cens(x, y2) ~ 1, dat, family = asym_laplace())
-  expect_match2(scode, "target += log_diff_exp(\n")
-  expect_match2(scode, "asym_laplace_lcdf(rcens[n] | mu[n], sigma, quantile),")
+  expect_match2(scode, paste0(
+    "target += log_diff_exp(asym_laplace_lcdf(rcens[n] | mu[n], sigma, quantile), ",
+    "asym_laplace_lcdf(Y[n] | mu[n], sigma, quantile));"
+  ))
 
   dat$x <- 1
   expect_match2(stancode(y | cens(x) + weights(x) ~ 1, dat, exponential()),
@@ -1842,6 +1861,29 @@ test_that("Stan code of mixture model is correct", {
   expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
   expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
 
+  # predict all mixing proportions without a reference category
+  fam_na <- mixture(gaussian, student, exgaussian, refcat = NA)
+  scode <- stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+                         data = data, family = fam_na)
+  expect_match2(scode, "log_sum_exp_theta = log(exp(theta1[n]) + exp(theta2[n]) + exp(theta3[n]));")
+  expect_match2(scode, "theta3[n] = theta3[n] - log_sum_exp_theta;")
+  expect_match2(scode, "ps[1] = theta1[n] + normal_lpdf(Y[n] | mu1[n], sigma1);")
+  # all components are predicted; none is fixed as a reference category
+  # (the default 'theta2 = rep_vector(0.0, N);' followed by no linear predictor)
+  expect_match2(scode, "theta2 += Intercept_theta2 + Xc_theta2 * b_theta2;")
+
+  # errors when the number of predicted proportions is inconsistent
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta2 ~ x, theta3 ~ x),
+             data = data, family = fam),
+    "Can only predict all but one mixing proportion"
+  )
+  expect_error(
+    stancode(bf(y ~ x, theta1 ~ x, theta3 ~ x),
+             data = data, family = fam_na),
+    "all mixing proportions must be predicted"
+  )
+
   fam <- mixture(cumulative, sratio)
   scode <- stancode(y ~ x, data, family = fam)
   expect_match2(scode, "ordered_logistic_lpmf(Y[n] | mu1[n], Intercept_mu1);")
@@ -1854,9 +1896,13 @@ test_that("Stan code of mixture model is correct", {
     "ps[2] = log(theta2) + normal_lccdf(Y[n] | mu2[n], sigma2);"
   )
   expect_match2(scode, paste0(
-    "ps[2] = log(theta2) + log_diff_exp(\n",
-    "          normal_lcdf(rcens[n] | mu2[n], sigma2),"
+    "ps[2] = log(theta2) + log_diff_exp(normal_lcdf(rcens[n] | mu2[n], sigma2), ",
+    "normal_lcdf(Y[n] | mu2[n], sigma2));"
   ))
+  scode <- stancode(y | cens(2, y2 = 2) ~ x, data, mixture(gaussian, student))
+  expect_match2(scode,
+    "ps[2] = log(theta2) + (student_t_lcdf(Y[n] | nu2, mu2[n], sigma2) > -1e-10 ?"
+  )
 
   # truncated mixture model
   scode <- stancode(y | trunc(3) ~ x, data, fam)
@@ -1891,7 +1937,7 @@ test_that("sparse matrix multiplication is applied correctly", {
     "mu += csr_matrix_times_vector(rows(X), cols(X), wX, vX, uX, b);"
   )
   expect_match2(scode,
-    "uX_sigma[size(csr_extract_u(X_sigma))] = csr_extract_u(X_sigma);"
+    "array[size(csr_extract_u(X_sigma))] int uX_sigma = csr_extract_u(X_sigma);"
   )
   expect_match2(scode,
     paste0(
@@ -1908,7 +1954,7 @@ test_that("sparse matrix multiplication is applied correctly", {
     data, prior = prior(normal(0, 1), nlpar = a)
   )
   expect_match2(scode,
-    "vX_a[size(csr_extract_v(X_a))] = csr_extract_v(X_a);"
+    "array[size(csr_extract_v(X_a))] int vX_a = csr_extract_v(X_a);"
   )
   expect_match2(scode,
     "nlp_a += csr_matrix_times_vector(rows(X_a), cols(X_a), wX_a, vX_a, uX_a, b_a);"
@@ -2202,7 +2248,7 @@ test_that("Stan code for missing value terms works correctly", {
 
 test_that("Stan code for overimputation works correctly", {
   dat = data.frame(y = rnorm(10), x_x = rnorm(10), g = 1:10, z = 1)
-  dat$x[c(1, 3, 9)] <- NA
+  dat$x_x[c(1, 3, 9)] <- NA
   bform <- bf(y ~ mi(x_x)*g) + bf(x_x | mi(g) ~ 1) + set_rescor(FALSE)
   scode <- stancode(bform, dat, sample_prior = "yes")
   expect_match2(scode, "target += normal_lpdf(Yl_xx | mu_xx, sigma_xx)")
@@ -2441,6 +2487,61 @@ test_that("custom families are handled correctly", {
   )
   expect_match2(scode,
     "target += beta_binomial2_vec_lpmf(Y | mu, tau, vint1, vreal1);"
+  )
+
+  # check grouped thresholds with custom families
+  custom_thres_family <- custom_family(
+    "custom_thres_family",
+    dpar = c("mu", "disc"),
+    links = c("identity", "log"),
+    type = "int",
+    specials = "ordinal",
+    threshold = "flexible"
+  )
+  stan_funs <- "
+    real custom_thres_family_merged_lpmf(int y, real mu, real disc, vector thres, array[] int j) {
+      return y;
+    }
+  "
+  stanvars <- stanvar(scode = stan_funs, block = "functions")
+  dat <- data.frame(
+    response = rep(1:3, times = 2),
+    gr = rep(factor(1:3), each = 2)
+  )
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept, Jthres[n]);"
+  )
+  # check sum-to-zero grouped thresholds
+  custom_thres_family_stz <- custom_thres_family
+  custom_thres_family_stz$threshold <- "sum_to_zero"
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family_stz,
+    stanvar = stanvars,
+  )
+  expect_match2(
+    scode,
+    "target += custom_thres_family_merged_lpmf(Y[n] | mu[n], disc, merged_Intercept_stz, Jthres[n]);"
+  )
+  # threaded variants: Jthres must be indexed with the global nn,
+  scode <- stancode(
+    response | thres(gr = gr) ~ 1,
+    data = dat,
+    family = custom_thres_family,
+    stanvar = stanvars,
+    threads = threading(2)
+  )
+  expect_match2(
+    scode,
+    "ptarget += custom_thres_family_merged_lpmf(Y[nn] | mu[n], disc, merged_Intercept, Jthres[nn]);"
   )
 })
 
@@ -2682,48 +2783,6 @@ test_that("Un-normalized Stan code is correct", {
   expect_match2(scode, "target += beta_binomial2_lpmf(Y[n] | mu[n], tau, vint1[n], vreal1[n]);")
   expect_match2(scode, "gamma_lupdf(tau | 0.1, 0.1);")
 })
-
-# the new array syntax is now used throughout brms
-# test_that("Canonicalizing Stan code is correct", {
-#   # tests require cmdstanr which is not yet on CRAN
-#   skip_on_cran()
-#
-#   # only run if cmdstan >= 2.29 can be found on the system
-#   # otherwise the canonicalized code will cause test failures
-#   cmdstan_version <- try(cmdstanr::cmdstan_version(), silent = TRUE)
-#   found_cmdstan <- !is_try_error(cmdstan_version)
-#   skip_if_not(found_cmdstan && cmdstan_version >= "2.29.0")
-#   options(brms.backend = "cmdstanr")
-#
-#   scode <- stancode(
-#     count ~ zAge + zBase * Trt + (1|patient) + (1|obs),
-#     data = epilepsy, family = poisson(),
-#     prior = prior(student_t(5,0,10), class = b) +
-#       prior(cauchy(0,2), class = sd),
-#     normalize = FALSE
-#   )
-#   expect_match2(scode, "array[M_1] vector[N_1] z_1;")
-#   expect_match2(scode, "array[M_2] vector[N_2] z_2;")
-#
-#   model <- "
-#   data {
-#     int a[5];
-#     real b[5];
-#     vector[5] c[4];
-#   }
-#   parameters {
-#     real d[5];
-#     vector[5] e[4];
-#   }
-#   "
-#   stan_file <- cmdstanr::write_stan_file(model)
-#   canonicalized_code <- .canonicalize_stan_model(stan_file, overwrite_file = FALSE)
-#   expect_match2(canonicalized_code, "array[5] int a;")
-#   expect_match2(canonicalized_code, "array[5] real b;")
-#   expect_match2(canonicalized_code, "array[4] vector[5] c;")
-#   expect_match2(canonicalized_code, "array[5] real d;")
-#   expect_match2(canonicalized_code, "array[4] vector[5] e;")
-# })
 
 test_that("Normalizing Stan code works correctly", {
   normalize_stancode <- brms:::normalize_stancode

@@ -73,6 +73,10 @@ brmsfit <- function(formula = NULL, data = data.frame(), prior = empty_prior(),
     version$cmdstanr <- utils::packageVersion("cmdstanr")
     version$cmdstan <- as.package_version(cmdstanr::cmdstan_version())
   }
+  if (backend == "stanli") {
+    require_package("stanli")
+    version$stanli <- utils::packageVersion("stanli")
+  }
   x <- nlist(
     formula, data, prior, data2, stanvars, model, save_pars, algorithm,
     backend, threads, opencl, stan_args, fit, basis, criteria, file,

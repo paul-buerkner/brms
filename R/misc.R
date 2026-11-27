@@ -638,6 +638,25 @@ collapse_lists <- function(..., ls = list()) {
   out
 }
 
+# recursively add the elements of 'y' that are missing in 'x'
+# classed objects (e.g. mgcv smooths) and unnamed lists count as single elements
+# @param x a list whose existing elements are kept
+# @param y a list providing the missing elements
+fill_missing <- function(x, y) {
+  if (is.null(x)) {
+    return(y)
+  }
+  is_plain <- function(z) is.list(z) && !is.object(z)
+  for (n in names(y)) {
+    if (is.null(x[[n]])) {
+      x[[n]] <- y[[n]]
+    } else if (is_plain(x[[n]]) && is_plain(y[[n]])) {
+      x[[n]] <- fill_missing(x[[n]], y[[n]])
+    }
+  }
+  x
+}
+
 # create a named list using object names
 nlist <- function(...) {
   m <- match.call()
@@ -645,11 +664,14 @@ nlist <- function(...) {
   no_names <- is.null(names(dots))
   has_name <- if (no_names) FALSE else nzchar(names(dots))
   if (all(has_name)) return(dots)
-  nms <- as.character(m)[-1]
+  # deparse only the arguments that need a name: after do.call(), the call
+  # holds the argument values, which can be large
+  unnamed <- if (no_names) seq_along(dots) else which(!has_name)
+  nms <- as.character(m[c(1L, unnamed + 1L)])[-1]
   if (no_names) {
     names(dots) <- nms
   } else {
-    names(dots)[!has_name] <- nms[!has_name]
+    names(dots)[!has_name] <- nms
   }
   dots
 }
@@ -1096,6 +1118,11 @@ is_try_error <- function(x) {
 # check if verbose mode is activated
 is_verbose <- function() {
   as_one_logical(getOption("brms.verbose", FALSE))
+}
+
+# is a variable a date or something similar?
+is_date_like <- function(x) {
+  inherits(x, c("Date", "POSIXt", "difftime"))
 }
 
 viridis6 <- function() {

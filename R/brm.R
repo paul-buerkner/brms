@@ -4,7 +4,8 @@
 #' using Stan for full Bayesian inference. A wide range of distributions
 #' and link functions are supported, allowing users to fit -- among others --
 #' linear, robust linear, count data, survival, response times, ordinal,
-#' zero-inflated, hurdle, extended-support beta regression, and even self-defined mixture models all in a
+#' zero-inflated, hurdle, extended-support beta regression, and even
+#' self-defined mixture models all in a
 #' multilevel context. Further modeling options include non-linear and
 #' smooth terms, auto-correlation structures, censored data, meta-analytic
 #' standard errors, and quite a few more. In addition, all parameters of the
@@ -31,7 +32,8 @@
 #'   \code{family} might also be a list of families.
 #' @param prior One or more \code{brmsprior} objects created by
 #'   \code{\link{set_prior}} or related functions and combined using the
-#'   \code{c} method or the \code{+} operator. See also \code{\link[brms:default_prior.default]{default_prior}}
+#'   \code{c} method or the \code{+} operator. See also
+#'   \code{\link[brms:default_prior.default]{default_prior}}
 #'   for more help.
 #' @param data2 A named \code{list} of objects containing data, which
 #'   cannot be passed via argument \code{data}. Required for some objects
@@ -170,12 +172,16 @@
 #'   values. Can be set globally for the current \R session via the
 #'   \code{"brms.algorithm"} option (see \code{\link{options}}).
 #' @param backend Character string naming the package to use as the backend for
-#'   fitting the Stan model. Options are \code{"rstan"} (the default) or
-#'   \code{"cmdstanr"}. Can be set globally for the current \R session via the
+#'   fitting the Stan model. Options are \code{"rstan"} (the default),
+#'   \code{"cmdstanr"}, or \code{"stanli"}. Can be set globally for the
+#'   current \R session via the
 #'   \code{"brms.backend"} option (see \code{\link{options}}). Details on the
 #'   \pkg{rstan} and \pkg{cmdstanr} packages are available at
 #'   \url{https://mc-stan.org/rstan/} and \url{https://mc-stan.org/cmdstanr/},
-#'   respectively. Additionally a \code{"mock"} backend is available to make
+#'   respectively. The \code{"stanli"} backend runs the model with the
+#'   \pkg{stanli} package (\url{https://github.com/seantalts/stanli}), which
+#'   needs no C++ toolchain and has no compilation step.
+#'   Additionally a \code{"mock"} backend is available to make
 #'   testing \pkg{brms} and packages that depend on it easier.
 #'   The \code{"mock"} backend does not actually do any fitting, it only checks
 #'   the generated Stan code for correctness and then returns whatever is passed
@@ -197,6 +203,8 @@
 #'   sampling progress is still printed. Set \code{refresh = 0} to turn this off
 #'   as well. If using \code{backend = "rstan"} you can also set
 #'   \code{open_progress = FALSE} to prevent opening additional progress bars.
+#'   Can be set globally for the current \R session via the
+#'   \code{"brms.silent"} option (see \code{\link{options}}).
 #' @param seed The seed for random number generation to make results
 #'   reproducible. If \code{NA} (the default), \pkg{Stan} will set the seed
 #'   randomly.
@@ -245,6 +253,10 @@
 #'   \code{\link[rstan]{sampling}} or \code{\link[rstan]{vb}}.
 #'   For \code{backend = "cmdstanr"} the arguments are passed to the
 #'   \code{cmdstanr::sample} or \code{cmdstanr::variational} method.
+#'   For \code{backend = "stanli"} the arguments are passed to
+#'   \code{stanli::sample_model}, \code{stanli::variational_model},
+#'   \code{stanli::pathfinder_model} or \code{stanli::laplace_model},
+#'   depending on \code{algorithm}.
 #'
 #' @return An object of class \code{brmsfit}, which contains the posterior
 #'   draws along with many other useful information about the model. Use
@@ -450,7 +462,7 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 drop_unused_levels = TRUE, stanvars = NULL, stan_funs = NULL,
                 fit = NA, save_pars = getOption("brms.save_pars", NULL),
                 save_ranef = NULL, save_mevars = NULL, save_all_pars = NULL,
-                init = NULL, inits = NULL, chains = 4, 
+                init = NULL, inits = NULL, chains = 4,
                 iter = getOption("brms.iter", 2000),
                 warmup = floor(iter / 2), thin = 1,
                 cores = getOption("mc.cores", 1),
@@ -460,7 +472,8 @@ brm <- function(formula, data, family = gaussian(), prior = NULL,
                 control = NULL,
                 algorithm = getOption("brms.algorithm", "sampling"),
                 backend = getOption("brms.backend", "rstan"),
-                future = getOption("future", FALSE), silent = 1,
+                future = getOption("future", FALSE),
+                silent = getOption("brms.silent", 1),
                 seed = NA, save_model = NULL, stan_model_args = list(),
                 file = NULL, file_compress = TRUE,
                 file_refit = getOption("brms.file_refit", "never"),

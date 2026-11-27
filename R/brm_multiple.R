@@ -79,7 +79,8 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
                          data2 = NULL, autocor = NULL, cov_ranef = NULL,
                          sample_prior = c("no", "yes", "only"),
                          sparse = NULL, knots = NULL, stanvars = NULL,
-                         stan_funs = NULL, silent = 1, recompile = FALSE,
+                         stan_funs = NULL, silent = getOption("brms.silent", 1),
+                         recompile = FALSE,
                          combine = TRUE, fit = NA,
                          algorithm = getOption("brms.algorithm", "sampling"),
                          seed = NA, file = NULL, file_compress = TRUE,
@@ -146,16 +147,23 @@ brm_multiple <- function(formula, data, family = gaussian(), prior = NULL,
     return(fit)
   }
 
-  .brm <- function(i, ...) {
+  .brm <- function(i, newdata, data2, fit, silent, recompile, ...) {
     if (silent < 2) {
       message("Fitting imputed model ", i)
     }
-    update(fit, newdata = data[[i]], data2 = data2[[i]],
-           recompile = recompile, silent = silent, ...)
+    update(
+      fit, newdata = newdata, data2 = data2,
+      recompile = recompile, silent = silent, seed = seed,
+      ...
+    )
   }
 
-  fits <- future.apply::future_lapply(
-    seq_along(data), .brm, ..., future.seed = TRUE
+  # All objects to future_mapply() must be of the same length
+  data2 <- data2 %||% vector("list", length = length(data))
+  fits <- future.apply::future_mapply(
+    FUN = .brm, i = seq_along(data), newdata = data, data2 = data2,
+    MoreArgs = list(fit = fit, silent = silent, recompile = recompile, ...),
+    SIMPLIFY = FALSE, future.seed = TRUE
   )
 
   if (combine) {

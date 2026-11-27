@@ -114,12 +114,18 @@ test_that("autocor has reasonable ouputs", {
 })
 
 test_that("bayes_R2 has reasonable ouputs", {
-  fit1 <- add_criterion(fit1, "bayes_R2")
-  R2 <- bayes_R2(fit1, summary = FALSE)
+  expect_warning(
+    R2 <- bayes_R2(fit1, summary = FALSE),
+    "No model-based residual variance is currently implemented"
+  )
+  expect_no_warning(
+    R2 <- bayes_R2(fit1, method = "residual", summary = FALSE)
+  )
   expect_equal(dim(R2), c(ndraws(fit1), 1))
-  R2 <- bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ], re_formula = NA)
+  fit1 <- SW(add_criterion(fit1, "bayes_R2"))
+  R2 <- SW(bayes_R2(fit2, newdata = model.frame(fit2)[1:5, ], re_formula = NA))
   expect_equal(dim(R2), c(1, 4))
-  R2 <- bayes_R2(fit6)
+  R2 <- SW(bayes_R2(fit6))
   expect_equal(dim(R2), c(2, 4))
 })
 
@@ -468,7 +474,7 @@ test_that("loo has reasonable outputs", {
   loo6_2 <- SW(loo(fit6, cores = 1, newdata = fit6$data))
   expect_true(is.numeric(loo6_2$estimates))
   loo_compare <- loo_compare(loo6_1, loo6_2)
-  expect_range(loo_compare[2, 1], -1, 1)
+  expect_range(loo_compare$elpd_diff[2], -1, 1)
 })
 
 test_that("loo_subsample has reasonable outputs", {

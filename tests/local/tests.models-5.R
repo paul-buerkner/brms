@@ -1,5 +1,63 @@
 source("setup_tests_local.R")
 
+old_bayes_R2 <- function(fit) {
+  y <- brms:::get_y(fit, warn = TRUE)
+  ypred <- posterior_epred(fit, sort = TRUE)
+  e <- -1 * sweep(ypred, 2, y)
+  var_ypred <- matrixStats::rowVars(ypred)
+  var_e <- matrixStats::rowVars(e)
+  var_ypred / (var_ypred + var_e)
+}
+
+test_that("bayes_R2 prior-only draws match model-based formula", {
+  set.seed(2801)
+  dat <- data.frame(
+    x = rnorm(40),
+    y = rnorm(40)
+  )
+  fit <- brm(
+    y ~ x, data = dat, family = gaussian(),
+    prior = c(
+      prior(normal(0, 0.5), class = b),
+      prior(normal(0, 0.5), class = Intercept),
+      prior(exponential(1), class = sigma)
+    ),
+    sample_prior = "only",
+    chains = 1, iter = 600, warmup = 200,
+    seed = 2802, refresh = 0
+  )
+  ypred <- posterior_epred(fit, sort = TRUE)
+  sigma <- posterior_epred(fit, dpar = "sigma", sort = TRUE)
+  var_mupred <- matrixStats::rowVars(ypred)
+  var_res <- matrixStats::rowMeans2(sigma^2)
+  expected <- var_mupred / (var_mupred + var_res)
+  expect_equal(bayes_R2(fit, summary = FALSE)[, 1], expected)
+})
+
+test_that("bayes_R2 posterior difference shrinks with larger n", {
+  make_fit <- function(n, seed) {
+    set.seed(seed)
+    dat <- data.frame(x = rnorm(n))
+    dat$y <- 1 + 1.5 * dat$x + rnorm(n, sd = 1)
+    brm(
+      y ~ x, data = dat, family = gaussian(),
+      chains = 1, iter = 700, warmup = 300,
+      seed = seed, refresh = 0
+    )
+  }
+  fit_small <- make_fit(8, 2803)
+  fit_large <- make_fit(250, 2804)
+
+  model_small <- bayes_R2(fit_small, summary = FALSE)[, 1]
+  model_large <- bayes_R2(fit_large, summary = FALSE)[, 1]
+  residual_small <- old_bayes_R2(fit_small)
+  residual_large <- old_bayes_R2(fit_large)
+
+  diff_small <- abs(stats::median(model_small) - stats::median(residual_small))
+  diff_large <- abs(stats::median(model_large) - stats::median(residual_large))
+  expect_gt(diff_small, diff_large)
+})
+
 test_that("global shrinkage priors work correctly", suppressWarnings({
   set.seed(2563)
   dat <- epilepsy
@@ -173,6 +231,89 @@ test_that("projpred methods can be run", suppressWarnings({
   # takes very long and hence commented out
   # cv_vs <- cv_varsel(fit)
   # expect_is(vs, "vsel")
+}))
+
+test_that("projpred K-fold reference models use the 'dis' of their refit",
+          suppressWarnings({
+  fit <- brm(count ~ zAge + zBase, data = epilepsy, refresh = 0)
+  # the refit without the first 20 rows stands in for a K-fold refit
+  fit_fold <- update(fit, newdata = epilepsy[-(1:20), ], refresh = 0)
+  sigma_fold <- as.data.frame(fit_fold, variable = "sigma")$sigma
+
+  ref <- projpred::get_refmodel(fit)
+  expect_equal(ref$cvrefbuilder(fit_fold)$dis, sigma_fold)
+
+  dis_user <- rep(1, ndraws(fit))
+  ref_user <- projpred::get_refmodel(fit, dis = dis_user)
+  expect_equal(ref_user$cvrefbuilder(fit_fold)$dis, dis_user)
+}))
+
+test_that("projpred K-fold CV uses a user-supplied 'cvrefbuilder'",
+          suppressWarnings({
+  fit <- brm(count ~ zAge + zBase, data = epilepsy, refresh = 0)
+  # the refit without the first 20 rows stands in for a K-fold refit
+  fit_fold <- update(fit, newdata = epilepsy[-(1:20), ], refresh = 0)
+  sigma_fold <- as.data.frame(fit_fold, variable = "sigma")$sigma
+
+  cvrb_ks <- integer()
+  cvrb <- function(cvfit) {
+    cvrb_ks <<- c(cvrb_ks, cvfit$projpred_k)
+    sigma <- as.data.frame(cvfit, variable = "sigma")$sigma
+    projpred::get_refmodel(cvfit, dis = 2 * sigma,
+                           called_from_cvrefbuilder = TRUE)
+  }
+  ref <- projpred::get_refmodel(fit, cvrefbuilder = cvrb)
+  expect_identical(ref$cvrefbuilder, cvrb)
+  expect_equal(ref$cvrefbuilder(fit_fold)$dis, 2 * sigma_fold)
+
+  # the 'cvfun' returns the full-data fit for each fold, so no refit is needed
+  cvfun <- function(folds, ...) rep(list(fit), max(folds))
+  ref <- projpred::get_refmodel(fit, cvfun = cvfun, cvrefbuilder = cvrb)
+  cvrb_ks <- integer()
+  cvvs <- projpred::cv_varsel(ref, cv_method = "kfold", K = 2,
+                              nterms_max = 1, verbose = FALSE)
+  expect_is(cvvs, "vsel")
+  expect_equal(cvrb_ks, 1:2)
+
+  expect_error(projpred::get_refmodel(fit, cvrefbuilder = "a"),
+               "'cvrefbuilder' should be a function")
+}))
+
+test_that("projpred methods can be run with monotonic terms",
+          suppressWarnings({
+  set.seed(1234)
+  dat <- data.frame(
+    x = sample(0:4, 100, TRUE), z = rnorm(100),
+    f = factor(sample(c("lo", "mid", "hi"), 100, TRUE),
+               levels = c("lo", "mid", "hi"), ordered = TRUE)
+  )
+  dat$y <- c(0, 1, 1.5, 1.7, 1.8)[dat$x + 1] +
+    c(0, 0.4, 0.6)[as.integer(dat$f)] + 0.5 * dat$z + rnorm(100, sd = 0.5)
+  fit <- brm(y ~ mo(x) + mo(f) + z, data = dat, refresh = 0)
+
+  vs <- projpred::varsel(fit)
+  expect_is(vs, "vsel")
+  expect_setequal(projpred::ranking(vs)$fulldata, c("mo(x)", "mo(f)", "z"))
+  prj <- projpred::project(fit, predictor_terms = c("mo(x)", "mo(f)", "z"),
+                           ndraws = 25)
+  pred_new <- projpred::proj_linpred(prj, newdata = dat[1:5, ])$pred
+  pred_train <- projpred::proj_linpred(prj)$pred
+  expect_equal(unname(pred_new), unname(pred_train[, 1:5]))
+
+  # me() and mi() terms are not supported
+  fit_me <- brm(y ~ me(z, 0.1) + mo(x), data = dat, empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_me), "me\\(\\) or mi\\(\\)")
+
+  # the checks also apply to categorical models; 3 categories give the dpars
+  # 'mu2' and 'mu3' and no dpar 'mu'
+  dat$ycat <- factor(sample(1:3, 100, TRUE))
+  fit_me_cat <- brm(ycat ~ me(z, 0.1) + mo(x), data = dat,
+                    family = categorical(), empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_me_cat), "me\\(\\) or mi\\(\\)")
+  fit_gp_cat <- brm(ycat ~ gp(z), data = dat,
+                    family = categorical(), empty = TRUE)
+  expect_error(projpred::get_refmodel(fit_gp_cat),
+               "only supports standard multilevel")
 }))
 
 test_that("alternative algorithms can be used", suppressWarnings({

@@ -438,7 +438,8 @@ models for all parameters of the assumed response distribution.
   changed to an integer array. That way, covariates can also be used
   for indexing purposes in Stan.
 
-  Non-linear models may not be uniquely identified and / or show bad convergence.
+  Parameters of non-linear models may not be uniquely identified or the posterior
+  inference may have convergence issues.
   For this reason it is mandatory to specify priors on the non-linear parameters.
   For instructions on how to do that, see \code{\link{set_prior}}.
   For some examples of non-linear models, see \code{vignette("brms_nonlinear")}.
@@ -482,8 +483,8 @@ models for all parameters of the assumed response distribution.
   scale if the can only be within the unit interval.
 
   Alternatively, one may fix distributional parameters to certain values.
-  However, this is mainly useful when models become too
-  complicated and otherwise have convergence issues.
+  However, this is mainly useful when a model becomes too
+  complicated and posterior inference has convergence issues.
   We thus suggest to be generally careful when making use of this option.
   The \code{quantile} parameter of the \code{asym_laplace} distribution
   is a good example where it is useful. By fixing \code{quantile},
@@ -558,7 +559,12 @@ models for all parameters of the assumed response distribution.
   one of the them has to be predicted, while the remaining one is used
   as the reference category to identify the model. The so-called 'softmax'
   transformation is applied on the linear predictor terms to form a
-  probability vector.
+  probability vector. Alternatively, by setting \code{refcat = NA} in
+  \code{\link{mixture}}, all mixing proportions can be predicted without a
+  reference category. In this case, the 'softmax' transformation is applied
+  to all linear predictor terms. As the resulting model is only weakly
+  identified, informative priors on the \code{theta} parameters are strongly
+  recommended.
 
   For more information on mixture models, see
   the documentation of \code{\link{mixture}}.

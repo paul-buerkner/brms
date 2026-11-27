@@ -77,11 +77,25 @@ log_cdf <- function(x, link) {
     logit = log_inv_logit(x),
     probit = pnorm(x, log.p = TRUE),
     cauchit = pcauchy(x, log.p = TRUE),
-    cloglog = log1m_exp(-exp(x)),
+    cloglog = log_inv_cloglog(x),
     probit_approx = pnorm(x, log.p = TRUE),
     softit = log_inv_softit(x),
     stop2("Link '", link, "' is not supported.")
   )
+}
+
+# log[F(upper) - F(lower)] for unit interval link functions. Where F(lower)
+# exceeds 1/2 the upper tail is used instead, as in log_prob_interval()
+# (#1899): the log CDFs are near 0 there and lose the difference once they are
+# subnormal, and much earlier for softit, while the log CCDFs keep it
+# @param upper,lower vectors with upper >= lower
+# @param link a character string defining the link
+log_diff_cdf <- function(upper, lower, link) {
+  lcdf_lower <- log_cdf(lower, link)
+  out <- log_diff_exp(log_cdf(upper, link), lcdf_lower)
+  ut <- which(lcdf_lower > -log(2))
+  out[ut] <- log_diff_exp(log_ccdf(lower[ut], link), log_ccdf(upper[ut], link))
+  out
 }
 
 # log CCDF for unit interval link functions
@@ -780,6 +794,16 @@ update_misc_env <- function(x, recompile = FALSE, only_windows = FALSE) {
   stopifnot(is.brmsfit(x))
   recompile <- as_one_logical(recompile)
   only_windows <- as_one_logical(only_windows)
+  if (is_equal(x$backend, "stanli")) {
+    if (recompile || !only_windows) {
+      require_package("stanli", version = stanli_min_version())
+      sdata <- standata(x)
+      class(sdata) <- "list"
+      model <- stanli::stanli_model(code = stancode(x), data = sdata)
+      x$fit <- stanli::as_stanfit(x$fit, model = model)
+    }
+    return(x)
+  }
   if (recompile || !has_rstan_model(x)) {
     x <- add_rstan_model(x, overwrite = TRUE)
   } else if (os_is_windows() || !only_windows) {
@@ -819,6 +843,8 @@ add_rstan_model <- function(x, overwrite = FALSE) {
     ))
     x$fit@stanmodel <- stanfit@stanmodel
     x$fit@.MISC <- stanfit@.MISC
+    x$fit@model_pars <- stanfit@model_pars
+    x$fit@par_dims <- stanfit@par_dims
     message("Recompilation done")
   }
   x

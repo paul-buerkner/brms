@@ -75,6 +75,22 @@ test_that("find_vars finds all valid variable names in a string", {
   expect_equal(find_vars(string), c("x", "b.x", "a__3"))
 })
 
+test_that("pointwise group-level predictions use the nonzero columns", {
+  Z <- Matrix::sparseMatrix(
+    i = c(1, 1), j = c(2, 5), x = c(0.5, 1.5), dims = c(1, 6),
+    dimnames = list("observation", NULL)
+  )
+  r <- matrix(seq_len(24) / 10, nrow = 4)
+  rownames(r) <- paste0("draw", seq_len(nrow(r)))
+  r[, 1] <- NA_real_
+  expected <- Matrix::as.matrix(Matrix::tcrossprod(r, Z))
+  expect_identical(.predictor_re(Z, r), expected)
+  Z@x[] <- NaN
+  r[, 5] <- NA_real_
+  expected <- Matrix::as.matrix(Matrix::tcrossprod(r, Z))
+  expect_identical(.predictor_re(Z, r), expected)
+})
+
 test_that(".predictor_arma runs without errors", {
   ns <- 20
   nobs <- 30
