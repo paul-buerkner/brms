@@ -1120,6 +1120,11 @@ is_verbose <- function() {
   as_one_logical(getOption("brms.verbose", FALSE))
 }
 
+# is a variable a date or something similar?
+is_date_like <- function(x) {
+  inherits(x, c("Date", "POSIXt", "difftime"))
+}
+
 viridis6 <- function() {
   c("#440154", "#414487", "#2A788E", "#22A884", "#7AD151", "#FDE725")
 }

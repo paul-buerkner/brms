@@ -535,6 +535,12 @@ validate_newdata <- function(
       }
     }
   }
+  # convert date variables to numeric where appropriate
+  date_vars <- names(newdata)[ulapply(newdata, is_date_like)]
+  date_vars <- setdiff(date_vars, group_vars)
+  for (v in date_vars) {
+    newdata[[v]] <- as.numeric(newdata[[v]])
+  }
   # check if originally numeric variables are still numeric
   num_names <- names(mf)[!is_factor]
   num_names <- setdiff(num_names, group_vars)
