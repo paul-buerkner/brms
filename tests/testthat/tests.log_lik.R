@@ -580,6 +580,25 @@ test_that("log_lik for the xbeta model runs without errors", {
   expect_equal(length(ll), ns)
 })
 
+test_that("log_lik for the ordbeta model runs without errors", {
+  ns <- 50
+  nobs <- 8
+  prep <- structure(list(ndraws = ns, nobs = nobs), class = "brmsprep")
+  # mu should be on response scale (0, 1) for ordbeta
+  # kappa is positive (distance from xi to coi)
+  prep$dpars <- list(
+    mu = matrix(plogis(rnorm(ns * nobs)), ncol = nobs),
+    phi = rexp(ns, 0.1),
+    xi = matrix(rnorm(ns * nobs, -1, 0.5), ncol = nobs),
+    kappa = matrix(rexp(ns * nobs, 0.5), ncol = nobs)
+  )
+  prep$family <- list(link = "logit")
+  prep$data <- list(Y = c(0, 0.3, 0.5, 0.7, 1, 0.2, 0.8, 0.4))
+  ll <- brms:::log_lik_ordbeta(3, prep = prep)
+  expect_equal(length(ll), ns)
+  expect_true(all(is.finite(ll)))
+})
+
 test_that("log_lik_custom runs without errors", {
   ns <- 15
   nobs <- 10

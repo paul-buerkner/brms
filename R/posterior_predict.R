@@ -422,7 +422,7 @@ posterior_predict_shifted_lognormal <- function(i, prep, output = "random",
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   ndt <- get_dpar(prep, "ndt", i = i)
-  
+
   predict_continuous_helper(i = i, prep = prep, output = output,
                             distribution = "shifted_lnorm", meanlog = mu,
                             sdlog = sigma, shift = ndt, ...)
@@ -666,7 +666,7 @@ posterior_predict_com_poisson <- function(i, prep, output = "random", ...) {
 posterior_predict_exponential <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   rate <- 1 / mu
-  
+
   predict_continuous_helper(i = i, prep = prep, output = output,
                             distribution = "exp", rate = rate, ...)
 }
@@ -769,6 +769,18 @@ posterior_predict_xbeta <- function(i, prep, output = "random", ...) {
                             nu = kappa, ...)
 }
 
+posterior_predict_ordbeta <- function(i, prep, ...) {
+  # mu is already on response scale (0-1) after brms applies link function
+  mu <- get_dpar(prep, "mu", i = i)
+  phi <- get_dpar(prep, "phi", i = i)
+  xi <- get_dpar(prep, "xi", i = i)
+  kappa <- get_dpar(prep, "kappa", i = i)
+  rordbeta(
+    n = prep$ndraws,
+    mu = mu, phi = phi, xi = xi, kappa = kappa
+  )
+}
+
 posterior_predict_von_mises <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
@@ -782,7 +794,7 @@ posterior_predict_asym_laplace <- function(i, prep, output = "random", ...) {
   mu <- get_dpar(prep, "mu", i = i)
   sigma <- get_dpar(prep, "sigma", i = i)
   quantile <- get_dpar(prep, "quantile", i = i)
-  
+
   predict_continuous_helper(i = i, prep = prep, output = output,
                             distribution = "asym_laplace", mu = mu,
                             sigma = sigma, quantile = quantile, ...)
