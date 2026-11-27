@@ -98,23 +98,17 @@
     include = "fun_ordbeta.stan",
     prior = function(dpar, link = "identity", ...) {
       if (dpar == "xi") {
-
         return("student_t(3, 0, 2.5)")
-
       }
       if (dpar == "kappa") {
-
-        if(link=='identity') {
-
+        if (link=='identity') {
           return("gamma(0.01, 0.01)")
-
         } else {
           return("student_t(3, 0, 2.5)")
-      } 
-    }  
-      NULL 
+        }
+      }
+      NULL
     },
-    specials = c("ordbeta"),
     normalized = ""
   )
 }

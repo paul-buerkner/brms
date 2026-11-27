@@ -128,7 +128,7 @@ test_that("default priors are as expected", {
     expect_output(print(xbeta()$prior), "student\\_t\\(3, 0, 2.5\\)")
 })
 
-test_that("correct STAN code is used", {
+test_that("correct stan code is used for advanced beta families", {
     expect_equal(xbeta()$include, "fun_xbeta.stan")
     expect_equal(ordbeta()$include, "fun_ordbeta.stan")
 })

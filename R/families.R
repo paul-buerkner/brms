@@ -1643,10 +1643,6 @@ is_cox <- function(family) {
   "cox" %in% family_info(family, "specials")
 }
 
-is_ordbeta <- function(family) {
-  "ordbeta" %in% family_info(family, "specials")
-}
-
 # has joint link function over multiple inputs
 has_joint_link <- function(family) {
   "joint_link" %in% family_info(family, "specials")

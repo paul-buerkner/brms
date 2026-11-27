@@ -277,3 +277,52 @@ test_that("prior tags correctly go to priorsense data", {
     )
   )
 })
+
+test_that("Ordered beta models work correctly", {
+  set.seed(123)
+  n <- 200
+  x <- rnorm(n)
+  mu <- 0.5 * x
+  thres <- c(-1, 1.5)
+  phi <- 5
+  pr_zero <- plogis(thres[1] - mu)
+  pr_one <- 1 - plogis(thres[2] - mu)
+  pr_cont <- 1 - pr_zero - pr_one
+  y <- vapply(seq_len(n), function(i) {
+    component <- sample(1:3, 1, prob = c(pr_zero[i], pr_cont[i], pr_one[i]))
+    if (component == 1) return(0)
+    if (component == 3) return(1)
+    rbeta(1, plogis(mu[i]) * phi, (1 - plogis(mu[i])) * phi)
+  }, numeric(1))
+  dat <- data.frame(y = y, x = x)
+
+  fit1 <- brm(y ~ x, data = dat, family = ordbeta(), refresh = 0)
+  print(summary(fit1))
+  expect_range(posterior_summary(fit1)["b_x", "Estimate"], 0.3, 0.7)
+
+  pred <- posterior_predict(fit1, ndraws = 100)
+  expect_true(all(pred >= 0 & pred <= 1))
+  expect_true(any(pred == 0) && any(pred == 1))
+
+  epred <- posterior_epred(fit1, ndraws = 100)
+  expect_true(all(epred >= 0 & epred <= 1))
+
+  expect_range(loo(fit1)$estimates[3, 1], 300, 330)
+
+  # distributional model
+  fit2 <- brm(
+    bf(y ~ x, xi ~ x, kappa ~ x),
+    data = dat, family = ordbeta(), refresh = 0
+  )
+  print(summary(fit2))
+  expect_range(posterior_summary(fit2)["b_x", "Estimate"], 0.3, 0.7)
+
+  pred <- posterior_predict(fit2, ndraws = 100)
+  expect_true(all(pred >= 0 & pred <= 1))
+  expect_true(any(pred == 0) && any(pred == 1))
+
+  epred <- posterior_epred(fit2, ndraws = 100)
+  expect_true(all(epred >= 0 & epred <= 1))
+
+  expect_range(loo(fit2)$estimates[3, 1], 300, 330)
+})
