@@ -14,7 +14,7 @@ fitting functions such as glm or glmer.
 However, the standard family functions as described in
 family will work with brms.
 You can also specify custom families for use in brms with
-the custom_family function."><meta property="og:image" content="https://paulbuerkner.com/brms/logo.svg"></head><body>
+the custom_family function."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -29,7 +29,7 @@ the custom_family function."><meta property="og:image" content="https://paulbuer
       brms
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.24.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -73,7 +73,8 @@ the custom_family function."><meta property="og:image" content="https://paulbuer
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Special Family Functions for <span class="pkg">brms</span> Models</h1>
+
+      <h1>Special Family Functions for <span class="pkg">brms</span> Models</h1>
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/R/families.R" class="external-link"><code>R/families.R</code></a></small>
       <div class="d-none name"><code>brmsfamily.Rd</code></div>
     </div>
@@ -151,6 +152,13 @@ the <code><a href="custom_family.html">custom_family</a></code> function.</p>
 <span><span class="fu">Beta</span><span class="op">(</span>link <span class="op">=</span> <span class="st">"logit"</span>, link_phi <span class="op">=</span> <span class="st">"log"</span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">xbeta</span><span class="op">(</span>link <span class="op">=</span> <span class="st">"logit"</span>, link_phi <span class="op">=</span> <span class="st">"log"</span>, link_kappa <span class="op">=</span> <span class="st">"log"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="fu">ordbeta</span><span class="op">(</span></span>
+<span>  link <span class="op">=</span> <span class="st">"logit"</span>,</span>
+<span>  link_phi <span class="op">=</span> <span class="st">"log"</span>,</span>
+<span>  link_xi <span class="op">=</span> <span class="st">"identity"</span>,</span>
+<span>  link_kappa <span class="op">=</span> <span class="st">"log"</span></span>
+<span><span class="op">)</span></span>
 <span></span>
 <span><span class="fu">dirichlet</span><span class="op">(</span>link <span class="op">=</span> <span class="st">"logit"</span>, link_phi <span class="op">=</span> <span class="st">"log"</span>, refcat <span class="op">=</span> <span class="cn">NULL</span><span class="op">)</span></span>
 <span></span>
@@ -232,7 +240,8 @@ supported: <code>gaussian</code>, <code>student</code>, <code>binomial</code>,
 <code>hurdle_gamma</code>, <code>hurdle_lognormal</code>, <code>hurdle_cumulative</code>,
 <code>zero_inflated_binomial</code>, <code>zero_inflated_beta_binomial</code>,
 <code>zero_inflated_beta</code>, <code>zero_inflated_negbinomial</code>,
-<code>zero_inflated_poisson</code>, <code>zero_one_inflated_beta</code>, and <code>xbeta</code>.</p></dd>
+<code>zero_inflated_poisson</code>, <code>zero_one_inflated_beta</code>, <code>xbeta</code>,
+and <code>ordbeta</code>.</p></dd>
 
 
 <dt id="arg-link">link<a class="anchor" aria-label="anchor" href="#arg-link"></a></dt>
@@ -364,6 +373,12 @@ terms in order to lead to an identified model.</p></dd>
   <code>zero_inflated_beta</code>, <code>zero_one_inflated_beta</code> families
   provide more flexibility.  For details see Kosmidis &amp; Zeileis
   (2024).</p></li>
+<li><p>Family <code>ordbeta</code> ('ordered beta') provides an alternative
+  approach to handling <code>[0, 1]</code> responses with exact <code>0</code>s
+  and <code>1</code>s. It models the response as a mixture of a degenerate
+  distribution at 0, a beta distribution for (0,1), and a degenerate
+  distribution at 1. The cutpoint parameters control the probability
+  of each component. For details see Kubinec (2023).</p></li>
 <li><p>Family <code>asym_laplace</code> allows for quantile regression when fixing
   the auxiliary <code>quantile</code> parameter to the quantile of interest.</p></li>
 <li><p>Family <code>exgaussian</code> ('exponentially modified Gaussian') and
@@ -431,6 +446,9 @@ terms in order to lead to an identified model.</p></dd>
     <h2 id="references">References<a class="anchor" aria-label="anchor" href="#references"></a></h2>
     <p>Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for [0, 1] Responses.
 <em>arXiv Preprint</em>. <a href="https://doi.org/10.48550/arXiv.2409.07233" class="external-link">doi:10.48550/arXiv.2409.07233</a></p>
+<p>Kubinec R (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
+Model for Continuous Data with Lower and Upper Bounds.
+<em>Political Analysis</em>, 31(4), 519-536. <a href="https://doi.org/10.1017/pan.2022.20" class="external-link">doi:10.1017/pan.2022.20</a></p>
     </div>
     <div class="section level2">
     <h2 id="see-also">See also<a class="anchor" aria-label="anchor" href="#see-also"></a></h2>

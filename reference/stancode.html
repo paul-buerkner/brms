@@ -6,7 +6,7 @@
   with objects from other packages can be registered to the same generic."><meta property="og:description" content="stancode is a generic function that can be used to
   generate Stan code for Bayesian models. Its original use is
   within the brms package, but new methods for use
-  with objects from other packages can be registered to the same generic."><meta property="og:image" content="https://paulbuerkner.com/brms/logo.svg"></head><body>
+  with objects from other packages can be registered to the same generic."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -21,7 +21,7 @@
       brms
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.24.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -65,7 +65,8 @@
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Stan Code for Bayesian models</h1>
+
+      <h1>Stan Code for Bayesian models</h1>
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/R/stancode.R" class="external-link"><code>R/stancode.R</code></a></small>
       <div class="d-none name"><code>stancode.Rd</code></div>
     </div>
@@ -124,7 +125,7 @@ form which Stan code should be generated.</p></dd>
     <h2 id="ref-examples">Examples<a class="anchor" aria-label="anchor" href="#ref-examples"></a></h2>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="fu">stancode</span><span class="op">(</span><span class="va">rating</span> <span class="op">~</span> <span class="va">treat</span> <span class="op">+</span> <span class="va">period</span> <span class="op">+</span> <span class="va">carry</span> <span class="op">+</span> <span class="op">(</span><span class="fl">1</span><span class="op">|</span><span class="va">subject</span><span class="op">)</span>,</span></span>
 <span class="r-in"><span>         data <span class="op">=</span> <span class="va">inhaler</span>, family <span class="op">=</span> <span class="st">"cumulative"</span><span class="op">)</span></span></span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.23.2</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> // generated with brms 2.24.0</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> functions {</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>   /* cumulative-logit log-PDF for a single response</span>
 <span class="r-out co"><span class="r-pr">#&gt;</span>    * Args:</span>

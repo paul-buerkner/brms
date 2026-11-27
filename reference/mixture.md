@@ -109,8 +109,8 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000202 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.02 seconds.
+#> Chain 1: Gradient evaluation took 0.000167 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.67 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -127,15 +127,15 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.292 seconds (Warm-up)
-#> Chain 1:                0.956 seconds (Sampling)
-#> Chain 1:                2.248 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.001 seconds (Warm-up)
+#> Chain 1:                0.748 seconds (Sampling)
+#> Chain 1:                1.749 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000122 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.22 seconds.
+#> Chain 2: Gradient evaluation took 9.4e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.94 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -152,9 +152,9 @@ fit1 <- brm(bf(y ~ x + z), dat, family = mix,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 25.76 seconds (Warm-up)
-#> Chain 2:                28.744 seconds (Sampling)
-#> Chain 2:                54.504 seconds (Total)
+#> Chain 2:  Elapsed Time: 20.249 seconds (Warm-up)
+#> Chain 2:                22.657 seconds (Sampling)
+#> Chain 2:                42.906 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 8 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup
@@ -219,8 +219,8 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000147 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.47 seconds.
+#> Chain 1: Gradient evaluation took 0.000115 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.15 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -237,15 +237,15 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.13 seconds (Warm-up)
-#> Chain 1:                0.913 seconds (Sampling)
-#> Chain 1:                2.043 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.848 seconds (Warm-up)
+#> Chain 1:                0.683 seconds (Sampling)
+#> Chain 1:                1.531 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000125 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.25 seconds.
+#> Chain 2: Gradient evaluation took 9.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.95 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -262,9 +262,9 @@ fit2 <- brm(bf(y ~ 1, mu1 ~ x, mu2 ~ z), dat, family = mix,
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.282 seconds (Warm-up)
-#> Chain 2:                0.933 seconds (Sampling)
-#> Chain 2:                2.215 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.96 seconds (Warm-up)
+#> Chain 2:                0.698 seconds (Sampling)
+#> Chain 2:                1.658 seconds (Total)
 #> Chain 2: 
 #> Warning: The largest R-hat is 1.83, indicating chains have not mixed.
 #> Running the chains for more iterations may help. See
@@ -313,8 +313,8 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000121 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.21 seconds.
+#> Chain 1: Gradient evaluation took 9.6e-05 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 0.96 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -331,15 +331,15 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 0.943 seconds (Warm-up)
-#> Chain 1:                0.867 seconds (Sampling)
-#> Chain 1:                1.81 seconds (Total)
+#> Chain 1:  Elapsed Time: 0.685 seconds (Warm-up)
+#> Chain 1:                0.629 seconds (Sampling)
+#> Chain 1:                1.314 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000113 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.13 seconds.
+#> Chain 2: Gradient evaluation took 8.5e-05 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 0.85 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -356,9 +356,9 @@ fit3 <- brm(bf(y ~ x + z, theta1 = 1, theta2 = 2),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 0.921 seconds (Warm-up)
-#> Chain 2:                0.794 seconds (Sampling)
-#> Chain 2:                1.715 seconds (Total)
+#> Chain 2:  Elapsed Time: 0.67 seconds (Warm-up)
+#> Chain 2:                0.579 seconds (Sampling)
+#> Chain 2:                1.249 seconds (Total)
 #> Chain 2: 
 summary(fit3)
 #>  Family: mixture(gaussian, gaussian) 
@@ -400,8 +400,8 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000236 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.36 seconds.
+#> Chain 1: Gradient evaluation took 0.000197 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.97 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -418,15 +418,15 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 1.882 seconds (Warm-up)
-#> Chain 1:                1.463 seconds (Sampling)
-#> Chain 1:                3.345 seconds (Total)
+#> Chain 1:  Elapsed Time: 1.432 seconds (Warm-up)
+#> Chain 1:                1.075 seconds (Sampling)
+#> Chain 1:                2.507 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000176 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.76 seconds.
+#> Chain 2: Gradient evaluation took 0.00016 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.6 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -443,9 +443,9 @@ fit4 <- brm(bf(y ~ x + z, theta2 ~ x),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 1.945 seconds (Warm-up)
-#> Chain 2:                1.424 seconds (Sampling)
-#> Chain 2:                3.369 seconds (Total)
+#> Chain 2:  Elapsed Time: 1.467 seconds (Warm-up)
+#> Chain 2:                1.066 seconds (Sampling)
+#> Chain 2:                2.533 seconds (Total)
 #> Chain 2: 
 summary(fit4)
 #>  Family: mixture(gaussian, gaussian) 
@@ -493,8 +493,8 @@ fit5 <- brm(bf(y ~ x + z, theta1 ~ x, theta2 ~ x),
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 1).
 #> Chain 1: 
-#> Chain 1: Gradient evaluation took 0.000227 seconds
-#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 2.27 seconds.
+#> Chain 1: Gradient evaluation took 0.000179 seconds
+#> Chain 1: 1000 transitions using 10 leapfrog steps per transition would take 1.79 seconds.
 #> Chain 1: Adjust your expectations accordingly!
 #> Chain 1: 
 #> Chain 1: 
@@ -511,15 +511,15 @@ fit5 <- brm(bf(y ~ x + z, theta1 ~ x, theta2 ~ x),
 #> Chain 1: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 1: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 1: 
-#> Chain 1:  Elapsed Time: 151.635 seconds (Warm-up)
-#> Chain 1:                186.378 seconds (Sampling)
-#> Chain 1:                338.013 seconds (Total)
+#> Chain 1:  Elapsed Time: 114.646 seconds (Warm-up)
+#> Chain 1:                140.823 seconds (Sampling)
+#> Chain 1:                255.469 seconds (Total)
 #> Chain 1: 
 #> 
 #> SAMPLING FOR MODEL 'anon_model' NOW (CHAIN 2).
 #> Chain 2: 
-#> Chain 2: Gradient evaluation took 0.000188 seconds
-#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.88 seconds.
+#> Chain 2: Gradient evaluation took 0.000144 seconds
+#> Chain 2: 1000 transitions using 10 leapfrog steps per transition would take 1.44 seconds.
 #> Chain 2: Adjust your expectations accordingly!
 #> Chain 2: 
 #> Chain 2: 
@@ -536,9 +536,9 @@ fit5 <- brm(bf(y ~ x + z, theta1 ~ x, theta2 ~ x),
 #> Chain 2: Iteration: 1800 / 2000 [ 90%]  (Sampling)
 #> Chain 2: Iteration: 2000 / 2000 [100%]  (Sampling)
 #> Chain 2: 
-#> Chain 2:  Elapsed Time: 147.94 seconds (Warm-up)
-#> Chain 2:                182.238 seconds (Sampling)
-#> Chain 2:                330.178 seconds (Total)
+#> Chain 2:  Elapsed Time: 111.694 seconds (Warm-up)
+#> Chain 2:                137.7 seconds (Sampling)
+#> Chain 2:                249.394 seconds (Total)
 #> Chain 2: 
 #> Warning: There were 196 divergent transitions after warmup. See
 #> https://mc-stan.org/misc/warnings.html#divergent-transitions-after-warmup

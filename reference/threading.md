@@ -93,7 +93,7 @@ fit <- brm(count ~ zAge + zBase * Trt + (1|patient),
 #> Chain 1 Iteration: 1800 / 2000 [ 90%]  (Sampling) 
 #> Chain 1 Iteration: 1900 / 2000 [ 95%]  (Sampling) 
 #> Chain 1 Iteration: 2000 / 2000 [100%]  (Sampling) 
-#> Chain 1 finished in 1.7 seconds.
+#> Chain 1 finished in 1.3 seconds.
 summary(fit)
 #>  Family: negbinomial 
 #>   Links: mu = log 
@@ -105,19 +105,19 @@ summary(fit)
 #> Multilevel Hyperparameters:
 #> ~patient (Number of levels: 59) 
 #>               Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> sd(Intercept)     0.55      0.07     0.42     0.71 1.00      310      435
+#> sd(Intercept)     0.55      0.07     0.41     0.72 1.00      285      383
 #> 
 #> Regression Coefficients:
 #>            Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> Intercept      1.78      0.12     1.53     2.00 1.01      333      445
-#> zAge           0.09      0.09    -0.07     0.27 1.00      397      458
-#> zBase          0.70      0.12     0.47     0.92 1.00      337      617
-#> Trt1          -0.26      0.17    -0.59     0.09 1.00      363      623
-#> zBase:Trt1     0.05      0.16    -0.27     0.39 1.00      497      624
+#> Intercept      1.80      0.12     1.57     2.04 1.00      389      622
+#> zAge           0.09      0.08    -0.07     0.24 1.00      589      609
+#> zBase          0.70      0.11     0.47     0.93 1.01      493      703
+#> Trt1          -0.28      0.17    -0.60     0.06 1.00      448      639
+#> zBase:Trt1     0.05      0.16    -0.27     0.36 1.00      613      490
 #> 
 #> Further Distributional Parameters:
 #>       Estimate Est.Error l-95% CI u-95% CI Rhat Bulk_ESS Tail_ESS
-#> shape     7.34      1.81     4.43    12.05 1.00      916      591
+#> shape     7.32      1.86     4.52    11.85 1.00      844      703
 #> 
 #> Draws were sampled using sample(hmc). For each parameter, Bulk_ESS
 #> and Tail_ESS are effective sample size measures, and Rhat is the potential

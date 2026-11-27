@@ -74,6 +74,13 @@ Beta(link = "logit", link_phi = "log")
 
 xbeta(link = "logit", link_phi = "log", link_kappa = "log")
 
+ordbeta(
+  link = "logit",
+  link_phi = "log",
+  link_xi = "identity",
+  link_kappa = "log"
+)
+
 dirichlet(link = "logit", link_phi = "log", refcat = NULL)
 
 logistic_normal(link = "identity", link_sigma = "log", refcat = NULL)
@@ -151,7 +158,8 @@ acat(link = "logit", link_disc = "log", threshold = "flexible")
   `hurdle_gamma`, `hurdle_lognormal`, `hurdle_cumulative`,
   `zero_inflated_binomial`, `zero_inflated_beta_binomial`,
   `zero_inflated_beta`, `zero_inflated_negbinomial`,
-  `zero_inflated_poisson`, `zero_one_inflated_beta`, and `xbeta`.
+  `zero_inflated_poisson`, `zero_one_inflated_beta`, `xbeta`, and
+  `ordbeta`.
 
 - link:
 
@@ -289,6 +297,13 @@ not ment to be exhaustive.
   `zero_one_inflated_beta` families provide more flexibility. For
   details see Kosmidis & Zeileis (2024).
 
+- Family `ordbeta` ('ordered beta') provides an alternative approach to
+  handling `[0, 1]` responses with exact `0`s and `1`s. It models the
+  response as a mixture of a degenerate distribution at 0, a beta
+  distribution for (0,1), and a degenerate distribution at 1. The
+  cutpoint parameters control the probability of each component. For
+  details see Kubinec (2023).
+
 - Family `asym_laplace` allows for quantile regression when fixing the
   auxiliary `quantile` parameter to the quantile of interest.
 
@@ -371,6 +386,11 @@ link function.
 Kosmidis I, Zeileis A (2024). Extended-Support Beta Regression for \[0,
 1\] Responses. *arXiv Preprint*.
 [doi:10.48550/arXiv.2409.07233](https://doi.org/10.48550/arXiv.2409.07233)
+
+Kubinec R (2023). Ordered Beta Regression: A Parsimonious, Well-Fitting
+Model for Continuous Data with Lower and Upper Bounds. *Political
+Analysis*, 31(4), 519-536.
+[doi:10.1017/pan.2022.20](https://doi.org/10.1017/pan.2022.20)
 
 ## See also
 

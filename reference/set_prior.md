@@ -116,6 +116,14 @@ that the defined priors are reasonable for the model. Below, we list the
 types of parameters in brms models, for which the user can specify prior
 distributions.
 
+If several values are passed to arguments such as `coef` or `resp`, they
+are matched element-wise, not expanded to all combinations. For example,
+`coef = c("x1", "x2")` together with `resp = c("y1", "y2")` sets priors
+for `x1` in `y1` and `x2` in `y2`. All vector arguments must have the
+same length (or length one). To get all combinations, call `set_prior`
+once per combination or combine the results with
+[`c()`](https://rdrr.io/r/base/c.html) or `+`.
+
 Below, we provide details for the individual parameter classes that you
 can set priors on. Often, it may not be immediately clear, which
 parameters are present in the model. To get a full list of parameters
@@ -426,7 +434,7 @@ bprior <- c(prior_string("normal(0,10)", class = "b"),
 stancode(rating ~ treat + period + carry + (1|subject),
          data = inhaler, family = cumulative(),
          prior = bprior)
-#> // generated with brms 2.23.2
+#> // generated with brms 2.24.0
 #> functions {
 #>   /* cumulative-logit log-PDF for a single response
 #>    * Args:
@@ -543,7 +551,7 @@ stancode(rating ~ treat + period + carry + (1|subject),
 stancode(count ~ zAge + zBase * Trt,
          data = epilepsy, family = poisson(),
          prior = set_prior("horseshoe(3)"))
-#> // generated with brms 2.23.2
+#> // generated with brms 2.24.0
 #> functions {
 #>   /* Efficient computation of the horseshoe scale parameters
 #>    * see Appendix C.1 in https://projecteuclid.org/euclid.ejs/1513306866
@@ -629,7 +637,7 @@ bprior <- prior(constant(1), class = "b") +
   prior(constant(0.5), class = "sd")
 stancode(count ~ zAge + zBase + (1 | patient),
               data = epilepsy, prior = bprior)
-#> // generated with brms 2.23.2
+#> // generated with brms 2.24.0
 #> functions {
 #> }
 #> data {
@@ -697,7 +705,7 @@ stancode(count ~ zAge + zBase + (1 | patient),
 # pass priors to Stan without checking
 prior <- prior_string("target += normal_lpdf(b[1] | 0, 1)", check = FALSE)
 stancode(count ~ Trt, data = epilepsy, prior = prior)
-#> // generated with brms 2.23.2
+#> // generated with brms 2.24.0
 #> functions {
 #> }
 #> data {
@@ -757,7 +765,7 @@ prior_cov <- prior(normal(0, 10), class = "b", tag = "covariates")
 prior_trt <- prior(normal(0, 1), class = "b", coef = "Trt1", tag = "treatment")
 stancode(count ~ Trt + zAge + zBase + (1 | patient),
          data = epilepsy, prior = c(prior_cov, prior_trt))
-#> // generated with brms 2.23.2
+#> // generated with brms 2.24.0
 #> functions {
 #> }
 #> data {

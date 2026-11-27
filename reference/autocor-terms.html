@@ -12,7 +12,7 @@ cosy, unstr, sar,
 car, and fcor. Terms can be directly specified
 within the formula, or passed to the autocor argument of
 brmsformula in the form of a one-sided formula. For deprecated
-ways of specifying autocorrelation terms, see cor_brms."><meta property="og:image" content="https://paulbuerkner.com/brms/logo.svg"></head><body>
+ways of specifying autocorrelation terms, see cor_brms."></head><body>
     <a href="#main" class="visually-hidden-focusable">Skip to contents</a>
 
 
@@ -27,7 +27,7 @@ ways of specifying autocorrelation terms, see cor_brms."><meta property="og:imag
       brms
     </a>
 
-    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.23.2</small>
+    <small class="nav-text text-muted me-auto" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Released version">2.24.0</small>
 
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbar" aria-controls="navbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -71,7 +71,8 @@ ways of specifying autocorrelation terms, see cor_brms."><meta property="og:imag
 </nav><div class="container template-reference-topic">
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Autocorrelation structures</h1>
+
+      <h1>Autocorrelation structures</h1>
       <small class="dont-index">Source: <a href="https://github.com/paul-buerkner/brms/blob/master/R/formula-ac.R" class="external-link"><code>R/formula-ac.R</code></a></small>
       <div class="d-none name"><code>autocor-terms.Rd</code></div>
     </div>
@@ -107,7 +108,7 @@ terms.</p>
     <div class="sourceCode"><pre class="sourceCode r"><code><span class="r-in"><span><span class="co"># specify autocor terms within the formula</span></span></span>
 <span class="r-in"><span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span> <span class="op">+</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span></span></span>
 <span class="r-out co"><span class="r-pr">#&gt;</span> y ~ x + arma(p = 1, q = 1) + car(M)</span>
-<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x609eb89593a8&gt;</span>
+<span class="r-out co"><span class="r-pr">#&gt;</span> &lt;environment: 0x64acd7a96508&gt;</span>
 <span class="r-in"><span></span></span>
 <span class="r-in"><span><span class="co"># specify autocor terms in the 'autocor' argument</span></span></span>
 <span class="r-in"><span><span class="fu"><a href="brmsformula.html">bf</a></span><span class="op">(</span><span class="va">y</span> <span class="op">~</span> <span class="va">x</span>, autocor <span class="op">=</span> <span class="op">~</span> <span class="fu"><a href="arma.html">arma</a></span><span class="op">(</span>p <span class="op">=</span> <span class="fl">1</span>, q <span class="op">=</span> <span class="fl">1</span><span class="op">)</span> <span class="op">+</span> <span class="fu"><a href="car.html">car</a></span><span class="op">(</span><span class="va">M</span><span class="op">)</span><span class="op">)</span></span></span>
