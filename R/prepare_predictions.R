@@ -784,7 +784,7 @@ prepare_predictions_ac <- function(bframe, draws, sdata, oos = NULL,
               "when using cov = FALSE in autocor terms.")
       }
       # need to sample correlated residuals
-      out$err <- matrix(nrow = nrow(draws), ncol = length(out$Y))
+      out$err <- matrix(nrow = nrow(draws), ncol = max(out$end_tg))
       sderr_regex <- paste0("^sderr", p, "$")
       out$sderr <- prepare_draws(draws, sderr_regex, regex = TRUE)
       for (i in seq_len(out$N_tg)) {
