@@ -268,6 +268,14 @@ When creating \code{conditional_effects} for a particular predictor
   bad model fit, where it is just due to conditioning on certain factor
   levels.
 
+  For models with a \code{trials} term (e.g., binomial), the effects are
+  shown on the probability scale while \code{points = TRUE} shows the raw
+  counts, so the two are not directly comparable. To get the effects on the
+  count scale, set the number of trials via \code{conditions}, for example
+  \code{conditions = list(<trials_variable> = 10)}. This only matches points
+  with that number of trials, so it works best if all observations have the
+  same one.
+
   To fully change colors of the created plots, one has to amend both
   \code{scale_colour} and \code{scale_fill}. See
   \code{\link[ggplot2:scale_color_grey]{scale_colour_grey}} or
