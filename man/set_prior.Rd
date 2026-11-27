@@ -104,6 +104,14 @@ Define priors for specific parameters or classes of parameters.
   Below, we list the types of parameters in \pkg{brms} models,
   for which the user can specify prior distributions.
 
+  If several values are passed to arguments such as \code{coef} or
+  \code{resp}, they are matched element-wise, not expanded to all
+  combinations. For example, \code{coef = c("x1", "x2")} together with
+  \code{resp = c("y1", "y2")} sets priors for \code{x1} in \code{y1} and
+  \code{x2} in \code{y2}. All vector arguments must have the same length
+  (or length one). To get all combinations, call \code{set_prior} once per
+  combination or combine the results with \code{c()} or \code{+}.
+
   Below, we provide details for the individual parameter classes that you can
   set priors on. Often, it may not be immediately clear, which parameters are
   present in the model. To get a full list of parameters and parameter

@@ -159,3 +159,24 @@ test_that("prior tags are correctly applied", {
   expect_equal(v[which(v$class == "Intercept"),]$tag, "prior_tag4")
   expect_equal(v[which(v$class == "L"),]$tag[[2]], "prior_tag5")
 })
+
+test_that("set_prior handles vector arguments of different lengths", {
+  # same length: matched element-wise, no grid expansion
+  prior <- set_prior("normal(0,1)", class = "b",
+                     coef = c("x1", "x2"), resp = c("y1", "y2"))
+  expect_equal(nrow(prior), 2)
+  expect_equal(prior$coef, c("x1", "x2"))
+  expect_equal(prior$resp, c("y1", "y2"))
+
+  # length 1 is recycled
+  prior <- set_prior("normal(0,1)", class = "b", coef = c("x1", "x2"))
+  expect_equal(nrow(prior), 2)
+
+  # differing lengths give an informative error
+  expect_error(
+    set_prior("normal(0,1)", class = "b",
+              coef = c("x1", "x2"), resp = c("y", "z", "w")),
+    "must have length 1 or the same length"
+  )
+})
+
