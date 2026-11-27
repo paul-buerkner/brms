@@ -1914,6 +1914,25 @@ test_that("Stan code of mixture model is correct", {
   scode <- stancode(bform, data = data, prior = bprior)
   expect_match2(scode, "mu1[n] = (nlp_eta[n] ^ 2);")
   expect_match2(scode, "mu2[n] = (log(nlp_eta[n]) + nlp_a[n]);")
+
+  # mixture combining a component with a built-in link function and one without (#1887)
+  dat_bb <- data.frame(y = c(2L, 5L, 8L), trials = c(10L, 10L, 10L), x = 1:3)
+  scode <- stancode(
+    y | trials(trials) ~ x, data = dat_bb,
+    family = mixture(binomial("logit"), beta_binomial("logit"))
+  )
+  expect_false(grepl("mu1 = inv_logit(mu1);", scode, fixed = TRUE))
+  expect_match2(scode, "mu2 = inv_logit(mu2);")
+  expect_match2(scode, "binomial_logit_lpmf(Y[n] | trials[n], mu1[n]);")
+  expect_match2(scode, "beta_binomial_lpmf(Y[n] | trials[n], mu2[n] .* phi2, (1 - mu2[n]) .* phi2);")
+
+  dat_surv <- data.frame(y = c(1.5, 2.5, 3.0), cens = c(0, 1, 0), x = 1:3)
+  scode <- stancode(
+    y | cens(cens) ~ x, data = dat_surv,
+    family = mixture(cox("log"), Gamma("log"))
+  )
+  expect_false(grepl("mu1 = exp(mu1);", scode, fixed = TRUE))
+  expect_match2(scode, "mu2 = exp(mu2);")
 })
 
 test_that("sparse matrix multiplication is applied correctly", {

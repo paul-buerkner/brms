@@ -98,8 +98,11 @@ stan_has_built_in_fun <- function(bterms, family = NULL) {
   dpar <- family[["dpar"]]
   # only few families have special lcdf and lccdf functions
   cdf <- has_ad_terms(bterms, c("cens", "trunc"))
-  has_built_in_fun(family, link, cdf = cdf) ||
+  if (is.null(dpar)) {
+    has_built_in_fun(family, link, cdf = cdf)
+  } else {
     has_built_in_fun(bterms, link, dpar = dpar, cdf = cdf)
+  }
 }
 
 # get all variable names accepted in Stan
