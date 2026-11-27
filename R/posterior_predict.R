@@ -1196,7 +1196,7 @@ validate_pp_output_support <- function(family_fun, output) {
 # @noRd
 pp_random <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
   # drop args that are only relevant for CDF/density/quantile output
-  args <- validate_distribution_args(distribution, ...)
+  args <- validate_distribution_args(distribution, fun_prefix = "r", ...)
   args[c("log.p", "lower.tail", "log", "p")] <- NULL
 
   if (is.null(lb) && is.null(ub)) {
@@ -1238,7 +1238,7 @@ pp_random <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
 # @noRd
 pp_random_discrete <- function(n, distribution, lb = NULL, ub = NULL, ntrys = 5, ...) {
   # drop args that are only relevant for CDF/density/quantile output
-  args <- validate_distribution_args(distribution, ...)
+  args <- validate_distribution_args(distribution, fun_prefix = "r", ...)
   args[c("log.p", "lower.tail", "log", "p")] <- NULL
   rdist <- paste0("r", distribution)
   if (is.null(lb) && is.null(ub)) {
@@ -1554,7 +1554,7 @@ pp_quantile <- function(p, distribution, lb, ub, lower.tail = TRUE,
 }
 
 # ensure that only arguments that are accepted by distribution functions are passed
-validate_distribution_args <- function(distribution, fun_prefix = "p", ...) {
+validate_distribution_args <- function(distribution, fun_prefix, ...) {
   args <- list(...)
   fun_prefix <- as_one_character(fun_prefix)
   rdist <- paste0(fun_prefix, distribution)
