@@ -18,13 +18,9 @@
 #'   \code{NULL} unless \pkg{projpred} complains about it.
 #' @param latent See argument \code{latent} of
 #'   \code{\link[projpred:extend_family]{extend_family}}. Setting this to
-#'   \code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For the families
-#'   \code{gaussian}, \code{bernoulli}, \code{poisson}, \code{negbinomial},
-#'   \code{weibull}, \code{lognormal}, \code{beta_binomial},
-#'   \code{zero_inflated_binomial}, and \code{zero_inflated_beta_binomial},
-#'   \pkg{brms} defines the functions for response-scale analyses (see the
-#'   latent-projection vignette of \pkg{projpred}). See 'Details' for addition
-#'   terms.
+#'   \code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For some
+#'   families, \pkg{brms} defines the functions for response-scale analyses
+#'   (see 'Details').
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
@@ -52,17 +48,22 @@
 #'   \code{\link[projpred:predict.refmodel]{predict.refmodel}} are passed to
 #'   \code{wrhs} and \code{orhs}, respectively.
 #'
-#'   With \code{latent = TRUE}, the response-scale functions of \pkg{brms}
-#'   support the addition terms \code{cens} (except interval censoring) and
-#'   \code{trunc} (with the same bounds for all observations). For
-#'   \code{beta_binomial} and the zero-inflated binomial families, they also
-#'   support \code{trials} if all observations have the same number of
-#'   trials. The latent projection itself does not use
-#'   the numbers of trials, but predictions for new data with another number of
-#'   trials give an error. For other families and addition terms, \pkg{brms}
-#'   gives a warning, and the response-scale results are \code{NA} or not
-#'   valid. With
-#'   \code{latent = FALSE}, \pkg{projpred} ignores the addition terms
+#'   With \code{latent = TRUE}, \pkg{brms} defines the functions for
+#'   response-scale analyses (see the latent-projection vignette of
+#'   \pkg{projpred}) for the families \code{gaussian}, \code{bernoulli},
+#'   \code{poisson}, \code{negbinomial}, \code{weibull}, \code{lognormal},
+#'   \code{beta_binomial}, \code{zero_inflated_binomial}, and
+#'   \code{zero_inflated_beta_binomial}. These functions support the addition
+#'   terms \code{cens} (except interval censoring) and \code{trunc} (with the
+#'   same bounds for all observations, and not for the last three families).
+#'   For the last three families, these functions also support \code{trials}
+#'   if all observations have the same number of trials. The latent projection
+#'   itself does not use the numbers of trials, but with these functions,
+#'   predictions for new data with another number of trials give an error.
+#'   For other families and addition terms, \pkg{brms} gives a warning, and
+#'   the response-scale results are \code{NA} or not valid.
+#'
+#'   With \code{latent = FALSE}, \pkg{projpred} ignores the addition terms
 #'   \code{se}, \code{mi} (with argument \code{sdy}), \code{trunc},
 #'   \code{cens}, and \code{rate}, and \pkg{brms} gives a warning. Models with
 #'   \code{se(sigma = FALSE)} and \code{latent = FALSE} and models with missing
@@ -189,23 +190,33 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
           "'sigma = FALSE' if 'latent = FALSE'.")
   }
 
-  # in the latent projection of the families with 'trials = TRUE' in
-  # latent_oscale_families(), only the response-scale functions use the
-  # numbers of trials, so projpred gets observation weights of 1
-  trials_oscale <- latent &&
-    isTRUE(latent_oscale_families()[[family_name]]$trials)
-  # the unique numbers of trials of the fit; K-fold refits take them from the
-  # full fit (see 'cvrefbuilder' below), so that all folds use the same
-  # response-scale functions
+  # the unique numbers of trials of the fit, for the families with
+  # 'trials = TRUE' in latent_oscale_families(); only the response-scale
+  # functions use them, so projpred gets observation weights of 1
   trials_fit <- NULL
-  # the number of trials that new data must have (set below if brms defines
-  # the response-scale functions)
-  trials_new <- NULL
+  # the number of trials of the response-scale functions of brms, which new
+  # data must have (NULL if the family does not use the numbers of trials or
+  # if brms does not define these functions)
+  trials_oscale <- NULL
   if (latent) {
+    # brms adds its functions only if the user passes none of these arguments
+    oscale_args <- c("latent_ilink", "latent_ll_oscale", "latent_ppd_oscale",
+                     "latent_epred", "latent_y_unqs")
+    user_oscale <- any(oscale_args %in% names(list(...)))
     # the latent projection of projpred does not support observation weights
     mdata <- .extract_model_data(object, resp = resp, extract_y = FALSE)
-    if (trials_oscale) {
-      trials_fit <- object$projpred_trials %||% unique(mdata$weights)
+    if (latent_uses_trials(family_name)) {
+      # K-fold refits take the numbers of trials from the full fit (see
+      # 'cvrefbuilder' below), so that all folds use the same functions
+      trials_fit <- object$brms_latent_trials %||% unique(mdata$weights)
+      if (!user_oscale) {
+        unsupported <- latent_oscale_unsupported(
+          family_name, bterms, data = object$data, trials = trials_fit
+        )
+        if (is.null(unsupported)) {
+          trials_oscale <- trials_fit
+        }
+      }
     } else if (!isTRUE(all(mdata$weights == 1))) {
       stop2("Projpred does not support 'weights' or 'trials' other than 1 ",
             "in the latent projection.")
@@ -243,13 +254,13 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   # allows to handle additional arguments implicitly
   extract_model_data <- function(object, newdata = NULL, ...) {
     out <- .extract_model_data(object, newdata = newdata, resp = resp, ...)
-    if (trials_oscale) {
+    if (!is.null(trials_fit)) {
       # the response-scale functions of brms use the number of trials of the
-      # fit; 'trials_new' is read at call time
-      if (!is.null(trials_new) && any(out$weights != trials_new)) {
+      # full fit
+      if (!is.null(trials_oscale) && any(out$weights != trials_oscale)) {
         stop2("The response-scale functions of brms for family '",
               family_name, "' support only the number of trials of the ",
-              "reference model (", trials_new, "). The new data have other ",
+              "reference model (", trials_oscale, "). The new data have other ",
               "numbers of trials.")
       }
       out$weights <- rep(1, length(out$weights))
@@ -312,7 +323,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       }
       # the numbers of trials of the full fit decide whether brms defines
       # the response-scale functions
-      cvfit$projpred_trials <- trials_fit
+      cvfit$brms_latent_trials <- trials_fit
       projpred::get_refmodel(cvfit, resp = resp, dis = dis_user,
                              latent = latent, brms_seed = brms_seed_k,
                              called_from_cvrefbuilder = TRUE, ...)
@@ -352,23 +363,18 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
   } else if (latent) {
     # the response-scale functions need argument 'cens' (projpred 2.10.0)
     require_package("projpred", "2.10.0")
-    # brms adds its functions only if the user passes none of these arguments
-    oscale_args <- c("latent_ilink", "latent_ll_oscale", "latent_ppd_oscale",
-                     "latent_epred", "latent_y_unqs")
     if (family$family == "cumulative") {
       args$latent_ilink <- latent_ilink_cumulative(
         object = object, family = family, bterms = bterms, resp = resp
       )
-    } else if (!any(oscale_args %in% names(args))) {
-      oscale_funs <- latent_oscale_funs(
+    } else if (!user_oscale) {
+      c(args) <- latent_oscale_funs(
         object = object, family = family, family_name = family_name,
         bterms = bterms, resp = resp, trials = trials_fit,
         warn = !from_cvrefbuilder
       )
-      if (trials_oscale && !is.null(oscale_funs)) {
-        trials_new <- trials_fit
-      }
-      c(args) <- oscale_funs
+      # the check of new data above requires the functions of brms
+      stopifnot(is.null(trials_oscale) || is.function(args$latent_ilink))
     }
     # TODO: If requested by users, add response-scale support for more families.
     # Ordinal families other than cumulative() need a `latent_ilink` function
@@ -559,16 +565,26 @@ latent_dis_dpar <- function(family_name, link) {
   latent_oscale_families()[[family_name]]$dis
 }
 
+# Do the response-scale functions of the family use the numbers of trials (see
+# latent_oscale_families())?
+latent_uses_trials <- function(family_name) {
+  isTRUE(latent_oscale_families()[[family_name]]$trials)
+}
+
 # Check if brms can define the response-scale functions of the latent
 # projection for a family other than binomial, categorical, and ordinal ones.
 #
 # @param family_name The brms name of the family.
 # @param bterms A brmsterms object.
 # @param data The data of the model.
+# @param trials The unique numbers of trials of the model (only used for the
+#   families with `trials = TRUE` in latent_oscale_families(); NULL counts as
+#   numbers of trials that vary).
 #
 # @return NULL if brms can define the functions. Otherwise, the reason for the
 #   warning of latent_oscale_funs().
-latent_oscale_unsupported <- function(family_name, bterms, data) {
+latent_oscale_unsupported <- function(family_name, bterms, data,
+                                      trials = NULL) {
   if (!family_name %in% names(latent_oscale_families())) {
     out <- paste0("family '", family_name, "'")
     ad <- c("se", "mi", "cens", "trunc", "rate")
@@ -596,11 +612,20 @@ latent_oscale_unsupported <- function(family_name, bterms, data) {
   if (length(unique(bounds$lb)) > 1L || length(unique(bounds$ub)) > 1L) {
     return("truncation bounds that vary between observations")
   }
-  epred_trunc_fun <- paste0("posterior_epred_trunc_", family_name)
-  if (is.formula(bterms$adforms$trunc) &&
-      !exists(epred_trunc_fun, envir = asNamespace("brms"), inherits = FALSE)) {
-    # the expected values of truncated models need this function
-    return(paste0("addition argument 'trunc' in family '", family_name, "'"))
+  if (is.formula(bterms$adforms$trunc)) {
+    # the expected values of truncated models need this function (see
+    # posterior_epred_trunc())
+    epred_trunc_fun <- paste0("posterior_epred_trunc_", family_name)
+    epred_trunc_fun <- try(
+      get(epred_trunc_fun, asNamespace("brms")), silent = TRUE
+    )
+    if (is_try_error(epred_trunc_fun)) {
+      return(paste0("addition argument 'trunc' in family '", family_name, "'"))
+    }
+  }
+  if (latent_uses_trials(family_name) && length(trials) != 1L) {
+    # the functions do not get the numbers of trials of new observations
+    return("numbers of trials that vary between observations")
   }
   NULL
 }
@@ -673,7 +698,6 @@ warn_projpred_ignored_ad <- function(family_name, bterms, data) {
 #   supports it) `latent_epred` to be passed to projpred::extend_family().
 latent_oscale_funs <- function(object, family, family_name, bterms, resp,
                                trials = NULL, warn = TRUE) {
-  has_trials <- isTRUE(latent_oscale_families()[[family_name]]$trials)
   binom_ad <- c("cens", "trunc")
   binom_ad <- binom_ad[ulapply(bterms$adforms[binom_ad], is.formula)]
   if (family_name == "binomial" && length(binom_ad)) {
@@ -687,11 +711,9 @@ latent_oscale_funs <- function(object, family, family_name, bterms, resp,
   } else {
     # use the model data instead of prepare_predictions(), so that this check
     # also works for fits without draws ('empty = TRUE')
-    unsupported <- latent_oscale_unsupported(family_name, bterms,
-                                             data = object$data)
-    if (is.null(unsupported) && has_trials && length(trials) != 1L) {
-      unsupported <- "numbers of trials that vary between observations"
-    }
+    unsupported <- latent_oscale_unsupported(
+      family_name, bterms, data = object$data, trials = trials
+    )
   }
   if (!is.null(unsupported)) {
     if (warn) {
@@ -719,8 +741,8 @@ latent_oscale_funs <- function(object, family, family_name, bterms, resp,
   # truncation bounds are the same for all observations (see above)
   lb <- prep$data[["lb"]][1]
   ub <- prep$data[["ub"]][1]
-  # the numbers of trials are the same for all observations (see above)
-  if (!has_trials) {
+  if (!latent_uses_trials(family_name)) {
+    # the functions of other families do not use the number of trials
     trials <- NULL
   }
   prep$data <- list()
