@@ -2021,14 +2021,15 @@ NULL
 
 #' @rdname OrdBeta
 #' @export
-dordbeta <- function(x, mu, phi, xi, coi, log = FALSE) {
+dordbeta <- function(x, mu, phi, xi, kappa, log = FALSE) {
   # Determine output length
   n <- max(length(x), length(mu))
   x <- rep_len(x, n)
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
   xi <- rep_len(xi, n)
-  coi <- rep_len(coi, n)
+  kappa <- rep_len(kappa, n)
+  coi <- xi + kappa
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
@@ -2059,7 +2060,7 @@ dordbeta <- function(x, mu, phi, xi, coi, log = FALSE) {
 
 #' @rdname OrdBeta
 #' @export
-pordbeta <- function(q, mu, phi, xi, coi,
+pordbeta <- function(q, mu, phi, xi, kappa,
                      lower.tail = TRUE, log.p = FALSE) {
   # Determine output length
   n <- max(length(q), length(mu))
@@ -2067,7 +2068,8 @@ pordbeta <- function(q, mu, phi, xi, coi,
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
   xi <- rep_len(xi, n)
-  coi <- rep_len(coi, n)
+  kappa <- rep_len(kappa, n)
+  coi <- xi + kappa
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
@@ -2105,7 +2107,7 @@ pordbeta <- function(q, mu, phi, xi, coi,
 
 #' @rdname OrdBeta
 #' @export
-qordbeta <- function(p, mu, phi, xi, coi,
+qordbeta <- function(p, mu, phi, xi, kappa,
                      lower.tail = TRUE, log.p = FALSE) {
   if (log.p) {
     p <- exp(p)
@@ -2119,7 +2121,8 @@ qordbeta <- function(p, mu, phi, xi, coi,
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
   xi <- rep_len(xi, n)
-  coi <- rep_len(coi, n)
+  kappa <- rep_len(kappa, n)
+  coi <- xi + kappa
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component
@@ -2148,12 +2151,13 @@ qordbeta <- function(p, mu, phi, xi, coi,
 
 #' @rdname OrdBeta
 #' @export
-rordbeta <- function(n, mu, phi, xi, coi) {
+rordbeta <- function(n, mu, phi, xi, kappa) {
   # recycle parameters to length n
   mu <- rep_len(mu, n)
   phi <- rep_len(phi, n)
   xi <- rep_len(xi, n)
-  coi <- rep_len(coi, n)
+  kappa <- rep_len(kappa, n)
+  coi <- xi + kappa
   # Transform mu to latent scale for threshold comparison
   mu_latent <- qlogis(mu)
   # probability of each component

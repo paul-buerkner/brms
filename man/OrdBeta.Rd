@@ -8,13 +8,13 @@
 \alias{rordbeta}
 \title{Ordered Beta Distribution}
 \usage{
-dordbeta(x, mu, phi, xi, coi, log = FALSE)
+dordbeta(x, mu, phi, xi, kappa, log = FALSE)
 
-pordbeta(q, mu, phi, xi, coi, lower.tail = TRUE, log.p = FALSE)
+pordbeta(q, mu, phi, xi, kappa, lower.tail = TRUE, log.p = FALSE)
 
-qordbeta(p, mu, phi, xi, coi, lower.tail = TRUE, log.p = FALSE)
+qordbeta(p, mu, phi, xi, kappa, lower.tail = TRUE, log.p = FALSE)
 
-rordbeta(n, mu, phi, xi, coi)
+rordbeta(n, mu, phi, xi, kappa)
 }
 \arguments{
 \item{x, q}{vector of quantiles}
@@ -25,6 +25,8 @@ rordbeta(n, mu, phi, xi, coi)
 
 \item{xi}{cutpoint of boundary at 0 (latent scale)}
 
+\item{kappa}{offset to xi for cutpoint of boundary at 1 (i.e., cutpoint = xi + kappa)}
+
 \item{log, log.p}{logical; if TRUE, probabilities are given as log(p)}
 
 \item{lower.tail}{logical; if TRUE (default), probabilities are
@@ -33,8 +35,6 @@ rordbeta(n, mu, phi, xi, coi)
 \item{p}{vector of probabilities}
 
 \item{n}{number of observations}
-
-\item{kappa}{offset to xi for cutpoint of boundary at 1 (i.e., cutpoint = xi + kappa)}
 }
 \description{
 Density, distribution function, quantile function and random generation

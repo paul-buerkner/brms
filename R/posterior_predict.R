@@ -775,11 +775,9 @@ posterior_predict_ordbeta <- function(i, prep, ...) {
   phi <- get_dpar(prep, "phi", i = i)
   xi <- get_dpar(prep, "xi", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
-  # coi = xi + kappa (ensures ordering)
-  coi <- xi + kappa
   rordbeta(
     n = prep$ndraws,
-    mu = mu, phi = phi, xi = xi, coi = coi
+    mu = mu, phi = phi, xi = xi, kappa = kappa
   )
 }
 

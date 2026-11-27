@@ -652,10 +652,8 @@ log_lik_ordbeta <- function(i, prep) {
   phi <- get_dpar(prep, "phi", i = i)
   xi <- get_dpar(prep, "xi", i = i)
   kappa <- get_dpar(prep, "kappa", i = i)
-  # coi = xi + kappa (ensures ordering)
-  coi <- xi + kappa
   y <- prep$data$Y[i]
-  out <- dordbeta(x = y, mu = mu, phi = phi, xi = xi, coi = coi, log = TRUE)
+  out <- dordbeta(x = y, mu = mu, phi = phi, xi = xi, kappa = kappa, log = TRUE)
   log_lik_weight(out, i = i, prep = prep)
 }
 
