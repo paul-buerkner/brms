@@ -28,7 +28,7 @@ test_that("SAR models work correctly", suppressWarnings({
   data(oldcol, package = "spdep")
   fit_lagsar <- brm(CRIME ~ INC + HOVAL + sar(COL.nb),
                     data = COL.OLD, data2 = list(COL.nb = COL.nb),
-                    chains = 2, refresh = 0)
+                    chains = 2, refresh = 0, backend = "stanli")
   print(fit_lagsar)
   expect_ggplot(pp_check(fit_lagsar))
   ce <- conditional_effects(fit_lagsar, ndraws = 200)
@@ -75,7 +75,7 @@ test_that("CAR models work correctly", suppressWarnings({
   fit_car <- brm(
     y | trials(size) ~ x1 + x2 + car(W, obs),
     data = dat, data2 = list(W = W), family = binomial(),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   print(fit_car)
   expect_ggplot(pp_check(fit_car))
@@ -150,7 +150,7 @@ test_that("student-t-distributed group-level effects work correctly",
   fit <- brm(
     count ~ Trt * zBase + (1 | gr(patient, dist = "student")),
     data = epilepsy, family = poisson(),
-    chains = 1, refresh = 0
+    chains = 1, refresh = 0, backend = "stanli"
   )
   print(summary(fit))
   expect_true("df_patient" %in% variables(fit))
@@ -194,7 +194,8 @@ test_that("dirichlet_multinomial models work correctly", suppressWarnings({
   fit <- brm(
     y | trials(size) ~ x, data = dat,
     family = dirichlet_multinomial(),
-    prior = prior("exponential(0.01)", "phi")
+    prior = prior("exponential(0.01)", "phi"),
+    backend = "stanli"
   )
   print(summary(fit))
 

@@ -9,7 +9,7 @@ test_that("ARMA models work correctly", suppressWarnings({
   fit_ar <- brm(
     y ~ x + ar(p = 5), data = dat,
     prior = prior(normal(0, 5), class = "ar"),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   print(fit_ar)
   ar <- colMeans(as.matrix(fit_ar, variable = "ar"))
@@ -19,7 +19,7 @@ test_that("ARMA models work correctly", suppressWarnings({
   expect_ggplot(plot(conditional_effects(fit_ar))[[1]])
 
   fit_ma <- brm(y ~ x + ma(q = 1), data = dat,
-                chains = 2, refresh = 0)
+                chains = 2, refresh = 0, backend = "stanli")
   print(fit_ma)
   expect_gt(LOO(fit_ma)$estimates[3, 1], LOO(fit_ar)$estimates[3, 1])
 
@@ -27,7 +27,7 @@ test_that("ARMA models work correctly", suppressWarnings({
     y ~ x + (1|g) + arma(gr = g, cov = TRUE), data = dat,
     prior = prior(normal(0, 5), class = "ar") +
       prior(normal(0, 6), class = "ma"),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   print(fit_arma)
   expect_range(waic(fit_arma)$estimates[3, 1], 250, 350)
@@ -37,7 +37,7 @@ test_that("ARMA models work correctly", suppressWarnings({
   fit_arma_pois <- brm(
     count ~ Trt + (1 | patient) + arma(visit, patient, cov = TRUE),
     data = epilepsy, family = poisson(),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   print(fit_arma_pois)
   expect_range(waic(fit_arma_pois)$estimates[3, 1], 1100, 1200)
@@ -50,7 +50,7 @@ test_that("categorical models work correctly", suppressWarnings({
               data = inhaler, family = categorical, iter = 500,
               prior = c(set_prior("normal(0,5)", "b", dpar = c("mu2", "mu3", "mu4")),
                         set_prior("normal(0,5)", "Intercept", dpar = c("mu2", "mu3", "mu4"))),
-              chains = 2, refresh = 0)
+              chains = 2, refresh = 0, backend = "stanli")
   print(fit2)
   expect_range(WAIC(fit2)$estimates[3, 1], 830, 900)
   ncat <- length(unique(inhaler$rating))

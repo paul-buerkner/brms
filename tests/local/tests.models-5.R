@@ -113,7 +113,7 @@ test_that("Non-linear matrix covariates work correctly", suppressWarnings({
   expect_equal(dim(posterior_predict(fit)), c(ndraws(fit), nobs(fit)))
 
   lcomp <- loo(fit, fit2)$diffs
-  expect_range(lcomp[2, 1], -1, 1)
+  expect_range(lcomp$elpd_diff[2], -1, 1)
 }))
 
 test_that("Addition argument 'subset' works correctly", suppressWarnings({
@@ -419,7 +419,7 @@ test_that("prior tags correctly go to priorsense data", {
   )
 })
 
-test_that("Ordered beta models work correctly", {
+test_that("Ordered beta models work correctly", suppressWarnings({
   set.seed(123)
   n <- 200
   x <- rnorm(n)
@@ -466,4 +466,4 @@ test_that("Ordered beta models work correctly", {
   expect_true(all(epred >= 0 & epred <= 1))
 
   expect_range(loo(fit2)$estimates[3, 1], 300, 330)
-})
+}))

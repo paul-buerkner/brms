@@ -36,7 +36,7 @@ test_that("GAMMs with factor variable in 'by' work correctly", suppressWarnings(
   set.seed(7)
   dat <- mgcv::gamSim(4, n = 200, dist = "normal")
   fit_gam2 <- brm(y ~ fac + s(x2, by = fac, k = 4), dat,
-                  chains = 2, refresh = 0)
+                  chains = 2, refresh = 0, backend = "stanli")
   print(fit_gam2)
 
   ce <- conditional_effects(fit_gam2, "x2:fac")
@@ -71,7 +71,8 @@ test_that("generalized extreme value models work correctly", suppressWarnings({
        sigma ~ s(cYear, bs = "bs", m = 1, k = 3) + SOI),
     data = fremantle, family = gen_extreme_value(),
     knots = knots, init = 0.5, chains = 4,
-    control = list(adapt_delta = 0.95), refresh = 0
+    control = list(adapt_delta = 0.95), refresh = 0,
+    backend = "stanli"
   )
   print(fit_gev)
 
@@ -89,7 +90,8 @@ test_that("Wiener diffusion models work correctly", suppressWarnings({
   dat$x <- x
 
   fit_d1 <- brm(bf(q | dec(resp) ~ x), dat,
-                family = wiener(), refresh = 0)
+                family = wiener(), refresh = 0,
+                backend = "stanli")
   print(fit_d1)
   expect_ggplot(plot(conditional_effects(fit_d1), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d1))
@@ -97,7 +99,8 @@ test_that("Wiener diffusion models work correctly", suppressWarnings({
   expect_true(min(pp) < 0)
 
   fit_d2 <- brm(bf(q | dec(resp) ~ x, ndt ~ x),
-                dat, family = wiener(), refresh = 0)
+                dat, family = wiener(), refresh = 0,
+                backend = "stanli")
   print(fit_d2)
   expect_ggplot(plot(conditional_effects(fit_d2), ask = FALSE)[[1]])
   expect_ggplot(pp_check(fit_d2))
@@ -113,7 +116,7 @@ test_that("disc parameter in ordinal models is handled correctly", suppressWarni
     bf(rating ~ period + carry + treat + (1|subject), disc ~ 1),
     data = inhaler, family = cumulative(),
     prior = prior(normal(0,5)),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   print(fit)
   expect_range(waic(fit)$estimates[3, 1], 870, 920)
@@ -131,7 +134,7 @@ test_that("Argument `incl_thres` works correctly for non-grouped thresholds",
     bf(rating ~ period + carry + treat + (1|subject)),
     data = inhaler, family = cumulative(),
     prior = prior(normal(0,5)),
-    chains = 2, refresh = 0
+    chains = 2, refresh = 0, backend = "stanli"
   )
   thres_minus_eta <- posterior_linpred(fit, incl_thres = TRUE)
   bprep <- prepare_predictions(fit)
@@ -195,7 +198,7 @@ test_that("Mixture models work correctly", suppressWarnings({
   fit2 <- brm(
     bform2, data = dat, family = mixfam,
     prior = prior, chains = 2,
-    init = 0, refresh = 0
+    init = 0, refresh = 0, backend = "stanli"
   )
   print(fit2)
   expect_ggplot(pp_check(fit2))
@@ -228,7 +231,7 @@ test_that("Gaussian processes work correctly", suppressWarnings({
   set.seed(1112)
   dat <- mgcv::gamSim(1, n = 30, scale = 2)
   fit1 <- brm(y ~ gp(x0) + x1 + gp(x2, cov = "matern32") + x3, dat,
-              chains = 2, refresh = 0)
+              chains = 2, refresh = 0, backend = "stanli")
   print(fit1)
   expect_ggplot(pp_check(fit1))
   ce <- conditional_effects(fit1, ndraws = 200, nug = 1e-07)
@@ -260,7 +263,7 @@ test_that("Gaussian processes work correctly", suppressWarnings({
 
   # GP with continuous 'by' variable
   fit4 <- brm(y ~ gp(x1, by = x2, cov = "matern52"), dat,
-              chains = 2, refresh = 0)
+              chains = 2, refresh = 0, backend = "stanli")
   print(fit4)
   expect_ggplot(pp_check(fit4))
   ce <- conditional_effects(fit4, ndraws = 200, nug = 1e-07)
@@ -286,7 +289,7 @@ test_that("Approximate Gaussian processes work correctly", suppressWarnings({
   fit1 <- brm(
     y ~ gp(x1, x2, by = fac, k = 10, c = 5/4, cov = "matern32"),
     data = dat, chains = 2, cores = 2, refresh = 0,
-    control = list(adapt_delta = 0.99)
+    control = list(adapt_delta = 0.99), backend = "stanli"
   )
   print(fit1)
   expect_range(bayes_R2(fit1)[1, 1], 0.45, 0.7)

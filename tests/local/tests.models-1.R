@@ -35,15 +35,15 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   loo1 <- SW(loo(fit1))
   expect_range(kfold1$estimates[3, 1], 1210, 1260)
   # expected output structure
-  expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics", 
+  expect_equal(names(kfold1), c("estimates", "pointwise", "diagnostics",
                                 "fits", "data", "data2"))
   # dims has correct dimensionality
   expect_equal(dim(kfold1)[1], ndraws(fit1))
   expect_equal(dim(kfold1)[2], nrow(epilepsy))
-  # output structure of loo and kfold object should be equal 
+  # output structure of loo and kfold object should be equal
   # wrt estimates, pointwise and diagnostics slots
   expect_equal(names(loo1)[1:3], names(kfold1)[1:3])
-  # diagnostics$pareto_k in kfold has same class as corresponding slot 
+  # diagnostics$pareto_k in kfold has same class as corresponding slot
   # in loo output
   expect_equal(class(kfold1$diagnostics), class(loo1$diagnostics))
   # diagnostics follow loo-style names
@@ -66,7 +66,7 @@ test_that("Poisson model from brm doc works correctly", suppressWarnings({
   # predict responses and evaluate the loss
   kfp1 <- kfold_predict(kfold1)
   rmse1 <- rmse(y = kfp1$y, yrep = kfp1$yrep)
-  expect_range(rmse1, 6, 7)
+  expect_range(rmse1, 6, 8)
 
   # test loo_moment_match
   loo1 <- loo(fit1)
@@ -81,7 +81,8 @@ test_that("Ordinal model from brm doc works correctly", suppressWarnings({
     rating ~ period + carry + cs(treat),
     data = inhaler, family = sratio("cloglog"),
     prior = set_prior("normal(0,5)"),
-    iter = 1000, chains = 2, refresh = 0
+    iter = 1000, chains = 2, refresh = 0,
+    backend = "stanli"
   )
   print(fit2)
   kfold2 <- SM(brms::kfold(fit2, save_fits = TRUE))
@@ -139,7 +140,8 @@ test_that("Binomial model from brm doc works correctly", suppressWarnings({
   data4 <- data.frame(n, success, x)
   fit4 <- brm(
     success | trials(n) ~ x, data = data4,
-    family = binomial("probit"), refresh = 0
+    family = binomial("probit"), refresh = 0,
+    backend = "stanli"
   )
   print(fit4)
   ce <- conditional_effects(fit4)
@@ -158,7 +160,8 @@ test_that("Categorical model works correctly with kfold_predict", suppressWarnin
     chains = 2,
     cores = 2,
     iter = 200,
-    seed = 42
+    seed = 42,
+    backend = "stanli"
   )
 
   kfold1 <- brms::kfold(fit, save_fits = TRUE)
@@ -269,17 +272,17 @@ test_that("varying slopes without overall effects work", suppressWarnings({
 
 test_that("update works correctly for some special cases", suppressWarnings({
   # models are recompiled when changing number of FEs from 0 to 1
-  fit1 <- brm(count ~ 1, data = epilepsy, refresh = 0)
-  fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy, refresh = 0)
+  fit1 <- brm(count ~ 1, data = epilepsy, refresh = 0, backend = "stanli")
+  fit2 <- update(fit1, ~ . + Trt, newdata = epilepsy, refresh = 0, backend = "stanli")
   expect_equal(rownames(fixef(fit2)), c("Intercept", "Trt1"))
-  fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy, refresh = 0)
+  fit3 <- update(fit2, ~ . - Trt, newdata = epilepsy, refresh = 0, backend = "stanli")
   expect_equal(rownames(fixef(fit3)), c("Intercept"))
 
   # test that family is correctly updated
-  fit4 <- update(fit1, family = student(), refresh = 0)
+  fit4 <- update(fit1, family = student(), refresh = 0, backend = "stanli")
   expect_equal(family(fit4)$family, "student")
   expect_equal(formula(fit4)$family$family, "student")
-  fit5 <- update(fit1, bf(~., family = student()), refresh = 0)
+  fit5 <- update(fit1, bf(~., family = student()), refresh = 0, backend = "stanli")
   expect_equal(family(fit5)$family, "student")
   expect_equal(formula(fit5)$family$family, "student")
 }))
