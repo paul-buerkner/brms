@@ -1,6 +1,25 @@
 # posterior_predict contract helpers
 # Depends on helper-distributions.R (sourced first alphabetically).
 
+cox_test_prep <- function(ns = 20L, nobs = 3L, tail = "constant") {
+  basis <- brms:::bhaz_basis_matrix(
+    seq(0, 4, length.out = 30),
+    list(df = 5, intercept = TRUE, Boundary.knots = c(0, 4))
+  )
+  sb <- matrix(rep(c(0.1, 0.15, 0.2, 0.25, 0.3), each = ns), ns)
+  fam <- cox()
+  fam$fun <- "cox"
+  structure(list(
+    ndraws = ns, nobs = nobs, family = fam,
+    dpars = list(mu = matrix(seq(0.5, 3, length.out = ns), ns, nobs)),
+    data = list(Y = as.array(rep(1, nobs))),
+    bhaz = list(
+      basis = basis, sbhaz = list(sb), Jgrbhaz = rep(1L, nobs),
+      tail = tail, horizon = NULL, nodes = 64
+    )
+  ), class = "brmsprep")
+}
+
 # Registry entries suitable for posterior_predict contract tests
 pp_test_entries <- function(truncation = FALSE) {
   dist_active_entries(

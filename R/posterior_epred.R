@@ -17,6 +17,22 @@
 #'  If specified, expected predictions of this parameters are returned.
 #' @param nlpar Optional name of a predicted non-linear parameter.
 #'  If specified, expected predictions of this parameters are returned.
+#' @param ... Further arguments passed to \code{\link{prepare_predictions}}.
+#'   For Cox models, these include \code{horizon} and \code{nodes}; see
+#'   Details in \code{\link{posterior_epred.brmsfit}}.
+#'
+#' @details For Cox response predictions, supply a finite nonnegative
+#'   \code{horizon} through \code{...}. Predictions return restricted mean
+#'   survival time \eqn{E[\min(T, horizon)]}, where \eqn{T} is event time,
+#'   rather than the unrestricted mean. No horizon is chosen implicitly.
+#'   \code{nodes} controls the number of Gauss-Legendre nodes per integration
+#'   panel (default 64). This calculation requires \pkg{statmod}.
+#'   These controls are ignored for other families and parameter predictions.
+#'
+#'   When reusing a prepared prediction object, supply \code{horizon} and
+#'   \code{nodes} to \code{\link{prepare_predictions}}, not to subsequent
+#'   \code{posterior_epred} calls. Further arguments cannot be supplied to
+#'   \code{posterior_epred} for an already prepared object.
 #'
 #' @return An \code{array} of draws. For
 #'   categorical and ordinal models, the output is an S x N x C array.
@@ -76,6 +92,10 @@ posterior_epred.brmsprep <- function(object, dpar, nlpar, sort,
                                      scale = "response", incl_thres = NULL,
                                      summary = FALSE, robust = FALSE,
                                      probs = c(0.025, 0.975), ...) {
+  if (length(list(...))) {
+    stop2("Further prediction arguments must be supplied when preparing ",
+          "the object with 'prepare_predictions'.")
+  }
   summary <- as_one_logical(summary)
   dpars <- names(object$dpars)
   nlpars <- names(object$nlpars)
@@ -498,8 +518,88 @@ posterior_epred_zero_inflated_asym_laplace <- function(prep) {
 }
 
 posterior_epred_cox <- function(prep) {
-  stop2("Cannot compute expected values of the posterior predictive ",
-        "distribution for family 'cox'.")
+  prep <- prepare_cox_predictions(prep)
+  horizon <- prep$bhaz$horizon
+  nodes <- prep$bhaz$nodes
+  if (is.null(horizon)) {
+    stop2(
+      "For Cox models, supply 'horizon' to compute the expected event time ",
+      "capped at that horizon (restricted mean survival time)."
+    )
+  }
+  horizon <- as_one_numeric(horizon)
+  nodes <- as_one_integer(nodes)
+  if (!is.finite(horizon) || horizon < 0 || nodes < 2L) {
+    stop2("'horizon' must be finite and nonnegative; 'nodes' must be >= 2.")
+  }
+  bounds <- attr(prep$bhaz$basis, "Boundary.knots")
+  if (prep$bhaz$tail == "none" && horizon > bounds[2]) {
+    stop2("'horizon' is beyond the spline support with tail = 'none'.")
+  }
+  require_package("statmod")
+  rule <- statmod::gauss.quad(nodes, kind = "legendre")
+  # RMST is the integral of survival from 0 to horizon, conditional on any
+  # truncation. Split panels at spline knots and boundaries before quadrature.
+  # Shared panels avoid reevaluating the same spline for each observation.
+  breaks0 <- c(0, horizon, bounds, attr(prep$bhaz$basis, "knots"))
+  breaks0 <- sort(unique(breaks0[is.finite(breaks0) &
+                                  breaks0 >= 0 & breaks0 <= horizon]))
+  panels <- seq_len(length(breaks0) - 1L)
+  grids <- lapply(panels, function(j) {
+    (breaks0[j + 1L] + breaks0[j]) / 2 +
+      (breaks0[j + 1L] - breaks0[j]) / 2 * rule$nodes
+  })
+  weights <- lapply(panels, function(j) {
+    (breaks0[j + 1L] - breaks0[j]) / 2 * rule$weights
+  })
+  out <- matrix(0, prep$ndraws, prep$nobs)
+  for (s in seq_along(prep$bhaz$sbhaz)) {
+    take <- which(prep$bhaz$Jgrbhaz == s)
+    if (!length(take)) next
+    sb <- prep$bhaz$sbhaz[[s]]
+    H0 <- lapply(grids, bhaz_at, sbhaz = sb, basis = prep$bhaz$basis,
+                 tail = prep$bhaz$tail, integrate = TRUE, paired = FALSE)
+    if (!is_trunc(prep)) {
+      mu <- prep$dpars$mu[, take, drop = FALSE]
+      acc <- matrix(0, prep$ndraws, length(take))
+      for (j in seq_along(H0)) {
+        for (g in seq_len(nodes)) {
+          acc <- acc + exp(-H0[[j]][, g] * mu) * weights[[j]][g]
+        }
+      }
+      out[, take] <- acc
+      next
+    }
+    for (i in take) {
+      mu <- prep$dpars$mu[, i]
+      lb <- prep$data$lb[i]
+      ub <- prep$data$ub[i]
+      tr <- cox_truncation(mu, sb, prep$bhaz$basis, prep$bhaz$tail, lb, ub)
+      # Conditional survival changes form at each observation's truncation bounds.
+      breaks <- c(breaks0, lb, ub)
+      breaks <- sort(unique(breaks[is.finite(breaks) &
+                                    breaks >= 0 & breaks <= horizon]))
+      for (j in seq_len(length(breaks) - 1L)) {
+        k <- match(breaks[j], breaks0)
+        if (!is.na(k) && breaks[j + 1L] == breaks0[k + 1L]) {
+          H <- H0[[k]] * mu
+          w <- weights[[k]]
+        } else {
+          # Only panels cut by observation-specific truncation need new nodes.
+          half <- (breaks[j + 1L] - breaks[j]) / 2
+          grid <- (breaks[j + 1L] + breaks[j]) / 2 + half * rule$nodes
+          H <- bhaz_at(grid, sb, prep$bhaz$basis, prep$bhaz$tail,
+                       integrate = TRUE, paired = FALSE) * mu
+          w <- half * rule$weights
+        }
+        a <- pmin(pmax(H - tr$Hlo, 0), tr$width)
+        logS <- -a + log1m_prob(-(tr$width - a)) - log1m_prob(-tr$width)
+        logS[which(H >= tr$Hup)] <- -Inf
+        out[, i] <- out[, i] + as.vector(exp(logS) %*% w)
+      }
+    }
+  }
+  out
 }
 
 posterior_epred_hurdle_poisson <- function(prep) {
@@ -779,6 +879,11 @@ posterior_epred_trunc <- function(prep) {
 # @param lb lower truncation bound
 # @param ub upper truncation bound
 # @return draws of the truncated mean parameter
+posterior_epred_trunc_cox <- function(prep, lb, ub) {
+  # The RMST engine already uses the observation-specific bounds in prep$data.
+  posterior_epred_cox(prep)
+}
+
 posterior_epred_trunc_gaussian <- function(prep, lb, ub) {
   zlb <- (lb - prep$dpars$mu) / prep$dpars$sigma
   zub <- (ub - prep$dpars$mu) / prep$dpars$sigma

@@ -75,8 +75,9 @@ Only used if \code{summary} is \code{TRUE}.}
 \item{probs}{The percentiles to be computed by the \code{quantile}
 function. Only used if \code{summary} is \code{TRUE}.}
 
-\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
-that control several aspects of data validation and prediction.}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}.
+For Cox models, these include \code{horizon} and \code{nodes}; see
+Details in \code{\link{posterior_epred.brmsfit}}.}
 }
 \value{
 An \code{array} of predicted \emph{mean} response values.

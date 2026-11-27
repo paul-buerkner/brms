@@ -1,5 +1,124 @@
 context("Tests for distribution functions")
 
+test_that("Cox density warns when spline inputs override precomputed values", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  sb <- prep$bhaz$sbhaz[[1]]
+  basis <- prep$bhaz$basis
+  mu <- prep$dpars$mu[, 1]
+  bhaz <- brms:::bhaz_at(1, sb, basis)
+  cbhaz <- brms:::bhaz_at(1, sb, basis, integrate = TRUE)
+  expect_silent(expected <- brms:::dcox(1, mu, sbhaz = sb, basis = basis))
+  expect_silent(cached <- brms:::dcox(1, mu, bhaz = bhaz, cbhaz = cbhaz))
+  expect_equal(cached, expected)
+  for (precomputed in list(list(bhaz = 0), list(cbhaz = 0),
+                          list(bhaz = 0, cbhaz = 0))) {
+    expect_warning(
+      got <- do.call(brms:::dcox, c(
+        list(x = 1, mu = mu, sbhaz = sb, basis = basis), precomputed
+      )),
+      "Ignoring precomputed 'bhaz' and 'cbhaz' because 'basis' is supplied",
+      fixed = TRUE
+    )
+    expect_equal(got, expected)
+  }
+})
+
+test_that("Cox inversion and tails agree with independent forward evaluation", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  sb <- prep$bhaz$sbhaz[[1]]
+  basis <- prep$bhaz$basis
+  mu <- prep$dpars$mu[, 1]
+  probs <- seq(0.01, 0.99, length.out = prep$ndraws)
+  for (t in c(0.2, 1, 2, 3.9)) {
+    expected <- mu * as.vector(sb %*%
+      as.vector(brms:::bhaz_basis_matrix(t, basis = basis, integrate = TRUE)))
+    expect_equal(brms:::pcox(t, mu, sbhaz = sb, basis = basis,
+                             log.p = TRUE, lower.tail = FALSE), -expected)
+  }
+  q <- brms:::qcox(probs, mu, sb, basis, "loglinear")
+  expect_equal(brms:::pcox(q, mu, sbhaz = sb, basis = basis, tail = "loglinear"),
+               probs, tolerance = 1e-8)
+  f <- function(x) brms:::dcox(
+    x, mu = 1, sbhaz = sb[1, , drop = FALSE], basis = basis, tail = "loglinear"
+  )
+  expect_equal(integrate(f, 0, Inf)$value, 1, tolerance = 1e-6)
+  q <- brms:::qcox(0.99, mu, sb, basis, "none")
+  expect_equal(q, rep(-4, length(mu)))
+  expect_true(all(is.na(brms:::pcox(
+    5, mu, sbhaz = sb, basis = basis, tail = "none"
+  ))))
+  expect_equal(brms:::qcox(0, mu, sb, basis), rep(0, length(mu)))
+  expect_true(all(is.infinite(brms:::qcox(1, mu, sb, basis))))
+  expect_warning(q <- brms:::qcox(c(-0.1, NA, rep(0.5, 18)), mu, sb, basis),
+                 "NaNs produced")
+  expect_true(all(is.na(q[1:2])))
+  expect_equal(brms:::dcox(Inf, mu, sbhaz = sb, basis = basis,
+                           tail = "loglinear"), rep(0, length(mu)))
+  rate <- 1 / as.vector(brms:::bhaz_basis_matrix(4, basis = basis))[5] / 4
+  flat <- matrix(c(rep((1 - rate) / 4, 4), rate), 1)
+  expect_equal(brms:::hcox(Inf, 1, sbhaz = flat, basis = basis,
+                           tail = "loglinear"), 0.25)
+})
+
+test_that("Cox inversion controls probability error and narrow truncation", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep(ns = 3L, nobs = 1L)
+  prep$dpars$mu[, 1] <- c(1e2, 1e6, 1e10)
+  prep$bhaz$sbhaz[[1]][] <- rep(
+    c(1e-10, 1e-6, 0.01, 0.1, 0.8899989999), each = 3
+  )
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1]
+  )), rep(0.5, 3), tolerance = 1e-8)
+
+  prep <- cox_test_prep(nobs = 1L)
+  prep$dpars$mu[] <- 1
+  prep$data$lb <- 1.0259159159159161
+  prep$data$ub <- prep$data$lb + 1e-10
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_true(all(q >= prep$data$lb & q <= prep$data$ub))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1]
+  )), rep(0.5, 20), tolerance = 1e-5)
+  draws <- posterior_predict(prep)
+  expect_true(all(draws >= prep$data$lb & draws <= prep$data$ub))
+})
+
+test_that("Cox quantiles retain extreme log and upper-tail probabilities", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep(nobs = 1L)
+  prep$dpars$mu[] <- 1
+  rate <- brms:::bhaz_at(4, prep$bhaz$sbhaz[[1]], prep$bhaz$basis)
+  cases <- list(
+    list(p = -100, lower.tail = FALSE, log.p = TRUE),
+    list(p = -1e-20, lower.tail = TRUE, log.p = TRUE),
+    list(p = 1e-20, lower.tail = FALSE, log.p = FALSE)
+  )
+  for (args in cases) {
+    q <- do.call(posterior_predict,
+                 c(list(prep, output = "quantile"), args))
+    H <- do.call(qexp, args)
+    expect_equal(as.vector(q), 4 + (H - 1) / rate, tolerance = 1e-10)
+  }
+  q <- posterior_predict(prep, output = "quantile", p = -500, log.p = TRUE)
+  expect_true(all(is.finite(q) & q > 0))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1], log.p = TRUE
+  )), rep(-500, 20), tolerance = 1e-8)
+  prep$dpars$mu[] <- 1e4
+  prep$data$lb <- 1
+  prep$data$ub <- 3
+  q <- posterior_predict(prep, output = "quantile", p = -1000,
+                         lower.tail = FALSE, log.p = TRUE)
+  expect_true(all(is.finite(q) & q >= 1 & q <= 3))
+  expect_equal(as.vector(posterior_predict(
+    prep, output = "probability", q = q[, 1], lower.tail = FALSE, log.p = TRUE
+  )), rep(-1000, 20), tolerance = 1e-7)
+})
+
 test_that("student distribution works correctly", {
   expect_equal(integrate(dstudent_t, -100, 100, df = 15, mu = 10, sigma = 5)$value, 1)
   expect_equal(dstudent_t(1, df = 10, mu = 0, sigma = 5), dt(1/5, df = 10)/5)

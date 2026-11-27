@@ -1,5 +1,69 @@
 context("Tests for posterior_predict helper functions")
 
+test_that("Cox preparation uses native links and nonlinear parameter dispatch", {
+  skip_if_not_installed("splines2")
+  dat <- data.frame(y = 1:10, x = seq_len(10))
+  for (link in c("log", "identity", "softplus", "squareplus")) {
+    fit <- brm(y ~ 0 + Intercept, dat, family = cox(link), empty = TRUE)
+    frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+    pars <- c("b_Intercept", paste0("sbhaz[", 1:5, "]"))
+    draws <- posterior::as_draws_matrix(
+      matrix(rep(c(2, rep(0.2, 5)), each = 3), 3,
+             dimnames = list(NULL, pars))
+    )
+    prep <- prepare_predictions(
+      frame, draws = draws, sdata = standata(fit), tail = "constant"
+    )
+    expect_equal(brms:::get_dpar(prep, "mu"),
+                 matrix(brms:::inv_link(2, link), 3, 10))
+    expect_true(all(is.finite(posterior_predict(prep))))
+  }
+  fit <- brm(bf(y ~ exp(a), a ~ 1, nl = TRUE), dat,
+             family = cox(), empty = TRUE)
+  frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+  pars <- c("b_a_Intercept", paste0("sbhaz[", 1:5, "]"))
+  draws <- posterior::as_draws_matrix(
+    matrix(rep(c(0.2, rep(0.2, 5)), each = 3), 3,
+           dimnames = list(NULL, pars))
+  )
+  prep <- prepare_predictions(
+    frame, draws = draws, sdata = standata(fit), tail = "constant"
+  )
+  expect_equal(prep$bhaz$basis, fit$basis$bhaz$basis_matrix)
+  expect_true(all(is.finite(posterior_predict(prep))))
+})
+
+test_that("Cox outputs preserve stable truncation and reject unsupported preparations", {
+  skip_if_not_installed("splines2")
+  prep <- cox_test_prep()
+  prep$dpars$mu[] <- 100
+  prep$data$lb <- rep(1, 3)
+  prep$data$ub <- rep(2, 3)
+  q <- posterior_predict(prep, output = "quantile", p = 0.5)
+  expect_true(all(q > 1 & q < 2))
+  expect_equal(unname(posterior_predict(prep, output = "probability", q = q[, 1])),
+               matrix(0.5, 20, 3), tolerance = 1e-7)
+  expect_true(all(is.finite(posterior_predict(
+    prep, output = "density", q = q[, 1], log = TRUE
+  ))))
+  expect_equal(unname(posterior_predict(prep, output = "quantile", p = 1)),
+               matrix(2, 20, 3), tolerance = 1e-8)
+  prep$bhaz$tail <- "none"
+  prep$data$ub[] <- 5
+  expect_error(posterior_predict(prep), "truncation bounds")
+  prep$data <- list(Y = rep(1, 3))
+  prep$bhaz$version <- package_version("2.23.1")
+  expect_true(all(is.finite(posterior_predict(prep))))
+  prep$bhaz$basis <- NULL
+  expect_error(posterior_predict(prep), "Please refit")
+  prep <- cox_test_prep()
+  prep$family <- mixture(cox(), cox())
+  prep$dpars <- list(mu1 = prep$dpars$mu, mu2 = prep$dpars$mu)
+  prep$bhaz <- list(mu1 = prep$bhaz, mu2 = prep$bhaz)
+  child <- brms:::pseudo_prep_for_mixture(prep, 1)
+  expect_error(posterior_predict(child), "non-mixture")
+})
+
 test_that("posterior_predict for location shift models runs without errors", {
   ns <- 30
   nobs <- 10
@@ -495,6 +559,31 @@ test_that("posterior_predict_mixture does not let p partially match prep", {
   expect_equal(dim(pred), c(nobs(fit), 4))
   draws <- posterior_predict(fit, ndraws = 10)
   expect_equal(dim(draws), c(10, nobs(fit)))
+})
+
+test_that("predict forwards distribution output controls before summarizing", {
+  skip_if_not_installed("splines2")
+  fit <- brms:::brmsfit_example1
+  prep <- cox_test_prep()
+  testthat::local_mocked_bindings(
+    prepare_predictions = function(...) prep, .package = "brms"
+  )
+  cases <- list(
+    list(output = "probability", q = 2, lower.tail = FALSE, log.p = TRUE),
+    list(output = "density", q = 2, log = TRUE),
+    list(output = "quantile", p = log(0.25), lower.tail = FALSE, log.p = TRUE)
+  )
+  for (args in cases) {
+    expected <- do.call(posterior_predict, c(list(prep), args))
+    expect_equal(
+      do.call(predict, c(list(fit, summary = FALSE), args)),
+      expected
+    )
+    expect_equal(
+      do.call(predict, c(list(fit, robust = TRUE, probs = c(0.1, 0.9)), args)),
+      posterior_summary(expected, robust = TRUE, probs = c(0.1, 0.9))
+    )
+  }
 })
 
 # ---------------------------------------------------------------------------

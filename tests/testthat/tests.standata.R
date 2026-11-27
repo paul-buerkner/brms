@@ -1041,6 +1041,92 @@ test_that("standata handles cox models correctly", {
   expect_equivalent(sdata$con_sbhaz, con_mat)
 })
 
+test_that("Cox Stan data use response-specific names", {
+  skip_if_not_installed("splines2")
+  dat <- data.frame(y = 1:10, y2 = 2:11, x = seq_len(10))
+  form <- bf(y ~ x, family = cox()) +
+    bf(y2 ~ x, family = cox()) + set_rescor(FALSE)
+  sdata <- standata(form, dat)
+  expect_false(anyDuplicated(names(sdata)) > 0L)
+  expect_true(all(c("Zbhaz_y", "Zcbhaz_y", "Kbhaz_y", "con_sbhaz_y",
+                    "Zbhaz_y2", "Zcbhaz_y2") %in% names(sdata)))
+  fit <- brm(form, dat, empty = TRUE)
+  frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+  pars <- c("b_y_Intercept", "b_y_x", "b_y2_Intercept", "b_y2_x",
+             paste0("sbhaz_y[", 1:5, "]"), paste0("sbhaz_y2[", 1:5, "]"))
+  draws <- posterior::as_draws_matrix(
+    matrix(0.2, 3, length(pars), dimnames = list(NULL, pars))
+  )
+  prep <- prepare_predictions(
+    frame, draws = draws, sdata = sdata, tail = "constant", horizon = 2
+  )
+  expect_equal(prep$resps$y$bhaz$basis, fit$basis$resps$y$bhaz$basis_matrix)
+  expect_equal(prep$resps$y2$bhaz$basis, fit$basis$resps$y2$bhaz$basis_matrix)
+  expect_equal(dim(posterior_predict(prep)), c(3L, 10L, 2L))
+  expect_equal(dim(posterior_epred(
+    prep, dpar = NULL, nlpar = NULL, sort = FALSE
+  )), c(3L, 10L, 2L))
+  expect_silent(sdata <- standata(
+    fit, newdata = data.frame(x = 1:2), check_response = FALSE
+  ))
+  expect_true(all(is.na(sdata$Y_y)) && all(is.na(sdata$Y_y2)))
+  expect_equal(as.vector(sdata$Zcbhaz_y %*% rep(0.2, 5)), c(0, 0))
+  expect_equal(as.vector(sdata$Zcbhaz_y2 %*% rep(0.2, 5)), c(0, 0))
+})
+
+test_that("Cox preparation preserves singleton and absent strata", {
+  skip_if_not_installed("splines2")
+  dat <- data.frame(y = 1:10, x = seq_len(10),
+                    g = factor(rep(c("a", "b"), 5)))
+  fit <- brm(y | bhaz(gr = g) ~ x, data = dat, family = cox(), empty = TRUE)
+  frame <- brms:::brmsframe(fit$formula, data = fit$data, basis = fit$basis)
+  pars <- c(paste0("sbhaz[a,", 1:5, "]"), paste0("sbhaz[b,", 1:5, "]"))
+  draws <- posterior::as_draws_matrix(
+    matrix(0.2, 3, 10, dimnames = list(NULL, pars))
+  )
+  for (rows in list(1:2, 1L)) {
+    sdata <- standata(fit, newdata = dat[rows, ])
+    prep <- brms:::prepare_predictions_bhaz(
+      frame$dpars$mu, draws, sdata
+    )
+    expect_equal(dim(prep$bhaz), c(3L, length(rows)))
+    expect_equal(prep$basis, fit$basis$bhaz$basis_matrix)
+    expect_equal(prep$bhaz, unname(tcrossprod(matrix(0.2, 3, 5), sdata$Zbhaz)))
+    expect_equal(prep$cbhaz, unname(tcrossprod(matrix(0.2, 3, 5), sdata$Zcbhaz)))
+  }
+})
+
+test_that("Unchecked Cox responses do not extrapolate the spline", {
+  skip_if_not_installed("splines2")
+  dat <- data.frame(y = 1:10, x = seq_len(10))
+  for (form in list(bf(y ~ x), bf(y ~ exp(a), a ~ x, nl = TRUE))) {
+    fit <- brm(form, dat, family = cox(), empty = TRUE)
+    expect_silent(sdata <- standata(
+      fit, newdata = data.frame(y = c(0, 100), x = 1:2),
+      check_response = FALSE
+    ))
+    expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 1))
+    expect_silent(sdata <- standata(
+      fit, newdata = data.frame(x = 1:2), check_response = FALSE
+    ))
+    expect_true(all(is.na(sdata$Y)))
+    expect_equal(as.vector(sdata$Zcbhaz %*% rep(0.2, 5)), c(0, 0))
+    expect_error(standata(
+      fit, newdata = data.frame(y = c(-1, 2), x = 1:2),
+      check_response = TRUE
+    ), "requires response greater than or equal to 0")
+    expect_warning(standata(
+      fit, newdata = data.frame(y = 100, x = 1),
+      check_response = TRUE
+    ), "beyond boundary knots")
+    expect_silent(response <- standata(
+      fit, newdata = data.frame(y = c(0, 100), x = 1:2),
+      only_response = TRUE
+    ))
+    expect_equal(as.vector(response$Y), c(0, 100))
+  }
+})
+
 test_that("cox baseline hazard knots are based on event times only", {
   skip_if_not_installed("splines2")
   set.seed(1234)
@@ -1126,28 +1212,6 @@ test_that("cox baseline hazard basis is fixed after model fitting", {
     # a single new observation is not enough to define a basis on its own
     expect_equal(nrow(standata(fit, newdata = data[1, ])$Zbhaz), 1)
   }
-})
-
-test_that("cox baseline hazard basis stored by brms 2.23.0 is still used", {
-  skip_if_not_installed("splines2")
-  set.seed(1234)
-  data <- data.frame(
-    y = c(rexp(80), rep(1000, 20)),
-    cens = c(rep(0, 80), rep(1, 20)),
-    x = rnorm(100)
-  )
-  bform <- bf(y | bhaz(df = 8) + cens(cens) ~ x, family = brmsfamily("cox"))
-  fit <- brm(bform, data = data, empty = TRUE)
-  sdata <- standata(fit)
-
-  # brms 2.23.0 stored the basis with the predictor terms
-  fit$basis$dpars$mu$bhaz <- fit$basis$bhaz
-  fit$basis$bhaz <- NULL
-  newdata <- data[1:10, ]
-  newdata$cens <- 0
-  sdata_new <- standata(fit, newdata = newdata)
-  expect_equal(attr(sdata_new$Zbhaz, "knots"), attr(sdata$Zbhaz, "knots"))
-  expect_equal(nrow(sdata_new$Zbhaz), 10)
 })
 
 test_that("standata handles addition term 'rate' is correctly", {

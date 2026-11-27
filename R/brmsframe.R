@@ -429,7 +429,7 @@ frame_basis_bhaz <- function(x, data, ...) {
   if (is_cox(x$family)) {
     # the basis (and thus the knots of the baseline hazard) is constructed in
     # the same way as on the original data in 'data_bhaz'; no warning is
-    # emitted here as it would already have been emitted there
+    # emitted here as it would already have been emitted in 'data_response_bhaz'
     args <- family_info(x, "bhaz")$args
     out$basis_matrix <- bhaz_basis(x, data, args = args, warn = FALSE)
   }

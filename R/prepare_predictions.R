@@ -6,7 +6,7 @@ prepare_predictions.brmsfit <- function(
   incl_autocor = TRUE, oos = NULL, resp = NULL, ndraws = NULL, draw_ids = NULL,
   nsamples = NULL, subset = NULL, nug = NULL, smooths_only = FALSE,
   offset = TRUE, newdata2 = NULL, new_objects = NULL, point_estimate = NULL,
-  ndraws_point_estimate = 1, ...
+  ndraws_point_estimate = 1, tail = "constant", ...
 ) {
 
   x <- restructure(x)
@@ -39,7 +39,7 @@ prepare_predictions.brmsfit <- function(
   )
 
   new_formula <- update_re_terms(x$formula, re_formula)
-  bframe <- brmsframe(new_formula, data = x$data)
+  bframe <- brmsframe(new_formula, data = x$data, basis = x$basis)
   # TODO: move prep_re into prepare_predictions in brms 3.0
   prep_re <- prepare_predictions_re_global(
     bframe = bframe, draws = draws, sdata = sdata,
@@ -51,7 +51,7 @@ prepare_predictions.brmsfit <- function(
     prep_re = prep_re, resp = resp,
     sample_new_levels = sample_new_levels, nug = nug,
     new = !is.null(newdata), oos = oos,
-    stanvars = x$stanvars
+    stanvars = x$stanvars, tail = tail, ...
   )
 }
 
@@ -844,32 +844,83 @@ prepare_predictions_thres <- function(bframe, draws, sdata, ...) {
 }
 
 # prepare predictions of baseline functions for the cox model
-prepare_predictions_bhaz <- function(bframe, draws, sdata, ...) {
+prepare_predictions_bhaz <- function(bframe, draws, sdata,
+                                     tail = "constant", horizon = NULL,
+                                     nodes = 64, ...) {
   if (!is_cox(bframe$family)) {
     return(NULL)
   }
-  out <- list()
+  # bhaz/cbhaz retain draws-by-observations evaluations for likelihoods.
+  # Arbitrary-time predictions use the stored basis and draws-by-coefficients
+  # sbhaz matrices, one per stratum; Jgrbhaz selects each observation's stratum.
+  out <- list(
+    basis = bframe$frame$basis$bhaz$basis_matrix,
+    tail = match.arg(tail, c("constant", "loglinear", "none")),
+    horizon = horizon, nodes = nodes
+  )
   p <- usc(combine_prefix(bframe))
   Zbhaz <- sdata[[paste0("Zbhaz", p)]]
   Zcbhaz <- sdata[[paste0("Zcbhaz", p)]]
   if (has_bhaz_groups(bframe)) {
     groups <- get_bhaz_groups(bframe)
     Jgrbhaz <- sdata[[paste0("Jgrbhaz", p)]]
+    out$Jgrbhaz <- Jgrbhaz
+    out$sbhaz <- named_list(groups)
     out$bhaz <- out$cbhaz <- matrix(nrow = nrow(draws), ncol = nrow(Zbhaz))
     for (k in seq_along(groups)) {
       sbhaz_regex <- paste0("^sbhaz", p, "\\[", groups[k], ",")
       sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
+      out$sbhaz[[k]] <- sbhaz
       take <- Jgrbhaz == k
-      out$bhaz[, take] <- tcrossprod(sbhaz, Zbhaz[take, ])
-      out$cbhaz[, take] <- tcrossprod(sbhaz, Zcbhaz[take, ])
+      out$bhaz[, take] <- tcrossprod(sbhaz, Zbhaz[take, , drop = FALSE])
+      out$cbhaz[, take] <- tcrossprod(sbhaz, Zcbhaz[take, , drop = FALSE])
     }
   } else {
-    sbhaz_regex <- paste0("^sbhaz", p)
+    sbhaz_regex <- paste0("^sbhaz", p, "\\[")
     sbhaz <- prepare_draws(draws, sbhaz_regex, regex = TRUE)
+    out$sbhaz <- list(sbhaz)
+    out$Jgrbhaz <- rep(1L, nrow(Zbhaz))
     out$bhaz <- tcrossprod(sbhaz, Zbhaz)
     out$cbhaz <- tcrossprod(sbhaz, Zcbhaz)
   }
   out
+}
+
+# Keep old likelihood preparation usable while requiring the canonical
+# response-level basis for time-aware predictions.
+check_cox_prep <- function(prep) {
+  if (!is_cox(prep$family) || is.mixfamily(prep$family) ||
+      isTRUE(prep$bhaz$mixture)) {
+    stop2("This method requires a non-mixture Cox response.")
+  }
+  if (!inherits(prep$bhaz$basis, "MSpline")) {
+    stop2("Cox predictions require a stored baseline basis. ",
+          "Please refit your model.")
+  }
+  invisible(NULL)
+}
+
+prepare_cox_predictions <- function(object, ..., check_response = FALSE) {
+  if (is.brmsprep(object)) {
+    if (length(list(...))) {
+      stop2("Prediction arguments must be supplied when preparing the object.")
+    }
+    prep <- object
+  } else {
+    prep <- prepare_predictions(object, check_response = check_response, ...)
+  }
+  if (!is.brmsprep(prep)) {
+    stop2("Please select a single Cox response via 'resp'.")
+  }
+  check_cox_prep(prep)
+  prep$dpars$mu <- get_dpar(prep, "mu")
+  if (is.null(dim(prep$dpars$mu))) {
+    prep$dpars$mu <- matrix(prep$dpars$mu, prep$ndraws, prep$nobs)
+  }
+  if (any(!is.finite(prep$dpars$mu) | prep$dpars$mu <= 0)) {
+    stop2("Cox predictions require finite positive values of 'mu'.")
+  }
+  prep
 }
 
 # extract data mainly related to the response variable
@@ -930,6 +981,7 @@ pseudo_prep_for_mixture <- function(prep, comp, draw_ids = NULL) {
   }
   if (is_cox(out$family)) {
     out$bhaz <- prep$bhaz[[paste0("mu", comp)]]
+    out$bhaz$mixture <- TRUE
   }
   # weighting should happen after computing the mixture
   out$data$weights <- NULL
@@ -1255,7 +1307,14 @@ is.bprepnl <- function(x) {
 #' @param ndraws_point_estimate Only used if \code{point_estimate} is not
 #'   \code{NULL}. How often shall the point estimate's value be repeated?
 #'   Defaults to \code{1}.
+#' @param tail Cox prediction-time extrapolation beyond the fitted spline's
+#'   upper boundary: \code{"constant"} (default), \code{"loglinear"}, or
+#'   \code{"none"}. See \code{\link{posterior_predict.brmsfit}}.
 #' @param ... Further arguments passed to \code{\link{validate_newdata}}.
+#'   For Cox models, also accepts \code{horizon = NULL} and \code{nodes = 64},
+#'   stored for restricted mean survival time predictions. A horizon is
+#'   required only when computing restricted mean survival time; see
+#'   \code{\link{posterior_epred.brmsfit}}.
 #'
 #' @return An object of class \code{'brmsprep'} or \code{'mvbrmsprep'},
 #'   depending on whether a univariate or multivariate model is passed.

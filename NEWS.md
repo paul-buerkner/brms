@@ -2,6 +2,9 @@
 
 ### New Features
 
+* Add native Cox predictive draws, CDFs, densities, and quantiles with explicit
+tail extrapolation policies, and restricted mean survival time with a required
+horizon. Thanks to Sebastian Weber. (#1963)
 * Fit models with the new `stanli` backend (`backend = "stanli"`), which
 needs no C++ toolchain or compilation step.
 * Extend `posterior_predict` beyond random draws via argument `output`,
@@ -76,8 +79,8 @@ Thanks to Ahmed Eldeeb. (#1899)
 * Align the R functions `log1m_exp()` and `log_diff_exp()` with their 
 definitions in Stan. (#1899)
 * Cox models now place the knots of the baseline hazard based on the event
-times only instead of both event and censoring times. Models fitted with
-brms 2.23.1 or earlier keep using their original knots in post-processing.
+times only instead of both event and censoring times.
+Cox models using the old baseline-basis layout must be refitted.
 Thanks to Sebastian Weber. (#1898)
 * The basis of the baseline hazard of Cox models is now stored with the
 response instead of with the predictor terms. As a result, `log_lik`, `loo`
@@ -2382,5 +2385,4 @@ have proper priors by default.
 # brms 0.1.0
 
 * Initial release version
-
 

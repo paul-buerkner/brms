@@ -57,8 +57,9 @@ Indicating whether to return predicted values in the original
 order (\code{FALSE}; default) or in the order of the
 time series (\code{TRUE}).}
 
-\item{...}{Further arguments passed to \code{\link{prepare_predictions}}
-that control several aspects of data validation and prediction.}
+\item{...}{Further arguments passed to \code{\link{prepare_predictions}}.
+For Cox models, these include \code{horizon} and \code{nodes}; see
+Details in \code{\link{posterior_epred.brmsfit}}.}
 }
 \value{
 An \code{array} of draws. For
@@ -80,6 +81,19 @@ residual error is ignored there. However, the estimated means of both methods
 averaged across draws should be very similar.
 }
 \details{
+For Cox response predictions, supply a finite nonnegative
+  \code{horizon} through \code{...}. Predictions return restricted mean
+  survival time \eqn{E[\min(T, horizon)]}, where \eqn{T} is event time,
+  rather than the unrestricted mean. No horizon is chosen implicitly.
+  \code{nodes} controls the number of Gauss-Legendre nodes per integration
+  panel (default 64). This calculation requires \pkg{statmod}.
+  These controls are ignored for other families and parameter predictions.
+
+  When reusing a prepared prediction object, supply \code{horizon} and
+  \code{nodes} to \code{\link{prepare_predictions}}, not to subsequent
+  \code{posterior_epred} calls. Further arguments cannot be supplied to
+  \code{posterior_epred} for an already prepared object.
+
 \code{NA} values within factors in \code{newdata},
   are interpreted as if all dummy variables of this factor are
   zero. This allows, for instance, to make predictions of the grand mean

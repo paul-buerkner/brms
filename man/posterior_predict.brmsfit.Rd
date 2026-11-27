@@ -151,6 +151,24 @@ Besides random draws, related quantities such as CDF or PIT
   outputs other than \code{"random"} yet; requesting an unsupported
   combination raises an error.
 
+  Cox predictions use a fitted baseline hazard spline. Its domain
+  is defined during model fitting and remains fixed afterward. The
+  \code{tail} argument selects extrapolation beyond its upper
+  boundary.  \code{tail = "constant"} (the default) keeps the
+  baseline hazard constant, giving an exponential survival
+  tail. \code{tail = "loglinear"} extends the log cumulative
+  baseline hazard linearly in log time, matching its boundary
+  slope. With \code{tail = "none"}, random draws and quantiles
+  beyond the upper boundary are right-censored at that boundary and
+  returned as its negative value. Note that the convention to use
+  positive values for events times and negative value for censored
+  observations requires aligned processing of the draws. CDFs and
+  densities beyond the upper boundary return \code{NA}. For Cox
+  models, \code{output = "pit"} evaluates the event-time CDF
+  conditional on covariates and any truncation bounds. It does not
+  adjust for censoring and is not a censoring-aware calibration
+  diagnostic.
+
   For truncated discrete models only: In the absence of any general
   algorithm to sample from truncated discrete distributions, rejection
   sampling is applied in this special case. This means that values are

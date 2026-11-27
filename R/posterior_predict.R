@@ -87,6 +87,24 @@
 #'   outputs other than \code{"random"} yet; requesting an unsupported
 #'   combination raises an error.
 #'
+#'   Cox predictions use a fitted baseline hazard spline. Its domain
+#'   is defined during model fitting and remains fixed afterward. The
+#'   \code{tail} argument selects extrapolation beyond its upper
+#'   boundary.  \code{tail = "constant"} (the default) keeps the
+#'   baseline hazard constant, giving an exponential survival
+#'   tail. \code{tail = "loglinear"} extends the log cumulative
+#'   baseline hazard linearly in log time, matching its boundary
+#'   slope. With \code{tail = "none"}, random draws and quantiles
+#'   beyond the upper boundary are right-censored at that boundary and
+#'   returned as its negative value. Note that the convention to use
+#'   positive values for events times and negative value for censored
+#'   observations requires aligned processing of the draws. CDFs and
+#'   densities beyond the upper boundary return \code{NA}. For Cox
+#'   models, \code{output = "pit"} evaluates the event-time CDF
+#'   conditional on covariates and any truncation bounds. It does not
+#'   adjust for censoring and is not a censoring-aware calibration
+#'   diagnostic.
+#'
 #'   For truncated discrete models only: In the absence of any general
 #'   algorithm to sample from truncated discrete distributions, rejection
 #'   sampling is applied in this special case. This means that values are
@@ -319,7 +337,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
                             negative_rt = FALSE, ndraws = NULL, draw_ids = NULL,
                             sort = FALSE, ntrys = 5, cores = NULL, summary = TRUE,
                             robust = FALSE, probs = c(0.025, 0.975),
-                            output = "random", ...) {
+                            output = "random", q = NULL, p = NULL,
+                            lower.tail = TRUE, log.p = FALSE, log = FALSE, ...) {
   contains_draws(object)
   object <- restructure(object)
   prep <- prepare_predictions(
@@ -329,7 +348,8 @@ predict.brmsfit <- function(object, newdata = NULL, re_formula = NULL,
   posterior_predict(
     prep, transform = transform, ntrys = ntrys, negative_rt = negative_rt,
     sort = sort, cores = cores, summary = summary, robust = robust,
-    probs = probs, output = output
+    probs = probs, output = output, q = q, p = p,
+    lower.tail = lower.tail, log.p = log.p, log = log
   )
 }
 
@@ -822,9 +842,50 @@ posterior_predict_zero_inflated_asym_laplace <- function(i, prep,
   out
 }
 
-posterior_predict_cox <- function(i, prep, output = "random", ...) {
-  stop2("Cannot sample from the posterior predictive ",
-        "distribution for family 'cox'.")
+posterior_predict_cox <- function(i, prep, output = "random", q = NULL, ...) {
+  check_cox_prep(prep)
+  if (output %in% c("probability", "pit", "density") &&
+      is.null(q) && (is.null(prep$data$Y[i]) || is.na(prep$data$Y[i]))) {
+    stop2("Supply 'q' when no observed response is available.")
+  }
+  sbhaz <- prep$bhaz$sbhaz[[prep$bhaz$Jgrbhaz[i]]]
+  args <- list(
+    mu = get_dpar(prep, "mu", i), sbhaz = sbhaz,
+    basis = prep$bhaz$basis, tail = prep$bhaz$tail
+  )
+  if (any(!is.finite(args$mu) | args$mu <= 0)) {
+    stop2("Cox predictions require finite positive values of 'mu'.")
+  }
+  if (is.null(prep$data$lb) && is.null(prep$data$ub)) {
+    out <- do_call(predict_continuous_helper,
+      c(list(i = i, prep = prep, output = output, distribution = "cox"),
+        args, list(q = q, ...))
+    )
+  } else {
+    # Generic pp helpers subtract CDFs, which saturate for large Cox hazards.
+    out <- posterior_predict_cox_trunc(i, prep, output, args, q = q, ...)
+  }
+  out
+}
+
+posterior_predict_cox_trunc <- function(i, prep, output, args, q = NULL,
+                                       p = NULL, lower.tail = TRUE,
+                                       log.p = FALSE, log = FALSE, ...) {
+  args$lb <- prep$data$lb[i]
+  args$ub <- prep$data$ub[i]
+  if (is.null(q)) q <- prep$data$Y[i]
+  if (output == "quantile" && is.null(p)) {
+    stop2("Argument 'p' must be specified when output = 'quantile'.")
+  }
+  switch(output,
+    random = do_call(rcox, c(list(n = prep$ndraws), args)),
+    probability = ,
+    pit = do_call(pcox, c(list(q = q, lower.tail = lower.tail, log.p = log.p),
+                          args)),
+    density = do_call(dcox, c(list(x = q, log = log), args)),
+    quantile = do_call(qcox, c(list(p = p, lower.tail = lower.tail,
+                                  log.p = log.p), args))
+  )
 }
 
 posterior_predict_hurdle_poisson <- function(i, prep, output = "random", ...) {
