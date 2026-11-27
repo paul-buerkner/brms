@@ -40,7 +40,10 @@ based on \code{\link{kfold.brmsfit}}.}
 
 \item{latent}{See argument \code{latent} of
 \code{\link[projpred:extend_family]{extend_family}}. Setting this to
-\code{TRUE} requires a \pkg{projpred} version >= 2.4.0.}
+\code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For the families
+\code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{weibull}, and
+\code{lognormal}, \pkg{brms} defines the functions for response-scale
+analyses (see the latent-projection vignette of \pkg{projpred}).}
 
 \item{brms_seed}{A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 and for sampling group-level effects for new levels (in multilevel models).

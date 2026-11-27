@@ -18,7 +18,10 @@
 #'   \code{NULL} unless \pkg{projpred} complains about it.
 #' @param latent See argument \code{latent} of
 #'   \code{\link[projpred:extend_family]{extend_family}}. Setting this to
-#'   \code{TRUE} requires a \pkg{projpred} version >= 2.4.0.
+#'   \code{TRUE} requires a \pkg{projpred} version >= 2.10.0. For the families
+#'   \code{bernoulli}, \code{poisson}, \code{negbinomial}, \code{weibull}, and
+#'   \code{lognormal}, \pkg{brms} defines the functions for response-scale
+#'   analyses (see the latent-projection vignette of \pkg{projpred}).
 #' @param brms_seed A seed used to infer seeds for \code{\link{kfold.brmsfit}}
 #'   and for sampling group-level effects for new levels (in multilevel models).
 #'   If \code{NULL}, then \code{\link{set.seed}} is not called at all. If not
@@ -97,6 +100,7 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
 
   # prepare the family object for use in projpred
   family <- family(object, resp = resp)
+  family_name <- family$family
   if (family$family == "bernoulli") {
     family$family <- "binomial"
   } else if (family$family == "gamma") {
@@ -151,6 +155,15 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
     }
   }
 
+  if (latent) {
+    # the latent projection of projpred does not support observation weights
+    mdata <- .extract_model_data(object, resp = resp, extract_y = FALSE)
+    if (!isTRUE(all(mdata$weights == 1))) {
+      stop2("Projpred does not support 'weights' or 'trials' other than 1 ",
+            "in the latent projection.")
+    }
+  }
+
   # only use the raw formula for selection of terms
   formula <- formula$formula
   # LHS should only contain the response variable
@@ -166,6 +179,14 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       dis <- as.data.frame(object, variable = dis)[[dis]]
     } else if (family$family == "Gamma") {
       dis <- paste0("shape", usc(resp))
+      dis <- as.data.frame(object, variable = dis)[[dis]]
+    }
+  } else if (is.null(dis) && latent) {
+    # the SD of the latent Gaussian distribution, if the family has a dpar
+    # for it (see latent_oscale_families())
+    dis_dpar <- latent_dis_dpar(family_name, family$link)
+    if (!is.null(dis_dpar)) {
+      dis <- paste0(dis_dpar, usc(resp))
       dis <- as.data.frame(object, variable = dis)[[dis]]
     }
   }
@@ -264,18 +285,27 @@ get_refmodel.brmsfit <- function(object, newdata = NULL, resp = NULL,
       )
     }
   } else if (latent) {
-    require_package("projpred", "2.4.0")
+    # the response-scale functions need argument 'cens' (projpred 2.10.0)
+    require_package("projpred", "2.10.0")
+    # brms adds its functions only if the user passes none of these arguments
+    oscale_args <- c("latent_ilink", "latent_ll_oscale", "latent_ppd_oscale",
+                     "latent_epred", "latent_y_unqs")
     if (family$family == "cumulative") {
       args$latent_ilink <- latent_ilink_cumulative(
         object = object, family = family, bterms = bterms, resp = resp
       )
+    } else if (!any(oscale_args %in% names(args))) {
+      c(args) <- latent_oscale_funs(
+        object = object, family = family, family_name = family_name,
+        bterms = bterms, resp = resp,
+        warn = !isTRUE(args[["called_from_cvrefbuilder"]])
+      )
     }
-    # TODO: If requested by users, add response-scale support for more families:
-    # For response-scale support, they all need a specific `latent_ilink`
-    # function; some families (those for which the response can be numeric) also
-    # require specific `latent_ll_oscale` and `latent_ppd_oscale` functions. The
-    # binomial family (and thereby also the brms::bernoulli() family) has
-    # response-scale support implemented natively in projpred.
+    # TODO: If requested by users, add response-scale support for more families.
+    # Ordinal families other than cumulative() need a `latent_ilink` function
+    # that gives the category probabilities (projpred has the other functions
+    # for categorical responses). Families with a numeric response can be added
+    # in latent_oscale_families().
   }
   do_call(projpred::init_refmodel, args)
 }
@@ -412,5 +442,198 @@ latent_ilink_cumulative <- function(object, family, bterms, resp) {
   # usage because `draws_mat` would continue to live in the environment of the
   # returned function):
   rm(draws_mat)
+  out
+}
+
+# Families for which brms defines the functions required for response-scale
+# analyses with the latent projection. The functions call log_lik_<family>(),
+# posterior_predict_<family>(), and posterior_epred_<family>() with `mu`
+# replaced by the (projected) predictions. A family can be added here if these
+# functions use only `mu`, dpars that are not predicted, and the data elements
+# set in latent_oscale_funs() (`Y`, `cens`, `lb`, and `ub`), for example not
+# `trials`.
+# Element `dis` names a dpar that is the SD of the latent Gaussian distribution
+# if the link is the identity (see latent_dis_dpar()).
+latent_oscale_families <- function() {
+  list(
+    bernoulli = list(),
+    poisson = list(),
+    negbinomial = list(),
+    weibull = list(),
+    lognormal = list(dis = "sigma")
+  )
+}
+
+# The dpar that is the SD of the latent Gaussian distribution. Its draws are the
+# default of argument `dis` of get_refmodel.brmsfit(), and the functions of
+# latent_oscale_funs() take it from their argument `dis`, so that submodels use
+# their projected SD. With other links than the identity, the dpar is not the
+# SD of the latent Gaussian distribution, and its draws are aggregated as those
+# of other dpars.
+# @return The name of the dpar or NULL.
+latent_dis_dpar <- function(family_name, link) {
+  if (link != "identity") {
+    return(NULL)
+  }
+  latent_oscale_families()[[family_name]]$dis
+}
+
+# Construct the functions required for response-scale analyses with the latent
+# projection for the families in latent_oscale_families().
+#
+# @param object, family, bterms, resp See latent_ilink_cumulative().
+# @param family_name The brms name of the family.
+# @param warn Warn if the model is not supported?
+#
+# @return NULL if projpred defines the functions for the family or if the
+#   model is not supported. Otherwise, a named list with elements
+#   `latent_ilink`, `latent_ll_oscale`, `latent_ppd_oscale`, and (if projpred
+#   supports it) `latent_epred` to be passed to projpred::extend_family().
+latent_oscale_funs <- function(object, family, family_name, bterms, resp,
+                               warn = TRUE) {
+  if (family_name == "binomial" || is_categorical(family) ||
+      is_ordinal(family)) {
+    # projpred defines the functions for these families
+    return(NULL)
+  }
+  unsupported <- NULL
+  if (!family_name %in% names(latent_oscale_families())) {
+    unsupported <- paste0("family '", family_name, "'")
+  } else if (has_interval_cens(bterms)) {
+    unsupported <- "interval censoring"
+  } else if (is.formula(bterms$adforms$rate)) {
+    unsupported <- "addition argument 'rate'"
+  } else {
+    # use the model data instead of prepare_predictions(), so that this check
+    # also works for fits without draws ('empty = TRUE')
+    bounds <- trunc_bounds(bterms, data = object$data)
+    if (length(unique(bounds$lb)) > 1L || length(unique(bounds$ub)) > 1L) {
+      unsupported <- "truncation bounds that vary between observations"
+    }
+  }
+  if (!is.null(unsupported)) {
+    if (warn) {
+      warning2("The response-scale functions of the latent projection are ",
+               "not yet implemented in brms for ", unsupported, ", so the ",
+               "response-scale results are NA or not valid. Pass these ",
+               "functions via '...' (see ?projpred::extend_family).")
+    }
+    return(NULL)
+  }
+
+  prep <- prepare_predictions(object, resp = resp)
+  # Free up some memory (keeping `object` would lead to unnecessary memory
+  # usage because `object` would continue to live in the environment of the
+  # returned functions, so a saved reference model or one sent to parallel
+  # workers would contain the fit twice):
+  rm(object)
+  dis_dpar <- latent_dis_dpar(family_name, family$link)
+  # other dpars are not predicted (no distributional models) and their draws
+  # are aggregated in the same way as the projected draws; rep_len() is
+  # required for fixed dpars of older models, which are single values
+  prep$dpars$mu <- NULL
+  aux_draws <- lapply(prep$dpars[setdiff(names(prep$dpars), dis_dpar)],
+                      function(x) as.matrix(rep_len(x, prep$ndraws)))
+  # truncation bounds are the same for all observations (see above)
+  lb <- prep$data[["lb"]][1]
+  ub <- prep$data[["ub"]][1]
+  prep$data <- list()
+  prep$old_order <- NULL
+  log_lik_fun <- paste0("log_lik_", prep$family$fun)
+  log_lik_fun <- get(log_lik_fun, asNamespace("brms"))
+  pp_fun <- paste0("posterior_predict_", prep$family$fun)
+  pp_fun <- get(pp_fun, asNamespace("brms"))
+
+  # prepare a brmsprep object for (projected) predictions 'ilpreds'
+  latent_prep <- function(ilpreds, dis, cl_ref, wdraws_ref, idxs = NULL) {
+    out <- prep
+    out$ndraws <- nrow(ilpreds)
+    out$nobs <- ncol(ilpreds)
+    out$dpars$mu <- ilpreds
+    # cl_agg() is slow and not needed if each draw is its own cluster
+    is_cl <- !identical(as.integer(cl_ref), seq_len(prep$ndraws))
+    for (dp in names(aux_draws)) {
+      draws <- aux_draws[[dp]]
+      if (is_cl) {
+        draws <- projpred::cl_agg(draws, cl = cl_ref, wdraws = wdraws_ref)
+      }
+      if (!is.null(idxs)) {
+        draws <- draws[idxs, , drop = FALSE]
+      }
+      out$dpars[[dp]] <- as.vector(draws)
+    }
+    if (!is.null(dis_dpar)) {
+      out$dpars[[dis_dpar]] <- dis
+    }
+    if (!is.null(lb)) {
+      out$data$lb <- rep(lb, out$nobs)
+    }
+    if (!is.null(ub)) {
+      out$data$ub <- rep(ub, out$nobs)
+    }
+    out
+  }
+
+  latent_ilink <- function(lpreds, cl_ref,
+                           wdraws_ref = rep(1, length(cl_ref))) {
+    inv_link(lpreds, family$link)
+  }
+  latent_ll_oscale <- function(ilpreds, dis, y_oscale,
+                               wobs = rep(1, ncol(ilpreds)), cens, cl_ref,
+                               wdraws_ref = rep(1, length(cl_ref))) {
+    prep_ll <- latent_prep(
+      ilpreds, dis, cl_ref = cl_ref, wdraws_ref = wdraws_ref
+    )
+    prep_ll$data$Y <- y_oscale
+    if (!is.null(cens)) {
+      prep_ll$data$cens <- prepare_cens(cens)
+    }
+    out <- lapply(seq_cols(ilpreds), log_lik_fun, prep = prep_ll)
+    out <- do_call(cbind, out)
+    out * rep(wobs, each = nrow(out))
+  }
+  cens_expr <- get_ad_expr(bterms, "cens", "cens")
+  if (!is.null(cens_expr)) {
+    # projpred evaluates this formula in the data and passes the result to
+    # argument 'cens' of latent_ll_oscale()
+    cens_var <- str2formula(
+      cens_expr, env = environment(bterms$adforms$cens)
+    )
+    attr(latent_ll_oscale, "cens_var") <- cens_var
+  }
+  if (is.formula(bterms$adforms$trunc)) {
+    # mark that the log likelihood uses these truncation bounds
+    attr(latent_ll_oscale, "trunc_bounds") <- list(lb = lb, ub = ub)
+  }
+  # predictions do not take censoring into account
+  latent_ppd_oscale <- function(ilpreds_resamp, dis_resamp,
+                                wobs = rep(1, ncol(ilpreds_resamp)), cl_ref,
+                                wdraws_ref = rep(1, length(cl_ref)),
+                                idxs_prjdraws) {
+    prep_pp <- latent_prep(
+      ilpreds_resamp, dis_resamp, cl_ref = cl_ref, wdraws_ref = wdraws_ref,
+      idxs = idxs_prjdraws
+    )
+    out <- lapply(seq_cols(ilpreds_resamp), pp_fun, prep = prep_pp)
+    do_call(cbind, out)
+  }
+  out <- nlist(latent_ilink, latent_ll_oscale, latent_ppd_oscale)
+  # check for the feature instead of a version number, so that development
+  # versions of projpred with 'latent_epred' also work
+  if ("latent_epred" %in% names(formals(projpred::extend_family))) {
+    posterior_epred_fun <- paste0("posterior_epred_", prep$family$family)
+    posterior_epred_fun <- get(posterior_epred_fun, asNamespace("brms"))
+    # the same as posterior_epred.brmsprep() for these families
+    out$latent_epred <- function(ilpreds, dis, cl_ref,
+                                 wdraws_ref = rep(1, length(cl_ref))) {
+      prep_ep <- latent_prep(
+        ilpreds, dis, cl_ref = cl_ref, wdraws_ref = wdraws_ref
+      )
+      if (is_trunc(prep_ep)) {
+        return(posterior_epred_trunc(prep_ep))
+      }
+      posterior_epred_fun(prep_ep)
+    }
+  }
   out
 }
